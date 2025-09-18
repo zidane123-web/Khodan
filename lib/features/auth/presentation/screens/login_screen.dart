@@ -1,8 +1,9 @@
+// lib/features/auth/presentation/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../app/core/constants.dart';
-import '../../../../app/core/widgets/khodan_primary_button.dart';
 import '../../../../data/repositories/auth_repository.dart';
 import '../cubit/auth_cubit.dart';
 import '../widgets/login_form.dart';
@@ -21,11 +22,7 @@ class LoginScreen extends StatelessWidget {
               SnackBar(content: Text(state.errorMessage!)),
             );
           }
-          if (state.status == AuthStatus.success) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Connexion réussie')),
-            );
-          }
+          // Pas besoin de gérer le succès ici, le routeur s'en charge.
         },
         child: Scaffold(
           body: SafeArea(
@@ -67,19 +64,23 @@ class LoginScreen extends StatelessWidget {
               ),
             ),
           ),
-          floatingActionButton: KhodanPrimaryButton(
-            label: 'Créer un compte',
-            icon: Icons.person_add_alt,
-            onPressed: () {
-              showDialog<void>(
-                context: context,
-                builder: (BuildContext context) {
-                  return const _SignupDialog();
-                },
-              );
-            },
+          bottomNavigationBar: Padding(
+            padding: const EdgeInsets.all(16),
+            child: FilledButton.icon(
+              label: const Text('Créer un compte'),
+              icon: const Icon(Icons.person_add_alt),
+              onPressed: () {
+                showDialog<void>(
+                  context: context,
+                  // On passe le AuthCubit au dialogue
+                  builder: (_) => BlocProvider.value(
+                    value: context.read<AuthCubit>(),
+                    child: const _SignupDialog(),
+                  ),
+                );
+              },
+            ),
           ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         ),
       ),
     );
@@ -176,10 +177,16 @@ class _SignupDialogState extends State<_SignupDialog> {
                             _passwordController.text.trim(),
                             farmName: _farmNameController.text.trim(),
                           );
-                      if (context.mounted &&
-                          context.read<AuthCubit>().state.status !=
-                              AuthStatus.failure) {
-                        Navigator.of(context).maybePop();
+                      
+                      // On ferme simplement le dialogue si le cubit est monté
+                      // Le routeur va gérer la redirection tout seul
+                      if (context.mounted) {
+                        final bool isSuccess =
+                            context.read<AuthCubit>().state.status ==
+                                AuthStatus.success;
+                        if (isSuccess) {
+                          Navigator.of(context).pop();
+                        }
                       }
                     },
               child: state.status == AuthStatus.loading
