@@ -13,6 +13,10 @@ class Animal extends Equatable {
     this.imageUrl,
     this.sireId,
     this.damId,
+    this.cageNumber,
+    this.origin,
+    this.entryDate,
+    this.firstBreedingDate,
   });
 
   final String id;
@@ -26,6 +30,10 @@ class Animal extends Equatable {
   final String? imageUrl;
   final String? sireId;
   final String? damId;
+  final String? cageNumber;
+  final String? origin;
+  final DateTime? entryDate;
+  final DateTime? firstBreedingDate;
 
   int get ageInDays => DateTime.now().difference(birthDate).inDays;
 
@@ -41,6 +49,10 @@ class Animal extends Equatable {
     String? imageUrl,
     String? sireId,
     String? damId,
+    String? cageNumber,
+    String? origin,
+    DateTime? entryDate,
+    DateTime? firstBreedingDate,
   }) {
     return Animal(
       id: id ?? this.id,
@@ -54,6 +66,10 @@ class Animal extends Equatable {
       imageUrl: imageUrl ?? this.imageUrl,
       sireId: sireId ?? this.sireId,
       damId: damId ?? this.damId,
+      cageNumber: cageNumber ?? this.cageNumber,
+      origin: origin ?? this.origin,
+      entryDate: entryDate ?? this.entryDate,
+      firstBreedingDate: firstBreedingDate ?? this.firstBreedingDate,
     );
   }
 
@@ -70,6 +86,14 @@ class Animal extends Equatable {
       imageUrl: json['image_url'] as String?,
       sireId: json['sire_id'] as String?,
       damId: json['dam_id'] as String?,
+      cageNumber: json['cage_number'] as String?,
+      origin: json['origin'] as String?,
+      entryDate: json['entry_date'] != null
+          ? DateTime.parse(json['entry_date'] as String)
+          : null,
+      firstBreedingDate: json['first_breeding_date'] != null
+          ? DateTime.parse(json['first_breeding_date'] as String)
+          : null,
     );
   }
 
@@ -86,6 +110,10 @@ class Animal extends Equatable {
       'image_url': imageUrl,
       'sire_id': sireId,
       'dam_id': damId,
+      'cage_number': cageNumber,
+      'origin': origin,
+      'entry_date': entryDate?.toIso8601String(),
+      'first_breeding_date': firstBreedingDate?.toIso8601String(),
     };
   }
 
@@ -102,5 +130,9 @@ class Animal extends Equatable {
         imageUrl,
         sireId,
         damId,
+        cageNumber,
+        origin,
+        entryDate,
+        firstBreedingDate,
       ];
 }

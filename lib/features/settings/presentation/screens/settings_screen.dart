@@ -1,4 +1,8 @@
+// lib/features/settings/presentation/screens/settings_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -30,6 +34,17 @@ class SettingsScreen extends StatelessWidget {
             subtitle: const Text('Consulter la base de connaissances et contacter le support.'),
             trailing: const Icon(Icons.help_outline),
             onTap: () {},
+          ),
+          const Divider(height: 1),
+          ListTile(
+            title: const Text(
+              'Déconnexion',
+              style: TextStyle(color: Colors.red),
+            ),
+            leading: const Icon(Icons.logout, color: Colors.red),
+            onTap: () async {
+              await context.read<AuthCubit>().signOut();
+            },
           ),
         ],
       ),

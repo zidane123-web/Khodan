@@ -1,8 +1,13 @@
+// lib/app/config/router.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/animals/presentation/screens/animal_list_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/events/presentation/screens/events_hub_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
@@ -16,8 +21,15 @@ class KhodanRouter {
   KhodanRouter()
       : router = GoRouter(
           navigatorKey: _rootNavigatorKey,
-          initialLocation: const DashboardRoute().location,
+          initialLocation: const SplashRoute().location,
+          refreshListenable:
+              GoRouterRefreshStream(Supabase.instance.client.auth.onAuthStateChange),
           routes: <RouteBase>[
+            GoRoute(
+              path: const SplashRoute().path,
+              builder: (BuildContext context, GoRouterState state) =>
+                  const SplashScreen(),
+            ),
             GoRoute(
               path: const LoginRoute().path,
               builder: (BuildContext context, GoRouterState state) =>
@@ -80,9 +92,48 @@ class KhodanRouter {
               ],
             ),
           ],
+          redirect: (BuildContext context, GoRouterState state) {
+            final Session? session = Supabase.instance.client.auth.currentSession;
+            final bool hasSession = session != null;
+            final String location = state.uri.toString();
+
+            final bool isAuthRoute = location == const LoginRoute().location;
+            final bool isSplashRoute = location == const SplashRoute().location;
+
+            if (isSplashRoute) {
+              return hasSession
+                  ? const DashboardRoute().location
+                  : const LoginRoute().location;
+            }
+
+            if (!hasSession) {
+              return isAuthRoute ? null : const LoginRoute().location;
+            }
+
+            if (isAuthRoute) {
+              return const DashboardRoute().location;
+            }
+
+            return null;
+          },
         );
 
   final GoRouter router;
+}
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
 }
 
 abstract class KhodanRoute {
@@ -91,6 +142,10 @@ abstract class KhodanRoute {
   final String path;
 
   String get location => path;
+}
+
+class SplashRoute extends KhodanRoute {
+  const SplashRoute() : super('/');
 }
 
 class LoginRoute extends KhodanRoute {

@@ -1,10 +1,14 @@
+// lib/main.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/config/router.dart';
 import 'app/config/theme.dart';
 import 'app/core/constants.dart';
+import 'data/repositories/auth_repository.dart';
+import 'features/auth/presentation/cubit/auth_cubit.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,8 +17,8 @@ Future<void> main() async {
 }
 
 Future<void> _initializeSupabase() async {
-  final supabaseUrl = AppConstants.supabaseUrl;
-  final supabaseAnonKey = AppConstants.supabaseAnonKey;
+  final String supabaseUrl = AppConstants.supabaseUrl;
+  final String supabaseAnonKey = AppConstants.supabaseAnonKey;
 
   if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
     debugPrint('⚠️ Supabase credentials are missing. Skipping initialization.');
@@ -32,11 +36,14 @@ class KhodanApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: AppConstants.appName,
-      theme: buildKhodanTheme(),
-      routerConfig: KhodanRouter().router,
-      debugShowCheckedModeBanner: false,
+    return BlocProvider<AuthCubit>(
+      create: (BuildContext context) => AuthCubit(AuthRepository()),
+      child: MaterialApp.router(
+        title: AppConstants.appName,
+        theme: buildKhodanTheme(),
+        routerConfig: KhodanRouter().router,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }

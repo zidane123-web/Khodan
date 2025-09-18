@@ -36,10 +36,31 @@ class AnimalDetailScreen extends StatelessWidget {
                   _InfoRow(label: 'Sexe', value: animal.sex),
                   _InfoRow(label: 'Statut', value: animal.status),
                   _InfoRow(
+                    label: 'Cage',
+                    value: animal.cageNumber ?? 'Non renseigné',
+                  ),
+                  _InfoRow(
+                    label: 'Origine',
+                    value: animal.origin ?? 'Non renseignée',
+                  ),
+                  _InfoRow(
                     label: 'Date de naissance',
                     value:
                         MaterialLocalizations.of(context).formatMediumDate(animal.birthDate),
                   ),
+                  _InfoRow(
+                    label: 'Date d’entrée',
+                    value: animal.entryDate != null
+                        ? MaterialLocalizations.of(context)
+                            .formatMediumDate(animal.entryDate!)
+                        : 'Non renseignée',
+                  ),
+                  if (animal.firstBreedingDate != null)
+                    _InfoRow(
+                      label: '1ère saillie',
+                      value:
+                          '${MaterialLocalizations.of(context).formatMediumDate(animal.firstBreedingDate!)} · ${animal.firstBreedingDate!.difference(animal.birthDate).inDays} jours',
+                    ),
                 ],
               ),
             ),
