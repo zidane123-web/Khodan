@@ -208,7 +208,7 @@ class DashboardCubit extends Cubit<DashboardState> {
         todayEntries.add(
           _TaskEntry(
             dateOnly,
-            '$label – en retard depuis ${overdueDays} j'
+            '$label – en retard depuis $overdueDays j'
             ' (${_formatShortDate(dateOnly)})',
           ),
         );
@@ -251,8 +251,8 @@ class DashboardCubit extends Cubit<DashboardState> {
     upcomingEntries.sort((a, b) => a.date.compareTo(b.date));
 
     return _TasksBreakdown(
-      today: todayEntries.map((_) => _.label).toList(),
-      upcoming: upcomingEntries.map((_) => _.label).toList(),
+      today: todayEntries.map((task) => task.label).toList(),
+      upcoming: upcomingEntries.map((task) => task.label).toList(),
     );
   }
 
