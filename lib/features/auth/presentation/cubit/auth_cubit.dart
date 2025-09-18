@@ -83,5 +83,18 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> signOut() => _repository.signOut();
+  Future<void> signOut() async {
+    emit(state.copyWith(status: AuthStatus.loading, resetError: true));
+    try {
+      await _repository.signOut();
+      emit(const AuthState());
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
 }
