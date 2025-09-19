@@ -2,9 +2,12 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../data/models/animal.dart';
+import '../../../../data/models/animal_event.dart';
 import '../../../../data/models/breeding_record.dart';
+import '../../../../data/models/event.dart';
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
+import '../../../../data/repositories/event_repository.dart';
 import '../../domain/models/breeding_performance_stats.dart';
 
 enum DashboardStatus { initial, loading, success, failure }
@@ -19,8 +22,16 @@ class DashboardState extends Equatable {
     this.activeLitters = 0,
     this.breedingSuccessRate,
     this.breedingEvaluatedCount = 0,
-    this.todayTasks = const <String>[],
-    this.upcomingTasks = const <String>[],
+    this.todayTasks = const <DashboardTask>[],
+    this.upcomingTasks = const <DashboardTask>[],
+    this.alerts = const <DashboardAlert>[],
+    this.calendarEvents = const <DashboardCalendarEvent>[],
+    this.kpiOrder = const <DashboardKpiType>[
+      DashboardKpiType.totalAnimals,
+      DashboardKpiType.gestatingDoes,
+      DashboardKpiType.plannedBreedings,
+      DashboardKpiType.breedingSuccessRate,
+    ],
     this.performance = const BreedingPerformanceStats(),
     this.errorMessage,
   });
@@ -33,8 +44,11 @@ class DashboardState extends Equatable {
   final int activeLitters;
   final double? breedingSuccessRate;
   final int breedingEvaluatedCount;
-  final List<String> todayTasks;
-  final List<String> upcomingTasks;
+  final List<DashboardTask> todayTasks;
+  final List<DashboardTask> upcomingTasks;
+  final List<DashboardAlert> alerts;
+  final List<DashboardCalendarEvent> calendarEvents;
+  final List<DashboardKpiType> kpiOrder;
   final BreedingPerformanceStats performance;
   final String? errorMessage;
 
@@ -48,8 +62,11 @@ class DashboardState extends Equatable {
     double? breedingSuccessRate,
     bool clearBreedingSuccessRate = false,
     int? breedingEvaluatedCount,
-    List<String>? todayTasks,
-    List<String>? upcomingTasks,
+    List<DashboardTask>? todayTasks,
+    List<DashboardTask>? upcomingTasks,
+    List<DashboardAlert>? alerts,
+    List<DashboardCalendarEvent>? calendarEvents,
+    List<DashboardKpiType>? kpiOrder,
     BreedingPerformanceStats? performance,
     String? errorMessage,
   }) {
@@ -67,6 +84,9 @@ class DashboardState extends Equatable {
           breedingEvaluatedCount ?? this.breedingEvaluatedCount,
       todayTasks: todayTasks ?? this.todayTasks,
       upcomingTasks: upcomingTasks ?? this.upcomingTasks,
+      alerts: alerts ?? this.alerts,
+      calendarEvents: calendarEvents ?? this.calendarEvents,
+      kpiOrder: kpiOrder ?? this.kpiOrder,
       performance: performance ?? this.performance,
       errorMessage: errorMessage ?? this.errorMessage,
     );
@@ -84,17 +104,24 @@ class DashboardState extends Equatable {
         breedingEvaluatedCount,
         todayTasks,
         upcomingTasks,
+        alerts,
+        calendarEvents,
+        kpiOrder,
         performance,
         errorMessage,
       ];
 }
 
 class DashboardCubit extends Cubit<DashboardState> {
-  DashboardCubit(this._animalRepository, this._breedingRepository)
-      : super(const DashboardState());
+  DashboardCubit(
+    this._animalRepository,
+    this._breedingRepository,
+    this._eventRepository,
+  ) : super(const DashboardState());
 
   final AnimalRepository _animalRepository;
   final BreedingRepository _breedingRepository;
+  final EventRepository _eventRepository;
 
   Future<void> loadDashboard() async {
     emit(state.copyWith(status: DashboardStatus.loading));
@@ -102,17 +129,36 @@ class DashboardCubit extends Cubit<DashboardState> {
       final List<Animal> animals = await _animalRepository.fetchAnimals();
       final List<BreedingRecord> records =
           await _breedingRepository.fetchBreedingRecords();
-      final Map<String, Animal> animalsById = <String, Animal>{
-        for (final Animal animal in animals) animal.id: animal,
-      };
-
       final DateTime now = DateTime.now();
       final DateTime startOfToday =
           DateTime(now.year, now.month, now.day);
 
+      final List<LivestockEvent> events = await _eventRepository.fetchEvents(
+        start: startOfToday.subtract(const Duration(days: 60)),
+        end: startOfToday.add(const Duration(days: 60)),
+      );
+      final List<AnimalEventLink> links =
+          await _eventRepository.fetchEventLinks();
+
+      final Map<String, Animal> animalsById = <String, Animal>{
+        for (final Animal animal in animals) animal.id: animal,
+      };
+
+      final Map<String, List<String>> eventAnimalMap =
+          <String, List<String>>{};
+      for (final AnimalEventLink link in links) {
+        eventAnimalMap.update(
+          link.eventId,
+          (List<String> value) => <String>[...value, link.animalId],
+          ifAbsent: () => <String>[link.animalId],
+        );
+      }
+
       final int activeAnimals = animals
-          .where((Animal animal) =>
-              animal.status.toLowerCase().contains('viv'))
+          .where(
+            (Animal animal) =>
+                animal.status.toLowerCase().contains('viv'),
+          )
           .length;
 
       final Set<String> gestatingDoeIds = <String>{};
@@ -149,18 +195,35 @@ class DashboardCubit extends Cubit<DashboardState> {
           ? null
           : evaluatedRecords
                   .where(
-                    (BreedingRecord record) => record.palpationPositive == true,
+                    (BreedingRecord record) =>
+                        record.palpationPositive == true,
                   )
                   .length /
               evaluatedCount;
 
       final List<BreedingReminder> reminders =
           BreedingReminder.build(records);
-      final _TasksBreakdown breakdown =
-          _buildTasks(reminders, records, animalsById, startOfToday);
+      final _TasksBreakdown breakdown = _buildTasks(
+        reminders,
+        records,
+        animalsById,
+        startOfToday,
+      );
 
       final BreedingPerformanceStats performance =
           _buildPerformanceStats(records, animalsById);
+
+      final List<DashboardAlert> alerts =
+          _buildAlerts(records, animalsById);
+
+      final List<DashboardCalendarEvent> calendarEvents =
+          _buildCalendarEvents(
+        breakdown.calendarEvents,
+        events,
+        eventAnimalMap,
+        animalsById,
+        startOfToday,
+      );
 
       emit(
         state.copyWith(
@@ -174,6 +237,8 @@ class DashboardCubit extends Cubit<DashboardState> {
           breedingEvaluatedCount: evaluatedCount,
           todayTasks: breakdown.today,
           upcomingTasks: breakdown.upcoming,
+          alerts: alerts,
+          calendarEvents: calendarEvents,
           performance: performance,
           errorMessage: null,
         ),
@@ -189,48 +254,94 @@ class DashboardCubit extends Cubit<DashboardState> {
     }
   }
 
+  void updateKpiOrder(List<DashboardKpiType> order) {
+    if (order.isEmpty) {
+      return;
+    }
+    final List<DashboardKpiType> sanitized = <DashboardKpiType>[];
+    for (final DashboardKpiType type in order) {
+      if (!sanitized.contains(type)) {
+        sanitized.add(type);
+      }
+    }
+    for (final DashboardKpiType type in state.kpiOrder) {
+      if (!sanitized.contains(type)) {
+        sanitized.add(type);
+      }
+    }
+    emit(state.copyWith(kpiOrder: sanitized));
+  }
+
   _TasksBreakdown _buildTasks(
     List<BreedingReminder> reminders,
     List<BreedingRecord> records,
     Map<String, Animal> animalsById,
     DateTime startOfToday,
   ) {
-    final List<_TaskEntry> todayEntries = <_TaskEntry>[];
-    final List<_TaskEntry> upcomingEntries = <_TaskEntry>[];
+    final List<DashboardTask> todayTasks = <DashboardTask>[];
+    final List<DashboardTask> upcomingTasks = <DashboardTask>[];
+    final List<DashboardCalendarEvent> calendarEvents =
+        <DashboardCalendarEvent>[];
 
-    void addEntry(DateTime dueDate, String label) {
+    void addTask({
+      required DateTime dueDate,
+      required DashboardTaskKind kind,
+      required String title,
+      required String contextLabel,
+    }) {
       final DateTime dateOnly =
           DateTime(dueDate.year, dueDate.month, dueDate.day);
       final int diffDays = dateOnly.difference(startOfToday).inDays;
+      final bool isOverdue = diffDays < 0;
 
+      final String relativeLabel;
       if (diffDays < 0) {
         final int overdueDays = -diffDays;
-        todayEntries.add(
-          _TaskEntry(
-            dateOnly,
-            '$label – en retard depuis $overdueDays j'
-            ' (${_formatShortDate(dateOnly)})',
-          ),
-        );
+        relativeLabel = 'En retard depuis $overdueDays j';
       } else if (diffDays == 0) {
-        todayEntries.add(
-          _TaskEntry(dateOnly, '$label – aujourd\'hui'),
-        );
+        relativeLabel = 'Aujourd’hui';
       } else if (diffDays == 1) {
-        upcomingEntries.add(
-          _TaskEntry(dateOnly, '$label – demain'),
-        );
+        relativeLabel = 'Demain';
+      } else {
+        relativeLabel = 'Dans $diffDays jours';
+      }
+
+      final DashboardTask task = DashboardTask(
+        title: title,
+        contextLabel: contextLabel,
+        dueDate: dateOnly,
+        kind: kind,
+        relativeLabel: relativeLabel,
+        isOverdue: isOverdue,
+      );
+
+      if (diffDays <= 0) {
+        todayTasks.add(task);
       } else if (diffDays <= 7) {
-        upcomingEntries.add(
-          _TaskEntry(dateOnly, '$label – dans $diffDays jours'),
+        upcomingTasks.add(task);
+      }
+
+      if (diffDays >= -3 && diffDays <= 30) {
+        calendarEvents.add(
+          DashboardCalendarEvent(
+            date: dateOnly,
+            title: '$title · $contextLabel',
+            subtitle: relativeLabel,
+            category: _mapTaskKindToCategory(kind),
+          ),
         );
       }
     }
 
     for (final BreedingReminder reminder in reminders) {
-      final String label =
-          '${_labelForTask(reminder.type)} · ${_animalLabel(animalsById[reminder.doeId], reminder.doeId)}';
-      addEntry(reminder.dueDate, label);
+      final String contextLabel =
+          _animalLabel(animalsById[reminder.doeId], reminder.doeId);
+      addTask(
+        dueDate: reminder.dueDate,
+        kind: _mapReminderType(reminder.type),
+        title: _labelForTask(reminder.type),
+        contextLabel: contextLabel,
+      );
     }
 
     for (final BreedingRecord record in records) {
@@ -241,19 +352,138 @@ class DashboardCubit extends Cubit<DashboardState> {
       final Animal? buck = animalsById[record.buckId];
       final String pairLabel =
           '${_animalLabel(doe, record.doeId)} × ${_animalLabel(buck, record.buckId)}';
-      addEntry(
-        record.matingDate,
-        'Saillie planifiée · $pairLabel',
+      addTask(
+        dueDate: record.matingDate,
+        kind: DashboardTaskKind.mating,
+        title: 'Saillie planifiée',
+        contextLabel: pairLabel,
       );
     }
 
-    todayEntries.sort((a, b) => a.date.compareTo(b.date));
-    upcomingEntries.sort((a, b) => a.date.compareTo(b.date));
+    todayTasks.sort(
+      (DashboardTask a, DashboardTask b) => a.dueDate.compareTo(b.dueDate),
+    );
+    upcomingTasks.sort(
+      (DashboardTask a, DashboardTask b) => a.dueDate.compareTo(b.dueDate),
+    );
 
     return _TasksBreakdown(
-      today: todayEntries.map((task) => task.label).toList(),
-      upcoming: upcomingEntries.map((task) => task.label).toList(),
+      today: todayTasks,
+      upcoming: upcomingTasks,
+      calendarEvents: calendarEvents,
     );
+  }
+
+  List<DashboardAlert> _buildAlerts(
+    List<BreedingRecord> records,
+    Map<String, Animal> animalsById,
+  ) {
+    final DateTime now = DateTime.now();
+    final List<DashboardAlert> alerts = <DashboardAlert>[];
+
+    for (final BreedingRecord record in records) {
+      if (record.kindlingDate != null) {
+        final Duration diff = now.difference(record.kindlingDate!);
+        if (diff.inDays <= 2) {
+          final Animal? doe = animalsById[record.doeId];
+          final String doeLabel = _animalLabel(doe, record.doeId);
+          final String detail = record.kitsBornAlive != null
+              ? '${record.kitsBornAlive} nés vivants.'
+              : 'Surveillez la portée.';
+          alerts.add(
+            DashboardAlert(
+              title: 'Mise-bas effectuée',
+              message:
+                  '$doeLabel a mis bas ${_formatRelativeTime(record.kindlingDate!)}.',
+              detail: detail,
+              timestamp: record.kindlingDate!,
+              type: DashboardAlertType.success,
+            ),
+          );
+        }
+      }
+
+      if (record.palpationPositive == false) {
+        final Animal? doe = animalsById[record.doeId];
+        final DateTime referenceDate =
+            record.palpationDate ?? record.plannedPalpationDate;
+        alerts.add(
+          DashboardAlert(
+            title: 'Palpation négative',
+            message:
+                '${_animalLabel(doe, record.doeId)} n’est pas gestante.',
+            detail: 'Planifiez une nouvelle saillie.',
+            timestamp: referenceDate,
+            type: DashboardAlertType.warning,
+          ),
+        );
+      }
+    }
+
+    alerts.sort(
+      (DashboardAlert a, DashboardAlert b) =>
+          b.timestamp.compareTo(a.timestamp),
+    );
+    return alerts;
+  }
+
+  List<DashboardCalendarEvent> _buildCalendarEvents(
+    List<DashboardCalendarEvent> taskEvents,
+    List<LivestockEvent> events,
+    Map<String, List<String>> eventAnimalMap,
+    Map<String, Animal> animalsById,
+    DateTime startOfToday,
+  ) {
+    final List<DashboardCalendarEvent> calendar =
+        List<DashboardCalendarEvent>.from(taskEvents);
+
+    for (final LivestockEvent event in events) {
+      final DateTime dateOnly = DateTime(
+        event.eventDate.year,
+        event.eventDate.month,
+        event.eventDate.day,
+      );
+      final int diffDays = dateOnly.difference(startOfToday).inDays;
+      if (diffDays < -7 || diffDays > 60) {
+        continue;
+      }
+
+      final DashboardCalendarCategory category =
+          _mapEventTypeToCategory(event.eventType);
+
+      final List<String> linkedAnimalIds = eventAnimalMap[event.id] ??
+          _animalIdsFromEvent(event);
+      final String? animalsLabel = linkedAnimalIds.isEmpty
+          ? null
+          : linkedAnimalIds
+              .map((String id) => _animalLabel(animalsById[id], id))
+              .join(', ');
+
+      final String? description = event.details['description'] as String?;
+      final String? subtitle;
+      if (animalsLabel != null && animalsLabel.isNotEmpty) {
+        subtitle = animalsLabel;
+      } else if (description != null && description.isNotEmpty) {
+        subtitle = description;
+      } else {
+        subtitle = event.notes;
+      }
+
+      calendar.add(
+        DashboardCalendarEvent(
+          date: dateOnly,
+          title: _labelForEvent(event.eventType),
+          subtitle: subtitle,
+          category: category,
+        ),
+      );
+    }
+
+    calendar.sort(
+      (DashboardCalendarEvent a, DashboardCalendarEvent b) =>
+          a.date.compareTo(b.date),
+    );
+    return calendar;
   }
 
   BreedingPerformanceStats _buildPerformanceStats(
@@ -338,6 +568,76 @@ class DashboardCubit extends Cubit<DashboardState> {
     }
   }
 
+  DashboardTaskKind _mapReminderType(BreedingTaskType type) {
+    switch (type) {
+      case BreedingTaskType.palpation:
+        return DashboardTaskKind.palpation;
+      case BreedingTaskType.kindling:
+        return DashboardTaskKind.kindling;
+      case BreedingTaskType.weaning:
+        return DashboardTaskKind.weaning;
+    }
+  }
+
+  DashboardCalendarCategory _mapTaskKindToCategory(
+    DashboardTaskKind kind,
+  ) {
+    switch (kind) {
+      case DashboardTaskKind.palpation:
+        return DashboardCalendarCategory.taskPalpation;
+      case DashboardTaskKind.kindling:
+        return DashboardCalendarCategory.taskKindling;
+      case DashboardTaskKind.weaning:
+        return DashboardCalendarCategory.taskWeaning;
+      case DashboardTaskKind.mating:
+        return DashboardCalendarCategory.scheduledMating;
+    }
+  }
+
+  DashboardCalendarCategory _mapEventTypeToCategory(String eventType) {
+    switch (eventType) {
+      case 'health_check':
+        return DashboardCalendarCategory.health;
+      case 'treatment':
+        return DashboardCalendarCategory.treatment;
+      case 'weight':
+        return DashboardCalendarCategory.weight;
+      case 'cage_change':
+        return DashboardCalendarCategory.housing;
+      default:
+        return DashboardCalendarCategory.general;
+    }
+  }
+
+  String _labelForEvent(String eventType) {
+    switch (eventType) {
+      case 'health_check':
+        return 'Visite vétérinaire';
+      case 'treatment':
+        return 'Traitement';
+      case 'weight':
+        return 'Pesée';
+      case 'cage_change':
+        return 'Changement de cage';
+      case 'inventory':
+        return 'Inventaire';
+      default:
+        if (eventType.isEmpty) {
+          return 'Événement';
+        }
+        final String normalized = eventType.replaceAll('_', ' ');
+        return normalized[0].toUpperCase() + normalized.substring(1);
+    }
+  }
+
+  List<String> _animalIdsFromEvent(LivestockEvent event) {
+    final dynamic ids = event.details['animalIds'];
+    if (ids is List) {
+      return ids.whereType<String>().toList();
+    }
+    return <String>[];
+  }
+
   String _animalLabel(Animal? animal, String fallbackId) {
     if (animal == null) {
       return fallbackId;
@@ -348,23 +648,123 @@ class DashboardCubit extends Cubit<DashboardState> {
     return animal.tagId;
   }
 
-  String _formatShortDate(DateTime date) {
-    final String day = date.day.toString().padLeft(2, '0');
-    final String month = date.month.toString().padLeft(2, '0');
-    return '$day/$month';
+  String _formatRelativeTime(DateTime dateTime) {
+    final Duration diff = DateTime.now().difference(dateTime);
+    if (diff.inDays.abs() >= 1) {
+      final int days = diff.inDays.abs();
+      if (diff.isNegative) {
+        return 'dans $days j';
+      }
+      return 'il y a $days j';
+    }
+    final int hours = diff.inHours.abs().clamp(1, 23);
+    if (diff.isNegative) {
+      return 'dans $hours h';
+    }
+    return 'il y a $hours h';
   }
 }
 
-class _TaskEntry {
-  _TaskEntry(this.date, this.label);
+class _TasksBreakdown {
+  const _TasksBreakdown({
+    required this.today,
+    required this.upcoming,
+    required this.calendarEvents,
+  });
 
-  final DateTime date;
-  final String label;
+  final List<DashboardTask> today;
+  final List<DashboardTask> upcoming;
+  final List<DashboardCalendarEvent> calendarEvents;
 }
 
-class _TasksBreakdown {
-  const _TasksBreakdown({required this.today, required this.upcoming});
+enum DashboardTaskKind { palpation, kindling, weaning, mating }
 
-  final List<String> today;
-  final List<String> upcoming;
+class DashboardTask extends Equatable {
+  const DashboardTask({
+    required this.title,
+    required this.contextLabel,
+    required this.dueDate,
+    required this.kind,
+    required this.relativeLabel,
+    this.isOverdue = false,
+  });
+
+  final String title;
+  final String contextLabel;
+  final DateTime dueDate;
+  final DashboardTaskKind kind;
+  final String relativeLabel;
+  final bool isOverdue;
+
+  @override
+  List<Object?> get props => <Object?>[
+        title,
+        contextLabel,
+        dueDate,
+        kind,
+        relativeLabel,
+        isOverdue,
+      ];
+}
+
+enum DashboardAlertType { info, warning, success }
+
+class DashboardAlert extends Equatable {
+  const DashboardAlert({
+    required this.title,
+    required this.message,
+    required this.timestamp,
+    this.detail,
+    this.type = DashboardAlertType.info,
+  });
+
+  final String title;
+  final String message;
+  final DateTime timestamp;
+  final String? detail;
+  final DashboardAlertType type;
+
+  @override
+  List<Object?> get props => <Object?>[title, message, timestamp, detail, type];
+}
+
+enum DashboardCalendarCategory {
+  taskPalpation,
+  taskKindling,
+  taskWeaning,
+  scheduledMating,
+  health,
+  treatment,
+  weight,
+  housing,
+  general,
+}
+
+class DashboardCalendarEvent extends Equatable {
+  const DashboardCalendarEvent({
+    required this.date,
+    required this.title,
+    required this.category,
+    this.subtitle,
+  });
+
+  final DateTime date;
+  final String title;
+  final String? subtitle;
+  final DashboardCalendarCategory category;
+
+  @override
+  List<Object?> get props => <Object?>[date, title, subtitle, category];
+}
+
+enum DashboardKpiType {
+  totalAnimals,
+  activeAnimals,
+  gestatingDoes,
+  plannedBreedings,
+  activeLitters,
+  breedingSuccessRate,
+  averageKitsBornAlive,
+  averageKitsWeaned,
+  totalKitsWeaned,
 }
