@@ -14,10 +14,36 @@ dependencies:
   flutter_bloc: ^8.1.6
   equatable: ^2.0.5
 
+  # --- Nouvelles dépendances ajoutées ---
+
+  # Pour la galerie d'images
+  image_picker: ^1.1.2
+  image_cropper: ^7.0.5
+
+  # Pour les graphiques et rapports
+  fl_chart: ^0.68.0
+
+  # Pour le mode hors-ligne (base de données locale)
+  drift: ^2.17.0
+  connectivity_plus: ^6.0.3
+
+  # Pour le scan de QR Code
+  mobile_scanner: ^5.1.1
+
+  # Pour l'export PDF et le partage
+  pdf: ^3.10.8
+  share_plus: ^9.0.0
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+
+  # Dépendances de développement pour Drift (base de données locale)
+  drift_dev: ^2.17.0
+  build_runner: ^2.4.10
+
 
 flutter:
   uses-material-design: true
