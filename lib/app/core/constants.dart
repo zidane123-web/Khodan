@@ -4,18 +4,9 @@ class AppConstants {
   static const String appName = 'Khodan';
   static const String supportEmail = 'support@khodan.app';
 
-  static const String _defaultSupabaseUrl = 'https://example.supabase.co';
-  static const String _defaultSupabaseAnonKey = 'public-anon-key';
-
-  /// Inject credentials at build time: `--dart-define=SUPABASE_URL=...`
-  static const String supabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: _defaultSupabaseUrl,
-  );
-  static const String supabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue: _defaultSupabaseAnonKey,
-  );
+  /// Inject credentials at build time: --dart-define-from-file=.env
+  static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
   /// Default configuration for the rabbit module.
   static const String defaultSpeciesName = 'Lapin';
