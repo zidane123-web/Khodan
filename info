@@ -1,0 +1,5 @@
+adb tcpip 5555 
+adb connect 192.168.100.61
+flutter run --dart-define=SUPABASE_URL=https://rmtkvalfhbhhqczwvtoz.supabase.co --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtdGt2YWxmaGJoaHFjend2dG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMjc3MjAsImV4cCI6MjA3MzcwMzcyMH0.iCunOEha0B-Lxz4y2I94tzqNs3UqlQdNMUa7mM7fsHE
+
+flutter run --dart-define-from-file=.env (lien plus court)
