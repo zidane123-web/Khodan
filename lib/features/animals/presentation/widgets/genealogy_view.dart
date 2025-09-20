@@ -43,7 +43,7 @@ class GenealogyView extends StatelessWidget {
 
     Color? chipColor(Animal? ancestor) {
       if (ancestor == null) {
-        return theme.colorScheme.surfaceVariant;
+        return theme.colorScheme.surfaceContainerHighest;
       }
       final int count = occurrences[ancestor.id] ?? 0;
       if (count > 1) {

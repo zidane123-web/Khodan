@@ -87,25 +87,27 @@ class _ReportsViewState extends State<_ReportsView> {
               }
 
               if (breedingState.status == BreedingStatus.failure) {
-                return _ErrorPlaceholder(message: breedingState.errorMessage);
+                return ErrorPlaceholder(message: breedingState.errorMessage);
               }
               if (animalState.status == AnimalStatus.failure) {
-                return _ErrorPlaceholder(message: animalState.errorMessage);
+                return ErrorPlaceholder(message: animalState.errorMessage);
               }
 
               final Map<String, Animal> animalsById =
                   <String, Animal>{for (final Animal animal in animalState.allAnimals) animal.id: animal};
               final List<BreedingRecord> filteredRecords =
                   _filterRecords(breedingState.records, animalsById);
-              final List<_MonthlyMetric> metrics =
+              final List<MonthlyMetric> metrics =
                   _buildMonthlyMetrics(filteredRecords);
-              final List<_BreederPerformance> performances =
+              final List<BreederPerformance> performances =
                   _buildBreederPerformances(filteredRecords, animalsById);
 
               return RefreshIndicator(
                 onRefresh: () async {
-                  await context.read<BreedingCubit>().loadData();
-                  await context.read<AnimalCubit>().fetchAnimals();
+                  final breedingCubit = context.read<BreedingCubit>();
+                  final animalCubit = context.read<AnimalCubit>();
+                  await breedingCubit.loadData();
+                  await animalCubit.fetchAnimals();
                 },
                 child: ListView(
                   padding: const EdgeInsets.all(16),
@@ -133,7 +135,7 @@ class _ReportsViewState extends State<_ReportsView> {
                     ),
                     const SizedBox(height: 16),
                     ListTile(
-                      tileColor: Theme.of(context).colorScheme.surfaceVariant,
+                      tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -199,7 +201,7 @@ class _ReportsViewState extends State<_ReportsView> {
     }).toList();
   }
 
-  List<_MonthlyMetric> _buildMonthlyMetrics(List<BreedingRecord> records) {
+  List<MonthlyMetric> _buildMonthlyMetrics(List<BreedingRecord> records) {
     final Map<DateTime, _MonthlyAccumulator> buckets =
         <DateTime, _MonthlyAccumulator>{};
     for (final BreedingRecord record in records) {
@@ -222,9 +224,9 @@ class _ReportsViewState extends State<_ReportsView> {
 
     final List<DateTime> months = buckets.keys.toList()
       ..sort((DateTime a, DateTime b) => a.compareTo(b));
-    return <_MonthlyMetric>[
+    return <MonthlyMetric>[
       for (final DateTime month in months)
-        _MonthlyMetric(
+        MonthlyMetric(
           month: month,
           successRate: buckets[month]!.successRate,
           averageBorn: buckets[month]!.averageBorn,
@@ -233,7 +235,7 @@ class _ReportsViewState extends State<_ReportsView> {
     ];
   }
 
-  List<_BreederPerformance> _buildBreederPerformances(
+  List<BreederPerformance> _buildBreederPerformances(
     List<BreedingRecord> records,
     Map<String, Animal> animalsById,
   ) {
@@ -260,9 +262,9 @@ class _ReportsViewState extends State<_ReportsView> {
       track(record.buckId, success, record.kitsWeaned);
     }
 
-    final List<_BreederPerformance> performances = <_BreederPerformance>[
+    final List<BreederPerformance> performances = <BreederPerformance>[
       for (final MapEntry<String, _BreederAccumulator> entry in map.entries)
-        _BreederPerformance(
+        BreederPerformance(
           animal: animalsById[entry.key],
           animalId: entry.key,
           totalMatings: entry.value.totalMatings,
@@ -270,7 +272,7 @@ class _ReportsViewState extends State<_ReportsView> {
           totalWeaned: entry.value.totalWeaned,
         ),
     ]
-      ..sort((_BreederPerformance a, _BreederPerformance b) =>
+      ..sort((BreederPerformance a, BreederPerformance b) =>
           b.successRate.compareTo(a.successRate));
 
     return performances.take(6).toList();
@@ -280,7 +282,7 @@ class _ReportsViewState extends State<_ReportsView> {
 class FertilityChartCard extends StatelessWidget {
   const FertilityChartCard({required this.metrics, super.key});
 
-  final List<_MonthlyMetric> metrics;
+  final List<MonthlyMetric> metrics;
 
   @override
   Widget build(BuildContext context) {
@@ -289,7 +291,7 @@ class FertilityChartCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: metrics.isEmpty
-            ? const _EmptyReportPlaceholder(
+            ? const EmptyReportPlaceholder(
                 title: 'Taux de fertilité',
                 description:
                     'Aucune donnée de saillie sur la période sélectionnée.',
@@ -304,7 +306,7 @@ class FertilityChartCard extends StatelessWidget {
                     child: LineChart(
                       LineChartData(
                         backgroundColor:
-                            theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                            theme.colorScheme.surfaceContainerHighest.withAlpha((255 * 0.3).round()),
                         gridData: FlGridData(show: false),
                         titlesData: FlTitlesData(
                           bottomTitles: AxisTitles(
@@ -379,7 +381,7 @@ class FertilityChartCard extends StatelessWidget {
 class LitterSizeChartCard extends StatelessWidget {
   const LitterSizeChartCard({required this.metrics, super.key});
 
-  final List<_MonthlyMetric> metrics;
+  final List<MonthlyMetric> metrics;
 
   @override
   Widget build(BuildContext context) {
@@ -388,7 +390,7 @@ class LitterSizeChartCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: metrics.isEmpty
-            ? const _EmptyReportPlaceholder(
+            ? const EmptyReportPlaceholder(
                 title: 'Taille moyenne des portées',
                 description: 'Aucune mise bas enregistrée sur la période.',
               )
@@ -468,7 +470,7 @@ class BreederPerformanceCard extends StatelessWidget {
     super.key,
   });
 
-  final List<_BreederPerformance> performances;
+  final List<BreederPerformance> performances;
   final Map<String, Animal> animalsById;
 
   @override
@@ -478,7 +480,7 @@ class BreederPerformanceCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: performances.isEmpty
-            ? const _EmptyReportPlaceholder(
+            ? const EmptyReportPlaceholder(
                 title: 'Performances par reproducteur',
                 description: 'Aucune statistique disponible pour cette période.',
               )
@@ -488,7 +490,7 @@ class BreederPerformanceCard extends StatelessWidget {
                   Text('Performances par reproducteur',
                       style: theme.textTheme.titleLarge),
                   const SizedBox(height: 12),
-                  for (final _BreederPerformance performance in performances)
+                  for (final BreederPerformance performance in performances)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: _BreederTile(
@@ -506,7 +508,7 @@ class BreederPerformanceCard extends StatelessWidget {
 class _BreederTile extends StatelessWidget {
   const _BreederTile({required this.performance, this.animal});
 
-  final _BreederPerformance performance;
+  final BreederPerformance performance;
   final Animal? animal;
 
   @override
@@ -537,7 +539,7 @@ class _BreederTile extends StatelessWidget {
         LinearProgressIndicator(
           value: performance.successRate,
           minHeight: 6,
-          backgroundColor: theme.colorScheme.surfaceVariant,
+          backgroundColor: theme.colorScheme.surfaceContainerHighest,
           color: theme.colorScheme.primary,
         ),
         const SizedBox(height: 4),
@@ -654,8 +656,8 @@ class _MonthlyAccumulator {
   double? get averageWeaned => weanedCount == 0 ? null : totalWeaned / weanedCount;
 }
 
-class _MonthlyMetric {
-  const _MonthlyMetric({
+class MonthlyMetric {
+  const MonthlyMetric({
     required this.month,
     this.successRate,
     this.averageBorn,
@@ -677,8 +679,8 @@ class _BreederAccumulator {
       totalMatings == 0 ? 0 : successfulMatings / totalMatings;
 }
 
-class _BreederPerformance {
-  const _BreederPerformance({
+class BreederPerformance {
+  const BreederPerformance({
     required this.animalId,
     required this.totalMatings,
     required this.successRate,
@@ -693,10 +695,11 @@ class _BreederPerformance {
   final Animal? animal;
 }
 
-class _EmptyReportPlaceholder extends StatelessWidget {
-  const _EmptyReportPlaceholder({
+class EmptyReportPlaceholder extends StatelessWidget {
+  const EmptyReportPlaceholder({
     required this.title,
     required this.description,
+    super.key,
   });
 
   final String title;
@@ -716,8 +719,8 @@ class _EmptyReportPlaceholder extends StatelessWidget {
   }
 }
 
-class _ErrorPlaceholder extends StatelessWidget {
-  const _ErrorPlaceholder({this.message});
+class ErrorPlaceholder extends StatelessWidget {
+  const ErrorPlaceholder({this.message, super.key});
 
   final String? message;
 

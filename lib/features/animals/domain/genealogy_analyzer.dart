@@ -54,7 +54,7 @@ class GenealogyAnalyzer {
           _computeInbreedingForAncestor(
         ancestorId,
         maxDepth: maxDepth,
-        stack: <String>{...?(pedigreeStack ?? <String>{})},
+        stack: <String>{...pedigreeStack ?? <String>{}},
       );
       for (final int depthA in ancestorsA[ancestorId]!) {
         for (final int depthB in ancestorsB[ancestorId]!) {
@@ -95,7 +95,7 @@ class GenealogyAnalyzer {
       _inbreedingMemo[ancestorId] = 0;
       return 0;
     }
-    final Set<String> nextStack = <String>{...?(stack ?? <String>{}), ancestorId};
+    final Set<String> nextStack = <String>{...stack ?? <String>{}, ancestorId};
     final double value = computePairCoefficient(
       ancestor.sireId,
       ancestor.damId,

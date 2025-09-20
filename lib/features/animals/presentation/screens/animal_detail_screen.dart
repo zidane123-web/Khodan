@@ -7,6 +7,7 @@ import '../../../../data/models/animal.dart';
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
+import '../../domain/genealogy_analyzer.dart';
 import '../cubit/animal_detail_cubit.dart';
 import '../widgets/animal_performance_overview.dart';
 import '../widgets/animal_photo_gallery.dart';
@@ -330,7 +331,7 @@ class _IdentityCard extends StatelessWidget {
                 errorBuilder: (BuildContext context, Object error,
                     StackTrace? stackTrace) {
                   return Container(
-                    color: theme.colorScheme.surfaceVariant,
+                    color: theme.colorScheme.surfaceContainerHighest,
                     alignment: Alignment.center,
                     child: const Icon(Icons.image_not_supported_outlined),
                   );

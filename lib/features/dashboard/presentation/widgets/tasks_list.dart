@@ -43,7 +43,7 @@ class TasksList extends StatelessWidget {
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: CircleAvatar(
-                    backgroundColor: color.withOpacity(0.15),
+                    backgroundColor: color.withAlpha((255 * 0.15).round()),
                     foregroundColor: color,
                     child: Icon(icon),
                   ),

@@ -188,7 +188,7 @@ class _ProductivityReportScreenState extends State<ProductivityReportScreen> {
                               LinearProgressIndicator(
                                 value: stat.successRate,
                                 minHeight: 6,
-                                backgroundColor: theme.colorScheme.surfaceVariant,
+                                backgroundColor: theme.colorScheme.surfaceContainerHighest,
                                 color: theme.colorScheme.primary,
                               ),
                               const SizedBox(height: 4),

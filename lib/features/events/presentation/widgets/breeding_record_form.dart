@@ -252,9 +252,9 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
     MaterialLocalizations localizations,
   ) {
     final bool highRisk = (_pairingCoefficient ?? 0) >= 0.0625;
-    final String? plannedKindling =
+    final String plannedKindling =
         localizations.formatMediumDate(_matingDate.add(const Duration(days: 31)));
-    final String? plannedWeaning = localizations.formatMediumDate(
+    final String plannedWeaning = localizations.formatMediumDate(
       (_kindlingDate ?? _matingDate.add(const Duration(days: 31)))
           .add(const Duration(days: 28)),
     );
