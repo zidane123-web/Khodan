@@ -5,3 +5,5 @@ flutter run --dart-define=SUPABASE_URL=https://rmtkvalfhbhhqczwvtoz.supabase.co 
 flutter run --dart-define-from-file=.env (lien plus court)
 
 flutter pub get
+
+supabase migrations new Nom_du_fichier

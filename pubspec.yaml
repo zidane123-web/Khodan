@@ -14,26 +14,28 @@ dependencies:
   flutter_bloc: ^8.1.6
   equatable: ^2.0.5
 
-  # --- Nouvelles dépendances ajoutées ---
-
-  # Pour la galerie d'images
+  # --- Pour la galerie d'images ---
   image_picker: ^1.1.2
   image_cropper: ^7.0.5
 
-  # Pour les graphiques et rapports
+  # --- Pour les graphiques et rapports ---
   fl_chart: ^0.68.0
 
-  # Pour le mode hors-ligne (base de données locale)
+  # --- Pour le mode hors-ligne (base de données locale) ---
   drift: ^2.17.0
   connectivity_plus: ^6.0.3
+  shared_preferences: ^2.3.2
 
-  # Pour le scan de QR Code
+  # --- Pour le scan de QR Code ---
   mobile_scanner: ^5.1.1
 
-  # Pour l'export PDF et le partage
+  # --- Pour l'export PDF et le partage ---
   pdf: ^3.10.8
-  printing: ^5.11.1 # <- AJOUTÉ ICI
+  printing: ^5.13.4
   share_plus: ^9.0.0
+  
+  # --- Suggestion pour le tableau de bord personnalisable ---
+  reorderable_grid_view: ^4.1.0
 
 
 dev_dependencies:
