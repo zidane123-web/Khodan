@@ -26,12 +26,14 @@ dependencies:
   # Pour le mode hors-ligne (base de données locale)
   drift: ^2.17.0
   connectivity_plus: ^6.0.3
+  shared_preferences: ^2.3.2
 
   # Pour le scan de QR Code
   mobile_scanner: ^5.1.1
 
   # Pour l'export PDF et le partage
   pdf: ^3.10.8
+  printing: ^5.13.4
   share_plus: ^9.0.0
 
 

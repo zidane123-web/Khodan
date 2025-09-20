@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../data/models/animal.dart';
 import '../../../../data/repositories/animal_repository.dart';
+import '../../../../data/services/offline_sync_manager.dart';
 
 enum AnimalStatus { initial, loading, success, failure }
 
@@ -111,11 +112,24 @@ class AnimalState extends Equatable {
 }
 
 class AnimalCubit extends Cubit<AnimalState> {
-  AnimalCubit(this._repository) : super(const AnimalState());
+  AnimalCubit(this._repository, {OfflineSyncManager? offlineManager})
+      : _offlineManager = offlineManager ?? OfflineSyncManager.instance,
+        super(const AnimalState());
 
   final AnimalRepository _repository;
+  final OfflineSyncManager _offlineManager;
 
   Future<void> fetchAnimals({int? speciesId}) async {
+    if (_offlineManager.isOffline.value && state.allAnimals.isNotEmpty) {
+      emit(
+        state.copyWith(
+          status: AnimalStatus.success,
+          animals: _applyFilters(state.allAnimals, state.filters),
+          errorMessage: null,
+        ),
+      );
+      return;
+    }
     emit(state.copyWith(status: AnimalStatus.loading));
     try {
       final List<Animal> animals =
@@ -140,6 +154,28 @@ class AnimalCubit extends Cubit<AnimalState> {
   }
 
   Future<void> createAnimal(Animal animal) async {
+    if (_offlineManager.isOffline.value) {
+      final List<Animal> allAnimals = List<Animal>.from(state.allAnimals)
+        ..add(animal);
+      allAnimals.sort((Animal a, Animal b) => a.tagId.compareTo(b.tagId));
+      _offlineManager.enqueue(
+        QueuedSyncAction(
+          description: 'Créer ${animal.tagId}',
+          execute: () async {
+            await _repository.createAnimal(animal);
+          },
+        ),
+      );
+      emit(
+        state.copyWith(
+          status: AnimalStatus.success,
+          allAnimals: allAnimals,
+          animals: _applyFilters(allAnimals, state.filters),
+          errorMessage: null,
+        ),
+      );
+      return;
+    }
     emit(state.copyWith(status: AnimalStatus.loading));
     try {
       final Animal created = await _repository.createAnimal(animal);
@@ -160,6 +196,34 @@ class AnimalCubit extends Cubit<AnimalState> {
   }
 
   Future<void> updateAnimal(Animal animal) async {
+    if (_offlineManager.isOffline.value) {
+      final List<Animal> allAnimals = List<Animal>.from(state.allAnimals);
+      final int index =
+          allAnimals.indexWhere((Animal element) => element.id == animal.id);
+      if (index == -1) {
+        allAnimals.add(animal);
+      } else {
+        allAnimals[index] = animal;
+      }
+      allAnimals.sort((Animal a, Animal b) => a.tagId.compareTo(b.tagId));
+      _offlineManager.enqueue(
+        QueuedSyncAction(
+          description: 'Mettre à jour ${animal.tagId}',
+          execute: () async {
+            await _repository.updateAnimal(animal);
+          },
+        ),
+      );
+      emit(
+        state.copyWith(
+          status: AnimalStatus.success,
+          allAnimals: allAnimals,
+          animals: _applyFilters(allAnimals, state.filters),
+          errorMessage: null,
+        ),
+      );
+      return;
+    }
     emit(state.copyWith(status: AnimalStatus.loading));
     try {
       final Animal updated = await _repository.updateAnimal(animal);
@@ -186,6 +250,27 @@ class AnimalCubit extends Cubit<AnimalState> {
   }
 
   Future<void> deleteAnimal(String id) async {
+    if (_offlineManager.isOffline.value) {
+      final List<Animal> allAnimals =
+          state.allAnimals.where((Animal animal) => animal.id != id).toList();
+      _offlineManager.enqueue(
+        QueuedSyncAction(
+          description: 'Supprimer $id',
+          execute: () async {
+            await _repository.deleteAnimal(id);
+          },
+        ),
+      );
+      emit(
+        state.copyWith(
+          status: AnimalStatus.success,
+          allAnimals: allAnimals,
+          animals: _applyFilters(allAnimals, state.filters),
+          errorMessage: null,
+        ),
+      );
+      return;
+    }
     emit(state.copyWith(status: AnimalStatus.loading));
     try {
       await _repository.deleteAnimal(id);

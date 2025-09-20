@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../../../../data/models/animal.dart';
 import '../../../../data/repositories/animal_repository.dart';
@@ -84,6 +86,132 @@ class _AnimalDetailView extends StatelessWidget {
     );
   }
 
+  Future<void> _exportPdf(
+    BuildContext context,
+    AnimalDetailState state,
+  ) async {
+    final Animal animal = state.animal;
+    final pw.Document doc = pw.Document();
+    final String filename = 'animal-${animal.tagId}.pdf';
+
+    String formatDate(DateTime date) =>
+        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+    final pw.Widget identitySection = pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: <pw.Widget>[
+        pw.Text('Identité', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+        pw.SizedBox(height: 8),
+        pw.Text('Tag : ${animal.tagId}'),
+        if (animal.name != null) pw.Text('Nom : ${animal.name}'),
+        pw.Text('Sexe : ${animal.sex}'),
+        pw.Text('Statut : ${animal.status}'),
+        pw.Text('Naissance : ${formatDate(animal.birthDate)}'),
+        if (animal.origin != null) pw.Text('Origine : ${animal.origin}'),
+        if (animal.cageNumber != null) pw.Text('Cage : ${animal.cageNumber}'),
+      ],
+    );
+
+    final AnimalPerformanceStats? performance = state.performance;
+    final pw.Widget? performanceSection = performance == null
+        ? null
+        : pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: <pw.Widget>[
+              pw.Text('Performances',
+                  style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(height: 8),
+              pw.Text('Saillies : ${performance.totalMatings}'),
+              pw.Text('Réussites : ${performance.successfulMatings}'),
+              if (performance.successRate != null)
+                pw.Text(
+                    'Taux de réussite : ${(performance.successRate! * 100).toStringAsFixed(1)} %'),
+              if (performance.averageKitsBornAlive != null)
+                pw.Text(
+                    'Nés vivants moyens : ${performance.averageKitsBornAlive!.toStringAsFixed(1)}'),
+              if (performance.averageKitsWeaned != null)
+                pw.Text(
+                    'Sevrés moyens : ${performance.averageKitsWeaned!.toStringAsFixed(1)}'),
+              pw.Text('Sevrés cumulés : ${performance.totalKitsWeaned}'),
+            ],
+          );
+
+    final GenealogyAnalysis? genealogy = state.genealogy;
+    String generationLabel(int index) {
+      if (genealogy == null || index >= genealogy.generations.length) {
+        return '';
+      }
+      final List<Animal?> ancestors = genealogy.generations[index];
+      final String joined = ancestors
+          .map((Animal? ancestor) => ancestor == null ? 'Inconnu' : ancestor.tagId)
+          .join(', ');
+      return 'Génération $index : $joined';
+    }
+    final pw.Widget? genealogySection = genealogy == null
+        ? null
+        : pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: <pw.Widget>[
+              pw.Text('Généalogie',
+                  style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(height: 8),
+              if (genealogy.inbreedingCoefficient != null)
+                pw.Text(
+                  'Coefficient d’endogamie : ${genealogy.inbreedingCoefficient!.toStringAsFixed(3)}',
+                ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: <pw.Widget>[
+                  for (int i = 1; i < genealogy.generations.length; i++)
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                      child: pw.Text(generationLabel(i)),
+                    ),
+                ],
+              ),
+            ],
+          );
+
+    final pw.Widget timelineSection = pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: <pw.Widget>[
+        pw.Text('Chronologie',
+            style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+        pw.SizedBox(height: 8),
+        if (state.timeline.isEmpty)
+          pw.Text('Aucun évènement enregistré.')
+        else
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: <pw.Widget>[
+              for (final AnimalTimelineEntry entry in state.timeline.take(20))
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                  child: pw.Text(
+                    '${formatDate(entry.date)} · ${entry.title}${entry.description != null ? ' — ${entry.description}' : ''}',
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
+
+    doc.addPage(
+      pw.MultiPage(
+        build: (pw.Context context) => <pw.Widget>[
+          pw.Header(level: 0, child: pw.Text('Fiche ${animal.tagId}')), 
+          identitySection,
+          pw.SizedBox(height: 12),
+          if (performanceSection != null) ...<pw.Widget>[performanceSection, pw.SizedBox(height: 12)],
+          if (genealogySection != null) ...<pw.Widget>[genealogySection, pw.SizedBox(height: 12)],
+          timelineSection,
+        ],
+      ),
+    );
+
+    await Printing.sharePdf(bytes: await doc.save(), filename: filename);
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AnimalDetailCubit, AnimalDetailState>(
@@ -136,7 +264,10 @@ class _AnimalDetailView extends StatelessWidget {
                     : (String url) => _removePhoto(context, url),
               ),
               const SizedBox(height: 16),
-              GenealogyView(animal: animal),
+              GenealogyView(
+                animal: animal,
+                analysis: state.genealogy,
+              ),
               const SizedBox(height: 16),
               AnimalTimeline(entries: state.timeline),
             ];
@@ -155,6 +286,15 @@ class _AnimalDetailView extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             title: Text(animal.name ?? animal.tagId),
+            actions: state.status == AnimalDetailStatus.success
+                ? <Widget>[
+                    IconButton(
+                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                      tooltip: 'Exporter en PDF',
+                      onPressed: () => _exportPdf(context, state),
+                    ),
+                  ]
+                : null,
           ),
           body: body,
         );
