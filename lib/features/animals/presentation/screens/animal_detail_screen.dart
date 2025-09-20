@@ -621,7 +621,7 @@ class _WeightHistoryCard extends StatelessWidget {
                       return FlLine(
                         color: theme.colorScheme.outlineVariant,
                         strokeWidth: 1,
-                        dashArray: const <double>[4, 4],
+                        dashArray: const <int>[4, 4],
                       );
                     },
                   ),
@@ -677,7 +677,7 @@ class _WeightHistoryCard extends StatelessWidget {
                   ),
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
-                      tooltipBgColor: theme.colorScheme.primary,
+                      getTooltipColor: (LineBarSpot touchedSpot) => theme.colorScheme.primary,
                       getTooltipItems:
                           (List<LineBarSpot> touchedSpots) {
                         return touchedSpots.map((LineBarSpot spot) {
@@ -720,8 +720,8 @@ class _WeightHistoryCard extends StatelessWidget {
                         show: true,
                         gradient: LinearGradient(
                           colors: <Color>[
-                            theme.colorScheme.primary.withOpacity(0.18),
-                            theme.colorScheme.primary.withOpacity(0.02),
+                            theme.colorScheme.primary.withValues(alpha: 0.18),
+                            theme.colorScheme.primary.withValues(alpha: 0.02),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -896,7 +896,7 @@ class _LitterHistoryCard extends StatelessWidget {
                   barTouchData: BarTouchData(
                     enabled: true,
                     touchTooltipData: BarTouchTooltipData(
-                      tooltipBgColor: theme.colorScheme.primary,
+                      getTooltipColor: (BarChartGroupData group) => theme.colorScheme.primary,
                       getTooltipItem: (
                         BarChartGroupData group,
                         int groupIndex,
