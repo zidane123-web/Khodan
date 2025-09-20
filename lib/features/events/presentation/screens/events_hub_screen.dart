@@ -91,11 +91,16 @@ class _EventsHubViewState extends State<_EventsHubView>
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Événements'),
         bottom: TabBar(
           controller: _tabController,
+          labelColor: theme.colorScheme.onPrimary,
+          unselectedLabelColor:
+              theme.colorScheme.onPrimary.withOpacity(0.7),
+          indicatorColor: theme.colorScheme.onPrimary,
           tabs: const <Widget>[
             Tab(text: 'Reproduction'),
             Tab(text: 'Santé'),

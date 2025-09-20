@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../features/animals/presentation/models/animal_quick_filter.dart';
 import '../../features/animals/presentation/screens/animal_list_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
@@ -57,8 +58,14 @@ class KhodanRouter {
                   routes: <RouteBase>[
                     GoRoute(
                       path: const AnimalsRoute().path,
-                      builder: (BuildContext context, GoRouterState state) =>
-                          const AnimalListScreen(),
+                      builder: (BuildContext context, GoRouterState state) {
+                        final Object? extra = state.extra;
+                        AnimalQuickFilter? quickFilter;
+                        if (extra is AnimalQuickFilter) {
+                          quickFilter = extra;
+                        }
+                        return AnimalListScreen(quickFilter: quickFilter);
+                      },
                     ),
                   ],
                 ),

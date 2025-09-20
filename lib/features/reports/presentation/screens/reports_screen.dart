@@ -110,7 +110,8 @@ class _ReportsViewState extends State<_ReportsView> {
                   await animalCubit.fetchAnimals();
                 },
                 child: ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                   children: <Widget>[
                     _FiltersRow(
                       period: _period,

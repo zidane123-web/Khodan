@@ -74,6 +74,44 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
           animal.sex.toLowerCase().contains('mal'))
       .toList();
 
+  List<DropdownMenuItem<String>> _buildBuckItems(ThemeData theme) {
+    final TextStyle baseStyle =
+        theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14);
+    return _bucks.map((Animal animal) {
+      final double? coefficient = _selectedDoeId == null
+          ? null
+          : _analyzer.computePairCoefficient(_selectedDoeId, animal.id);
+      final bool risky = coefficient != null && coefficient >= 0.0625;
+      final Color indicatorColor = risky
+          ? theme.colorScheme.error
+          : theme.colorScheme.onSurfaceVariant;
+      return DropdownMenuItem<String>(
+        value: animal.id,
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                '${animal.tagId}${animal.name != null ? ' · ${animal.name}' : ''}',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (coefficient != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Text(
+                  coefficient.toStringAsFixed(3),
+                  style: baseStyle.copyWith(
+                    color: indicatorColor,
+                    fontWeight: risky ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -295,20 +333,16 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _selectedBuckId,
-                decoration: const InputDecoration(labelText: 'Mâle'),
+                decoration: InputDecoration(
+                  labelText: 'Mâle',
+                  helperText: _selectedDoeId == null
+                      ? 'Sélectionnez d’abord une femelle'
+                      : 'Coefficient affiché à droite',
+                ),
                 hint: const Text('Sélectionner'),
                 validator: (String? value) =>
                     value == null ? 'Sélection obligatoire' : null,
-                items: _bucks
-                    .map(
-                      (Animal animal) => DropdownMenuItem<String>(
-                        value: animal.id,
-                        child: Text(
-                          '${animal.tagId}${animal.name != null ? ' · ${animal.name}' : ''}',
-                        ),
-                      ),
-                    )
-                    .toList(),
+                items: _buildBuckItems(theme),
                 onChanged: (String? value) {
                   setState(() {
                     _selectedBuckId = value;

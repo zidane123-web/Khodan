@@ -29,10 +29,18 @@ ThemeData buildKhodanTheme() {
         letterSpacing: -0.5,
       ),
       titleLarge: TextStyle(
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.4,
+      ),
+      titleMedium: TextStyle(
         fontWeight: FontWeight.w600,
+        letterSpacing: -0.2,
       ),
       bodyMedium: TextStyle(
         height: 1.4,
+      ),
+      bodySmall: TextStyle(
+        height: 1.3,
       ),
     ),
     cardTheme: CardThemeData(
@@ -40,7 +48,7 @@ ThemeData buildKhodanTheme() {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      margin: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
     ),
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(

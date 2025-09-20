@@ -10,26 +10,32 @@ import '../../../../data/repositories/event_repository.dart';
 import '../../../events/presentation/widgets/batch_event_form_dialog.dart';
 import '../../../events/presentation/widgets/breeding_record_form.dart';
 import '../cubit/animal_cubit.dart';
+import '../models/animal_quick_filter.dart';
 import '../widgets/animal_card.dart';
 import '../widgets/animal_form_dialog.dart';
+import '../widgets/animal_grid_card.dart';
 import 'animal_detail_screen.dart';
 import 'scan_animal_screen.dart';
 
 class AnimalListScreen extends StatelessWidget {
-  const AnimalListScreen({super.key});
+  const AnimalListScreen({super.key, this.quickFilter});
+
+  final AnimalQuickFilter? quickFilter;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<AnimalCubit>(
       create: (BuildContext context) =>
           AnimalCubit(InMemoryAnimalRepository())..fetchAnimals(),
-      child: const _AnimalListView(),
+      child: _AnimalListView(quickFilter: quickFilter),
     );
   }
 }
 
 class _AnimalListView extends StatefulWidget {
-  const _AnimalListView();
+  const _AnimalListView({this.quickFilter});
+
+  final AnimalQuickFilter? quickFilter;
 
   @override
   State<_AnimalListView> createState() => _AnimalListViewState();
@@ -41,6 +47,8 @@ class _AnimalListViewState extends State<_AnimalListView> {
   late final BreedingRepository _breedingRepository;
   bool _selectionMode = false;
   final Set<String> _selectedIds = <String>{};
+  bool _showGrid = false;
+  AnimalQuickFilter? _appliedQuickFilter;
 
   @override
   void initState() {
@@ -49,6 +57,7 @@ class _AnimalListViewState extends State<_AnimalListView> {
     _searchController.addListener(_onSearchChanged);
     _eventRepository = InMemoryEventRepository();
     _breedingRepository = InMemoryBreedingRepository();
+    _maybeApplyQuickFilter(widget.quickFilter);
   }
 
   @override
@@ -56,6 +65,36 @@ class _AnimalListViewState extends State<_AnimalListView> {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimalListView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.quickFilter != oldWidget.quickFilter) {
+      _maybeApplyQuickFilter(widget.quickFilter);
+    }
+  }
+
+  void _maybeApplyQuickFilter(AnimalQuickFilter? quickFilter) {
+    if (quickFilter == null || _appliedQuickFilter == quickFilter) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      context.read<AnimalCubit>().applyQuickFilter(quickFilter);
+      _searchController.text = '';
+      setState(() {
+        _appliedQuickFilter = quickFilter;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Filtre appliqué : ${quickFilter.label}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    });
   }
 
   void _onSearchChanged() {
@@ -234,6 +273,21 @@ class _AnimalListViewState extends State<_AnimalListView> {
 
   Widget _buildFiltersSummary(AnimalState state) {
     final List<Widget> chips = <Widget>[
+      if (state.filters.quickLabel != null)
+        InputChip(
+          label: Text(state.filters.quickLabel!),
+          avatar: const Icon(Icons.push_pin, size: 18),
+          onDeleted: () => context.read<AnimalCubit>().setFilters(
+                state.filters.copyWith(
+                  quickLabel: null,
+                  includeIds: null,
+                  statusQuery: null,
+                  clearQuickLabel: true,
+                  clearIncludeIds: true,
+                  clearStatusQuery: true,
+                ),
+              ),
+        ),
       if (state.filters.sex != null)
         InputChip(
           label: Text('Sexe : ${state.filters.sex}'),
@@ -263,7 +317,7 @@ class _AnimalListViewState extends State<_AnimalListView> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -293,23 +347,38 @@ class _AnimalListViewState extends State<_AnimalListView> {
     final bool hasFilters =
         state.filters.searchTerm.isNotEmpty || state.filters.hasAdvancedFilters;
 
-    final Widget listContent = animals.isEmpty
-        ? _EmptyAnimalsPlaceholder(
-            hasFilters: hasFilters,
-            onClearFilters: hasFilters
-                ? () {
-                    _searchController.clear();
-                    context.read<AnimalCubit>().clearAllFilters();
-                  }
-                : null,
-          )
-        : ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    final Widget listContent;
+    if (animals.isEmpty) {
+      listContent = _EmptyAnimalsPlaceholder(
+        hasFilters: hasFilters,
+        onClearFilters: hasFilters
+            ? () {
+                _searchController.clear();
+                context.read<AnimalCubit>().clearAllFilters();
+              }
+            : null,
+      );
+    } else if (_showGrid) {
+      listContent = LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double width = constraints.maxWidth;
+          final int crossAxisCount = width >= 1100
+              ? 3
+              : width >= 700
+                  ? 2
+                  : 1;
+          return GridView.builder(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.78,
+            ),
             itemCount: animals.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (BuildContext context, int index) {
               final Animal animal = animals[index];
-              return AnimalCard(
+              return AnimalGridCard(
                 animal: animal,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<Widget>(
@@ -317,11 +386,6 @@ class _AnimalListViewState extends State<_AnimalListView> {
                         AnimalDetailScreen(animal: animal),
                   ),
                 ),
-                onEdit: _selectionMode ? null : () => _editAnimal(animal),
-                onDelete: _selectionMode ? null : () => _deleteAnimal(animal),
-                onQuickBreed: _selectionMode
-                    ? null
-                    : () => _openQuickBreeding(animal, state),
                 selectionEnabled: _selectionMode,
                 isSelected: _selectedIds.contains(animal.id),
                 onSelectionChanged: _selectionMode
@@ -330,11 +394,41 @@ class _AnimalListViewState extends State<_AnimalListView> {
               );
             },
           );
+        },
+      );
+    } else {
+      listContent = ListView.separated(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+        itemCount: animals.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (BuildContext context, int index) {
+          final Animal animal = animals[index];
+          return AnimalCard(
+            animal: animal,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<Widget>(
+                builder: (BuildContext context) =>
+                    AnimalDetailScreen(animal: animal),
+              ),
+            ),
+            onEdit: _selectionMode ? null : () => _editAnimal(animal),
+            onDelete: _selectionMode ? null : () => _deleteAnimal(animal),
+            onQuickBreed:
+                _selectionMode ? null : () => _openQuickBreeding(animal, state),
+            selectionEnabled: _selectionMode,
+            isSelected: _selectedIds.contains(animal.id),
+            onSelectionChanged: _selectionMode
+                ? (bool selected) => _updateSelection(animal.id, selected)
+                : null,
+          );
+        },
+      );
+    }
 
     return Column(
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
@@ -420,6 +514,19 @@ class _AnimalListViewState extends State<_AnimalListView> {
                     icon: const Icon(Icons.qr_code_scanner),
                     tooltip: 'Scanner un identifiant',
                     onPressed: () => _openScanner(state),
+                  ),
+                if (!_selectionMode)
+                  IconButton(
+                    icon: Icon(
+                      _showGrid ? Icons.view_list : Icons.grid_view,
+                    ),
+                    tooltip:
+                        _showGrid ? 'Afficher en liste' : 'Afficher en grille',
+                    onPressed: () {
+                      setState(() {
+                        _showGrid = !_showGrid;
+                      });
+                    },
                   ),
                 if (_selectionMode)
                   IconButton(

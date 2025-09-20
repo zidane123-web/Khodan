@@ -20,6 +20,8 @@ class AnimalDetailState extends Equatable {
     this.performance,
     this.gallery = const <String>[],
     this.genealogy,
+    this.weightHistory = const <AnimalWeightEntry>[],
+    this.litterStats = const <AnimalLitterStat>[],
     this.errorMessage,
   });
 
@@ -29,6 +31,8 @@ class AnimalDetailState extends Equatable {
   final AnimalPerformanceStats? performance;
   final List<String> gallery;
   final GenealogyAnalysis? genealogy;
+  final List<AnimalWeightEntry> weightHistory;
+  final List<AnimalLitterStat> litterStats;
   final String? errorMessage;
 
   AnimalDetailState copyWith({
@@ -38,6 +42,8 @@ class AnimalDetailState extends Equatable {
     AnimalPerformanceStats? performance,
     List<String>? gallery,
     GenealogyAnalysis? genealogy,
+    List<AnimalWeightEntry>? weightHistory,
+    List<AnimalLitterStat>? litterStats,
     String? errorMessage,
   }) {
     return AnimalDetailState(
@@ -47,6 +53,8 @@ class AnimalDetailState extends Equatable {
       performance: performance ?? this.performance,
       gallery: gallery ?? this.gallery,
       genealogy: genealogy ?? this.genealogy,
+      weightHistory: weightHistory ?? this.weightHistory,
+      litterStats: litterStats ?? this.litterStats,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
@@ -59,6 +67,8 @@ class AnimalDetailState extends Equatable {
         performance,
         gallery,
         genealogy,
+        weightHistory,
+        litterStats,
         errorMessage,
       ];
 }
@@ -115,6 +125,13 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
 
       final List<String> gallery = _buildInitialGallery(state.animal);
       final GenealogyAnalysis genealogy = analyzer.analyze(state.animal.id);
+      final List<AnimalWeightEntry> weightHistory = _buildWeightHistory(
+        state.animal,
+        events,
+        eventAnimalMap,
+      );
+      final List<AnimalLitterStat> litterStats =
+          _buildLitterHistory(state.animal, records);
 
       emit(
         state.copyWith(
@@ -123,6 +140,8 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
           performance: performance,
           gallery: gallery,
           genealogy: genealogy,
+          weightHistory: weightHistory,
+          litterStats: litterStats,
           errorMessage: null,
         ),
       );
@@ -294,6 +313,67 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
     return entries;
   }
 
+  List<AnimalWeightEntry> _buildWeightHistory(
+    Animal animal,
+    List<LivestockEvent> events,
+    Map<String, List<String>> eventAnimalMap,
+  ) {
+    final List<AnimalWeightEntry> history = <AnimalWeightEntry>[];
+    for (final LivestockEvent event in events) {
+      if (event.eventType != 'weight') {
+        continue;
+      }
+      final List<String> linked = eventAnimalMap[event.id] ??
+          _animalIdsFromEvent(event);
+      if (!linked.contains(animal.id)) {
+        continue;
+      }
+      final double? weight = _extractWeight(event.details);
+      if (weight != null) {
+        history.add(
+          AnimalWeightEntry(date: event.eventDate, weightKg: weight),
+        );
+      }
+    }
+    history.sort((AnimalWeightEntry a, AnimalWeightEntry b) =>
+        a.date.compareTo(b.date));
+    return history;
+  }
+
+  List<AnimalLitterStat> _buildLitterHistory(
+    Animal animal,
+    List<BreedingRecord> records,
+  ) {
+    final String normalizedSex = animal.sex.toLowerCase();
+    final bool isDoe = normalizedSex.contains('fem');
+    final bool isBuck = normalizedSex.contains('mâ') || normalizedSex.contains('mal');
+    final Iterable<BreedingRecord> relevant = records.where((BreedingRecord record) {
+      if (isDoe) {
+        return record.doeId == animal.id;
+      }
+      if (isBuck) {
+        return record.buckId == animal.id;
+      }
+      return record.doeId == animal.id || record.buckId == animal.id;
+    });
+
+    final List<AnimalLitterStat> stats = <AnimalLitterStat>[];
+    for (final BreedingRecord record in relevant) {
+      if (record.kindlingDate != null) {
+        stats.add(
+          AnimalLitterStat(
+            date: record.kindlingDate!,
+            kitsBornAlive: record.kitsBornAlive,
+            kitsWeaned: record.kitsWeaned,
+          ),
+        );
+      }
+    }
+    stats.sort((AnimalLitterStat a, AnimalLitterStat b) =>
+        a.date.compareTo(b.date));
+    return stats;
+  }
+
   AnimalPerformanceStats _buildPerformance(
     Animal animal,
     List<BreedingRecord> records,
@@ -387,6 +467,17 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
       return ids.whereType<String>().toList();
     }
     return <String>[];
+  }
+
+  double? _extractWeight(Map<String, dynamic> details) {
+    final dynamic value = details['weightKg'] ?? details['weight'];
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.'));
+    }
+    return null;
   }
 
   AnimalTimelineCategory _categoryForEvent(String eventType) {
@@ -521,4 +612,29 @@ class AnimalTimelineEntry extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[date, title, description, category];
+}
+
+class AnimalWeightEntry extends Equatable {
+  const AnimalWeightEntry({required this.date, required this.weightKg});
+
+  final DateTime date;
+  final double weightKg;
+
+  @override
+  List<Object?> get props => <Object?>[date, weightKg];
+}
+
+class AnimalLitterStat extends Equatable {
+  const AnimalLitterStat({
+    required this.date,
+    this.kitsBornAlive,
+    this.kitsWeaned,
+  });
+
+  final DateTime date;
+  final int? kitsBornAlive;
+  final int? kitsWeaned;
+
+  @override
+  List<Object?> get props => <Object?>[date, kitsBornAlive, kitsWeaned];
 }

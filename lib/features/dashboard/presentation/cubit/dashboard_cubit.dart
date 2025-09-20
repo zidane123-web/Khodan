@@ -12,6 +12,35 @@ import '../../domain/models/breeding_performance_stats.dart';
 
 enum DashboardStatus { initial, loading, success, failure }
 
+enum DashboardModuleType {
+  kpis,
+  alerts,
+  calendar,
+  tasksToday,
+  tasksUpcoming,
+  performance,
+  weightTracking,
+  healthAlerts,
+  feedInventory,
+}
+
+class DashboardKpiFilter extends Equatable {
+  const DashboardKpiFilter({
+    required this.label,
+    this.sex,
+    this.statusQuery,
+    this.includeIds,
+  });
+
+  final String label;
+  final String? sex;
+  final String? statusQuery;
+  final Set<String>? includeIds;
+
+  @override
+  List<Object?> get props => <Object?>[label, sex, statusQuery, includeIds];
+}
+
 class DashboardState extends Equatable {
   const DashboardState({
     this.status = DashboardStatus.initial,
@@ -32,6 +61,20 @@ class DashboardState extends Equatable {
       DashboardKpiType.plannedBreedings,
       DashboardKpiType.breedingSuccessRate,
     ],
+    this.moduleOrder = const <DashboardModuleType>[
+      DashboardModuleType.kpis,
+      DashboardModuleType.alerts,
+      DashboardModuleType.calendar,
+      DashboardModuleType.tasksToday,
+      DashboardModuleType.tasksUpcoming,
+      DashboardModuleType.performance,
+    ],
+    this.hiddenModules = const <DashboardModuleType>{
+      DashboardModuleType.weightTracking,
+      DashboardModuleType.healthAlerts,
+      DashboardModuleType.feedInventory,
+    },
+    this.kpiFilters = const <DashboardKpiType, DashboardKpiFilter>{},
     this.performance = const BreedingPerformanceStats(),
     this.errorMessage,
   });
@@ -49,6 +92,9 @@ class DashboardState extends Equatable {
   final List<DashboardAlert> alerts;
   final List<DashboardCalendarEvent> calendarEvents;
   final List<DashboardKpiType> kpiOrder;
+  final List<DashboardModuleType> moduleOrder;
+  final Set<DashboardModuleType> hiddenModules;
+  final Map<DashboardKpiType, DashboardKpiFilter> kpiFilters;
   final BreedingPerformanceStats performance;
   final String? errorMessage;
 
@@ -67,6 +113,9 @@ class DashboardState extends Equatable {
     List<DashboardAlert>? alerts,
     List<DashboardCalendarEvent>? calendarEvents,
     List<DashboardKpiType>? kpiOrder,
+    List<DashboardModuleType>? moduleOrder,
+    Set<DashboardModuleType>? hiddenModules,
+    Map<DashboardKpiType, DashboardKpiFilter>? kpiFilters,
     BreedingPerformanceStats? performance,
     String? errorMessage,
   }) {
@@ -87,6 +136,9 @@ class DashboardState extends Equatable {
       alerts: alerts ?? this.alerts,
       calendarEvents: calendarEvents ?? this.calendarEvents,
       kpiOrder: kpiOrder ?? this.kpiOrder,
+      moduleOrder: moduleOrder ?? this.moduleOrder,
+      hiddenModules: hiddenModules ?? this.hiddenModules,
+      kpiFilters: kpiFilters ?? this.kpiFilters,
       performance: performance ?? this.performance,
       errorMessage: errorMessage ?? this.errorMessage,
     );
@@ -107,6 +159,9 @@ class DashboardState extends Equatable {
         alerts,
         calendarEvents,
         kpiOrder,
+        moduleOrder,
+        hiddenModules,
+        kpiFilters,
         performance,
         errorMessage,
       ];
@@ -144,6 +199,19 @@ class DashboardCubit extends Cubit<DashboardState> {
         for (final Animal animal in animals) animal.id: animal,
       };
 
+      final Set<String> allAnimalIds = animalsById.keys.toSet();
+      final Set<String> activeAnimalIds = <String>{};
+      for (final Animal animal in animals) {
+        if (animal.status.toLowerCase().contains('viv')) {
+          activeAnimalIds.add(animal.id);
+        }
+      }
+
+      final Set<String> plannedBreedingAnimalIds = <String>{};
+      final Set<String> activeLitterDoeIds = <String>{};
+      final Set<String> evaluatedAnimalIds = <String>{};
+      final Set<String> litterParticipantIds = <String>{};
+
       final Map<String, List<String>> eventAnimalMap =
           <String, List<String>>{};
       for (final AnimalEventLink link in links) {
@@ -154,14 +222,11 @@ class DashboardCubit extends Cubit<DashboardState> {
         );
       }
 
-      final int activeAnimals = animals
-          .where(
-            (Animal animal) =>
-                animal.status.toLowerCase().contains('viv'),
-          )
-          .length;
+      final int activeAnimals = activeAnimalIds.length;
 
       final Set<String> gestatingDoeIds = <String>{};
+      int plannedBreedings = 0;
+      int activeLitters = 0;
       for (final BreedingRecord record in records) {
         final bool hasMatingOccurred = record.matingDate.isBefore(now);
         final bool alreadyKindled = record.kindlingDate != null;
@@ -169,23 +234,29 @@ class DashboardCubit extends Cubit<DashboardState> {
         if (hasMatingOccurred && !alreadyKindled && !confirmedNegative) {
           gestatingDoeIds.add(record.doeId);
         }
+        if (record.matingDate.isAfter(now)) {
+          plannedBreedings += 1;
+          plannedBreedingAnimalIds
+            ..add(record.doeId)
+            ..add(record.buckId);
+        }
+        final bool hasActiveLitter = record.kindlingDate != null &&
+            (record.weaningDate == null || record.weaningDate!.isAfter(now));
+        if (hasActiveLitter) {
+          activeLitters += 1;
+          activeLitterDoeIds.add(record.doeId);
+        }
+        if (record.kindlingDate != null) {
+          litterParticipantIds
+            ..add(record.doeId)
+            ..add(record.buckId);
+        }
+        if (record.palpationPositive != null) {
+          evaluatedAnimalIds
+            ..add(record.doeId)
+            ..add(record.buckId);
+        }
       }
-
-      final int plannedBreedings = records
-          .where((BreedingRecord record) => record.matingDate.isAfter(now))
-          .length;
-
-      final int activeLitters = records
-          .where((BreedingRecord record) {
-            if (record.kindlingDate == null) {
-              return false;
-            }
-            if (record.weaningDate == null) {
-              return true;
-            }
-            return record.weaningDate!.isAfter(now);
-          })
-          .length;
 
       final Iterable<BreedingRecord> evaluatedRecords = records.where(
         (BreedingRecord record) => record.palpationPositive != null,
@@ -225,6 +296,49 @@ class DashboardCubit extends Cubit<DashboardState> {
         startOfToday,
       );
 
+      final Map<DashboardKpiType, DashboardKpiFilter> kpiFilters =
+          <DashboardKpiType, DashboardKpiFilter>{
+        DashboardKpiType.totalAnimals: DashboardKpiFilter(
+          label: 'Tous les animaux',
+          includeIds: allAnimalIds,
+        ),
+        DashboardKpiType.activeAnimals: DashboardKpiFilter(
+          label: 'Animaux actifs',
+          statusQuery: 'viv',
+          includeIds: activeAnimalIds,
+        ),
+        DashboardKpiType.gestatingDoes: DashboardKpiFilter(
+          label: 'Femelles en gestation',
+          sex: 'Femelle',
+          statusQuery: 'gest',
+          includeIds: gestatingDoeIds,
+        ),
+        DashboardKpiType.plannedBreedings: DashboardKpiFilter(
+          label: 'Paires programmées',
+          includeIds: plannedBreedingAnimalIds,
+        ),
+        DashboardKpiType.activeLitters: DashboardKpiFilter(
+          label: 'Portées en cours',
+          includeIds: activeLitterDoeIds,
+        ),
+        DashboardKpiType.breedingSuccessRate: DashboardKpiFilter(
+          label: 'Saillies évaluées',
+          includeIds: evaluatedAnimalIds,
+        ),
+        DashboardKpiType.averageKitsBornAlive: DashboardKpiFilter(
+          label: 'Historiques de portées',
+          includeIds: litterParticipantIds,
+        ),
+        DashboardKpiType.averageKitsWeaned: DashboardKpiFilter(
+          label: 'Sevrages réalisés',
+          includeIds: litterParticipantIds,
+        ),
+        DashboardKpiType.totalKitsWeaned: DashboardKpiFilter(
+          label: 'Total sevrés',
+          includeIds: litterParticipantIds,
+        ),
+      };
+
       emit(
         state.copyWith(
           status: DashboardStatus.success,
@@ -239,6 +353,7 @@ class DashboardCubit extends Cubit<DashboardState> {
           upcomingTasks: breakdown.upcoming,
           alerts: alerts,
           calendarEvents: calendarEvents,
+          kpiFilters: kpiFilters,
           performance: performance,
           errorMessage: null,
         ),
@@ -270,6 +385,32 @@ class DashboardCubit extends Cubit<DashboardState> {
       }
     }
     emit(state.copyWith(kpiOrder: sanitized));
+  }
+
+  void updateModulePreferences({
+    required List<DashboardModuleType> order,
+    required Set<DashboardModuleType> hidden,
+  }) {
+    final List<DashboardModuleType> sanitized = <DashboardModuleType>[];
+    for (final DashboardModuleType type in order) {
+      if (!sanitized.contains(type)) {
+        sanitized.add(type);
+      }
+    }
+    for (final DashboardModuleType type in DashboardModuleType.values) {
+      if (!sanitized.contains(type)) {
+        sanitized.add(type);
+      }
+    }
+    final Set<DashboardModuleType> filteredHidden = hidden
+        .where(DashboardModuleType.values.contains)
+        .toSet();
+    emit(
+      state.copyWith(
+        moduleOrder: sanitized,
+        hiddenModules: filteredHidden,
+      ),
+    );
   }
 
   _TasksBreakdown _buildTasks(
