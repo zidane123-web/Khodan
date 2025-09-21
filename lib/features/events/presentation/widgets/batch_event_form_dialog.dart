@@ -5,6 +5,26 @@ import '../../../../data/models/animal_event.dart';
 import '../../../../data/models/event.dart';
 import '../../../../data/repositories/event_repository.dart';
 
+class _EventTemplate {
+  const _EventTemplate({
+    required this.name,
+    required this.eventType,
+    this.weight,
+    this.price,
+    this.product,
+    this.notes,
+  });
+
+  final String name;
+  final String eventType;
+  final double? weight;
+  final double? price;
+  final String? product;
+  final String? notes;
+}
+
+final List<_EventTemplate> _savedEventTemplates = <_EventTemplate>[];
+
 class BatchEventFormDialog extends StatefulWidget {
   const BatchEventFormDialog({
     required this.animals,
@@ -39,8 +59,11 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _treatmentController = TextEditingController();
+  final TextEditingController _templateNameController = TextEditingController();
   DateTime _eventDate = DateTime.now();
   String? _eventType;
+  String? _selectedTemplateName;
+  bool _saveAsTemplate = false;
 
   @override
   void dispose() {
@@ -48,7 +71,28 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
     _weightController.dispose();
     _priceController.dispose();
     _treatmentController.dispose();
+    _templateNameController.dispose();
     super.dispose();
+  }
+
+  String _formatNumber(double? value) {
+    if (value == null) {
+      return '';
+    }
+    final bool isInteger = (value - value.round()).abs() < 0.001;
+    return isInteger ? value.toStringAsFixed(0) : value.toStringAsFixed(2);
+  }
+
+  void _applyTemplate(_EventTemplate template) {
+    setState(() {
+      _selectedTemplateName = template.name;
+      _eventType = template.eventType;
+      _weightController.text = _formatNumber(template.weight);
+      _priceController.text = _formatNumber(template.price);
+      _treatmentController.text = template.product ?? '';
+      _notesController.text = template.notes ?? '';
+      _templateNameController.text = template.name;
+    });
   }
 
   Future<void> _pickDate() async {
@@ -70,7 +114,12 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
   bool get _requiresTreatment =>
       _eventType == 'treatment' || _eventType == 'vaccination';
 
-  Map<String, dynamic> _buildDetails(Animal animal) {
+  Map<String, dynamic> _buildDetails(
+    Animal animal, {
+    double? weight,
+    double? price,
+    String? product,
+  }) {
     final Map<String, dynamic> details = <String, dynamic>{
       'animalIds': <String>[animal.id],
       'animalTag': animal.tagId,
@@ -79,23 +128,25 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
 
     switch (_eventType) {
       case 'weight':
-        final double? weight =
+        final double? effectiveWeight = weight ??
             double.tryParse(_weightController.text.replaceAll(',', '.'));
-        if (weight != null) {
-          details['weightKg'] = weight;
+        if (effectiveWeight != null) {
+          details['weightKg'] = effectiveWeight;
         }
         break;
       case 'sale':
-        final double? price =
+        final double? effectivePrice = price ??
             double.tryParse(_priceController.text.replaceAll(',', '.'));
-        if (price != null) {
-          details['salePrice'] = price;
+        if (effectivePrice != null) {
+          details['salePrice'] = effectivePrice;
         }
         break;
       case 'treatment':
       case 'vaccination':
-        if (_treatmentController.text.trim().isNotEmpty) {
-          details['product'] = _treatmentController.text.trim();
+        final String? effectiveProduct =
+            product ?? _treatmentController.text.trim();
+        if (effectiveProduct != null && effectiveProduct.isNotEmpty) {
+          details['product'] = effectiveProduct;
         }
         break;
     }
@@ -114,6 +165,46 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
       return;
     }
 
+    final double? parsedWeight = _requiresWeight
+        ? double.tryParse(_weightController.text.replaceAll(',', '.'))
+        : null;
+    final double? parsedPrice = _requiresPrice
+        ? double.tryParse(_priceController.text.replaceAll(',', '.'))
+        : null;
+    final String? parsedProduct = _requiresTreatment
+        ? (_treatmentController.text.trim().isEmpty
+            ? null
+            : _treatmentController.text.trim())
+        : null;
+    final String? trimmedNotes =
+        _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+
+    if (_saveAsTemplate) {
+      final String name = _templateNameController.text.trim();
+      if (name.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Indiquez un nom pour enregistrer le modèle.')),
+        );
+        return;
+      }
+      final _EventTemplate template = _EventTemplate(
+        name: name,
+        eventType: _eventType!,
+        weight: parsedWeight,
+        price: parsedPrice,
+        product: parsedProduct,
+        notes: trimmedNotes,
+      );
+      final int existingIndex = _savedEventTemplates
+          .indexWhere((_EventTemplate value) => value.name == name);
+      if (existingIndex >= 0) {
+        _savedEventTemplates[existingIndex] = template;
+      } else {
+        _savedEventTemplates.add(template);
+      }
+      _selectedTemplateName = name;
+    }
+
     final List<LivestockEvent> createdEvents = <LivestockEvent>[];
 
     for (final Animal animal in widget.animals) {
@@ -122,10 +213,13 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
         profileId: animal.profileId,
         eventType: _eventType!,
         eventDate: _eventDate,
-        details: _buildDetails(animal),
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
+        details: _buildDetails(
+          animal,
+          weight: parsedWeight,
+          price: parsedPrice,
+          product: parsedProduct,
+        ),
+        notes: trimmedNotes,
       );
 
       final LivestockEvent created = await widget.repository.createEvent(
@@ -174,6 +268,36 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
                 style: theme.textTheme.bodySmall,
               ),
               const SizedBox(height: 16),
+              if (_savedEventTemplates.isNotEmpty) ...<Widget>[
+                DropdownButtonFormField<String>(
+                  value: _selectedTemplateName,
+                  decoration: const InputDecoration(
+                    labelText: 'Appliquer un modèle',
+                  ),
+                  hint: const Text('Choisir un modèle'),
+                  items: _savedEventTemplates
+                      .map(
+                        (_EventTemplate template) => DropdownMenuItem<String>(
+                          value: template.name,
+                          child: Text(template.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (String? value) {
+                    if (value == null) {
+                      setState(() {
+                        _selectedTemplateName = null;
+                        _templateNameController.clear();
+                      });
+                    } else {
+                      final _EventTemplate template = _savedEventTemplates
+                          .firstWhere((_EventTemplate element) => element.name == value);
+                      _applyTemplate(template);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
               DropdownButtonFormField<String>(
                 value: _eventType,
                 decoration: const InputDecoration(labelText: 'Type d’évènement'),
@@ -290,6 +414,36 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
                   alignLabelWithHint: true,
                 ),
               ),
+              const SizedBox(height: 12),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Enregistrer comme modèle'),
+                subtitle: const Text(
+                  'Sauvegarder ces paramètres pour les appliquer en un clic.',
+                ),
+                value: _saveAsTemplate,
+                onChanged: (bool value) {
+                  setState(() {
+                    _saveAsTemplate = value;
+                    if (value && _templateNameController.text.isEmpty) {
+                      final String suggestion =
+                          _eventType != null ? 'Modèle ${_eventType!}' : '';
+                      _templateNameController.text =
+                          _selectedTemplateName ?? suggestion;
+                    }
+                  });
+                },
+              ),
+              if (_saveAsTemplate) ...<Widget>[
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _templateNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nom du modèle',
+                    hintText: 'Vaccination trimestrielle, pesée mensuelle…',
+                  ),
+                ),
+              ],
             ],
           ),
         ),

@@ -1,49 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../data/models/animal.dart';
 import '../../../../data/models/breeding_record.dart';
 import '../../../animals/domain/genealogy_analyzer.dart';
+import '../cubit/breeding_cubit.dart';
 
-class BreedingRecordFormDialog extends StatefulWidget {
-  const BreedingRecordFormDialog({
-    required this.animals,
-    this.initial,
+class AddBreedingRecordScreen extends StatefulWidget {
+  const AddBreedingRecordScreen({
+    this.initialRecord,
     this.initialDoeId,
     this.initialBuckId,
     super.key,
   });
 
-  final List<Animal> animals;
-  final BreedingRecord? initial;
+  final BreedingRecord? initialRecord;
   final String? initialDoeId;
   final String? initialBuckId;
 
-  static Future<BreedingRecord?> show(
-    BuildContext context, {
-    required List<Animal> animals,
-    BreedingRecord? initial,
-    String? initialDoeId,
-    String? initialBuckId,
-  }) {
-    return showDialog<BreedingRecord>(
-      context: context,
-      builder: (BuildContext context) => BreedingRecordFormDialog(
-        animals: animals,
-        initial: initial,
-        initialDoeId: initialDoeId,
-        initialBuckId: initialBuckId,
-      ),
-    );
-  }
-
   @override
-  State<BreedingRecordFormDialog> createState() =>
-      _BreedingRecordFormDialogState();
+  State<AddBreedingRecordScreen> createState() =>
+      _AddBreedingRecordScreenState();
 }
 
-class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
+class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
   late final List<GlobalKey<FormState>> _stepKeys;
-  late final GenealogyAnalyzer _analyzer;
+  late GenealogyAnalyzer _analyzer;
   final TextEditingController _bornAliveController = TextEditingController();
   final TextEditingController _bornDeadController = TextEditingController();
   final TextEditingController _adoptedController = TextEditingController();
@@ -51,6 +33,9 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
   final TextEditingController _weanedController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+
+  late List<Animal> _animals;
+  bool _isSaving = false;
 
   String? _selectedDoeId;
   String? _selectedBuckId;
@@ -62,16 +47,20 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
   int _currentStep = 0;
   double? _pairingCoefficient;
 
-  List<Animal> get _does => widget.animals
-      .where((Animal animal) =>
-          animal.sex.toLowerCase().contains('fem') ||
-          animal.sex.toLowerCase().startsWith('f'))
+  List<Animal> get _does => _animals
+      .where(
+        (Animal animal) =>
+            animal.sex.toLowerCase().contains('fem') ||
+            animal.sex.toLowerCase().startsWith('f'),
+      )
       .toList();
 
-  List<Animal> get _bucks => widget.animals
-      .where((Animal animal) =>
-          animal.sex.toLowerCase().contains('mâ') ||
-          animal.sex.toLowerCase().contains('mal'))
+  List<Animal> get _bucks => _animals
+      .where(
+        (Animal animal) =>
+            animal.sex.toLowerCase().contains('mÃƒÂ¢') ||
+            animal.sex.toLowerCase().contains('mal'),
+      )
       .toList();
 
   List<DropdownMenuItem<String>> _buildBuckItems(ThemeData theme) {
@@ -91,7 +80,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
           children: <Widget>[
             Expanded(
               child: Text(
-                '${animal.tagId}${animal.name != null ? ' · ${animal.name}' : ''}',
+                '${animal.tagId}${animal.name != null ? ' Ã‚Â· ${animal.name}' : ''}',
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -119,7 +108,9 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
       3,
       (_) => GlobalKey<FormState>(),
     );
-    final BreedingRecord? initial = widget.initial;
+    final BreedingState breedingState = context.read<BreedingCubit>().state;
+    _animals = List<Animal>.from(breedingState.animals);
+    final BreedingRecord? initial = widget.initialRecord;
     _selectedDoeId = initial?.doeId ?? widget.initialDoeId;
     _selectedBuckId = initial?.buckId ?? widget.initialBuckId;
     _matingDate = initial?.matingDate ?? DateTime.now();
@@ -130,23 +121,13 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
     _kindlingDate = initial?.kindlingDate;
     _weaningDate = initial?.weaningDate;
 
-    _bornAliveController.text =
-        initial?.kitsBornAlive?.toString() ?? '';
-    _bornDeadController.text =
-        initial?.kitsBornDead?.toString() ?? '';
-    _adoptedController.text =
-        initial?.adoptedKitsIn?.toString() ?? '';
-    _removedController.text =
-        initial?.kitsRemoved?.toString() ?? '';
-    _weanedController.text =
-        initial?.kitsWeaned?.toString() ?? '';
-    _weightController.text =
-        initial?.averageWeaningWeight?.toString() ?? '';
-    _notesController.text = initial?.notes ?? '';
-
-    final Map<String, Animal> animalsById = <String, Animal>{
-      for (final Animal animal in widget.animals) animal.id: animal,
-    };
+    _bornAliveController.text = initial?.kitsBornAlive?.toString() ?? '';
+    _bornDeadController.text = initial?.kitsBornDead?.toString() ?? '';
+    _adoptedController.text = initial?.adoptedKitsIn?.toString() ?? '';
+    _removedController.text = initial?.kitsRemoved?.toString() ?? '';
+    _weanedController.text = initial?.kitsWeaned?.toString() ?? '';
+    _weightController.text = initial?.averageWeaningWeight?.toString() ?? '';
+    final Map<String, Animal> animalsById = breedingState.animalsById;
     _analyzer = GenealogyAnalyzer(animalsById);
     _pairingCoefficient = (_selectedDoeId != null && _selectedBuckId != null)
         ? _analyzer.computePairCoefficient(_selectedDoeId, _selectedBuckId)
@@ -167,10 +148,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
 
   void _refreshPairingCoefficient() {
     _pairingCoefficient = (_selectedDoeId != null && _selectedBuckId != null)
-        ? _analyzer.computePairCoefficient(
-            _selectedDoeId,
-            _selectedBuckId,
-          )
+        ? _analyzer.computePairCoefficient(_selectedDoeId, _selectedBuckId)
         : null;
   }
 
@@ -203,7 +181,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
     return form == null || form.validate();
   }
 
-  void _handleContinue() {
+  Future<void> _handleContinue() async {
     if (!_validateStep(_currentStep)) {
       return;
     }
@@ -226,15 +204,18 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_selectedDoeId == null || _selectedBuckId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sélectionnez une femelle et un mâle.')),
+        const SnackBar(content: Text('SÃ©lectionnez une femelle et un mÃ¢le.')),
       );
       return;
     }
 
-    final BreedingRecord base = widget.initial ??
+    setState(() => _isSaving = true);
+
+    final BreedingRecord base =
+        widget.initialRecord ??
         BreedingRecord(
           id: 'breeding-${DateTime.now().millisecondsSinceEpoch}',
           profileId: 'demo-profile',
@@ -274,7 +255,39 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
           : _notesController.text.trim(),
     );
 
-    Navigator.of(context).pop(record);
+    final bool success = await _persistRecord(record);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() => _isSaving = false);
+
+    if (success) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<bool> _persistRecord(BreedingRecord record) async {
+    final BreedingCubit cubit = context.read<BreedingCubit>();
+    if (widget.initialRecord != null) {
+      await cubit.updateRecord(record);
+    } else {
+      await cubit.addRecord(record);
+    }
+
+    final BreedingState state = cubit.state;
+    if (state.status == BreedingStatus.failure) {
+      final String message =
+          state.errorMessage ?? 'Impossible d\'enregistrer la saillie.';
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      }
+      return false;
+    }
+    return true;
   }
 
   int? _parseInt(String value) {
@@ -285,16 +298,15 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
     return value.trim().isEmpty ? null : double.tryParse(value.trim());
   }
 
-  List<Step> _buildSteps(
-    ThemeData theme,
-    MaterialLocalizations localizations,
-  ) {
+  List<Step> _buildSteps(ThemeData theme, MaterialLocalizations localizations) {
     final bool highRisk = (_pairingCoefficient ?? 0) >= 0.0625;
-    final String plannedKindling =
-        localizations.formatMediumDate(_matingDate.add(const Duration(days: 31)));
+    final String plannedKindling = localizations.formatMediumDate(
+      _matingDate.add(const Duration(days: 31)),
+    );
     final String plannedWeaning = localizations.formatMediumDate(
-      (_kindlingDate ?? _matingDate.add(const Duration(days: 31)))
-          .add(const Duration(days: 28)),
+      (_kindlingDate ?? _matingDate.add(const Duration(days: 31))).add(
+        const Duration(days: 28),
+      ),
     );
 
     return <Step>[
@@ -310,15 +322,15 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
               DropdownButtonFormField<String>(
                 value: _selectedDoeId,
                 decoration: const InputDecoration(labelText: 'Femelle'),
-                hint: const Text('Sélectionner'),
+                hint: const Text('SÃƒÂ©lectionner'),
                 validator: (String? value) =>
-                    value == null ? 'Sélection obligatoire' : null,
+                    value == null ? 'SÃƒÂ©lection obligatoire' : null,
                 items: _does
                     .map(
                       (Animal animal) => DropdownMenuItem<String>(
                         value: animal.id,
                         child: Text(
-                          '${animal.tagId}${animal.name != null ? ' · ${animal.name}' : ''}',
+                          '${animal.tagId}${animal.name != null ? ' Ã‚Â· ${animal.name}' : ''}',
                         ),
                       ),
                     )
@@ -334,14 +346,14 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
               DropdownButtonFormField<String>(
                 value: _selectedBuckId,
                 decoration: InputDecoration(
-                  labelText: 'Mâle',
+                  labelText: 'MÃƒÂ¢le',
                   helperText: _selectedDoeId == null
-                      ? 'Sélectionnez d’abord une femelle'
-                      : 'Coefficient affiché à droite',
+                      ? 'SÃƒÂ©lectionnez dÃ¢â‚¬â„¢abord une femelle'
+                      : 'Coefficient affichÃƒÂ© ÃƒÂ  droite',
                 ),
-                hint: const Text('Sélectionner'),
+                hint: const Text('SÃƒÂ©lectionner'),
                 validator: (String? value) =>
-                    value == null ? 'Sélection obligatoire' : null,
+                    value == null ? 'SÃƒÂ©lection obligatoire' : null,
                 items: _buildBuckItems(theme),
                 onChanged: (String? value) {
                   setState(() {
@@ -389,8 +401,8 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
                           Expanded(
                             child: Text(
                               highRisk
-                                  ? 'Coefficient de consanguinité élevé (${_pairingCoefficient!.toStringAsFixed(3)}). Évitez ce croisement ou surveillez la portée.'
-                                  : 'Coefficient de consanguinité estimé : ${_pairingCoefficient!.toStringAsFixed(3)}.',
+                                  ? 'Coefficient de consanguinitÃƒÂ© ÃƒÂ©levÃƒÂ© (${_pairingCoefficient!.toStringAsFixed(3)}). Ãƒâ€°vitez ce croisement ou surveillez la portÃƒÂ©e.'
+                                  : 'Coefficient de consanguinitÃƒÂ© estimÃƒÂ© : ${_pairingCoefficient!.toStringAsFixed(3)}.',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: highRisk
                                     ? theme.colorScheme.onErrorContainer
@@ -445,11 +457,11 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: _palpationResult,
-                decoration: const InputDecoration(labelText: 'Résultat'),
+                decoration: const InputDecoration(labelText: 'RÃƒÂ©sultat'),
                 items: const <DropdownMenuItem<String>>[
                   DropdownMenuItem<String>(
                     value: 'unknown',
-                    child: Text('À confirmer'),
+                    child: Text('Ãƒâ‚¬ confirmer'),
                   ),
                   DropdownMenuItem<String>(
                     value: 'positive',
@@ -484,7 +496,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
                 title: Text(
                   _kindlingDate != null
                       ? localizations.formatMediumDate(_kindlingDate!)
-                      : 'Date prévue : $plannedKindling',
+                      : 'Date prÃƒÂ©vue : $plannedKindling',
                 ),
                 leading: const Icon(Icons.nest_cam_wired_stand),
                 trailing: Row(
@@ -513,7 +525,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
                       controller: _bornAliveController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Nés vivants',
+                        labelText: 'NÃƒÂ©s vivants',
                       ),
                     ),
                   ),
@@ -523,7 +535,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
                       controller: _bornDeadController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Nés morts',
+                        labelText: 'NÃƒÂ©s morts',
                       ),
                     ),
                   ),
@@ -537,7 +549,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
                       controller: _adoptedController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Lapereaux adoptés',
+                        labelText: 'Lapereaux adoptÃƒÂ©s',
                       ),
                     ),
                   ),
@@ -547,7 +559,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
                       controller: _removedController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Lapereaux retirés',
+                        labelText: 'Lapereaux retirÃƒÂ©s',
                       ),
                     ),
                   ),
@@ -559,7 +571,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
                 title: Text(
                   _weaningDate != null
                       ? localizations.formatMediumDate(_weaningDate!)
-                      : 'Date prévue : $plannedWeaning',
+                      : 'Date prÃƒÂ©vue : $plannedWeaning',
                 ),
                 leading: const Icon(Icons.child_care_outlined),
                 trailing: Row(
@@ -573,7 +585,8 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
                     IconButton(
                       icon: const Icon(Icons.calendar_today_outlined),
                       onPressed: () => _pickDate(
-                        initialDate: _weaningDate ??
+                        initialDate:
+                            _weaningDate ??
                             (_kindlingDate ??
                                 _matingDate.add(const Duration(days: 31))),
                         onSelected: (DateTime value) => _weaningDate = value,
@@ -590,7 +603,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
                       controller: _weanedController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Lapereaux sevrés',
+                        labelText: 'Lapereaux sevrÃƒÂ©s',
                       ),
                     ),
                   ),
@@ -627,37 +640,139 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
+    final MaterialLocalizations localizations = MaterialLocalizations.of(
+      context,
+    );
+    final BreedingState state = context.watch<BreedingCubit>().state;
+    final bool isInitialLoading =
+        state.status == BreedingStatus.loading && _animals.isEmpty;
+    final bool hasBlockingError =
+        state.status == BreedingStatus.failure && _animals.isEmpty;
 
-    return AlertDialog(
-      title: Text(widget.initial == null
-          ? 'Nouvelle saillie'
-          : 'Modifier la saillie'),
-      content: SizedBox(
-        width: 520,
-        child: Stepper(
-          currentStep: _currentStep,
-          type: StepperType.vertical,
-          controlsBuilder: (BuildContext context, ControlsDetails details) {
-            final bool isLast = _currentStep == 2;
-            return Row(
-              children: <Widget>[
-                FilledButton(
-                  onPressed: details.onStepContinue,
-                  child: Text(isLast ? 'Enregistrer' : 'Continuer'),
+    return BlocListener<BreedingCubit, BreedingState>(
+      listenWhen: (BreedingState previous, BreedingState current) =>
+          previous.animals != current.animals,
+      listener: (BuildContext context, BreedingState newState) {
+        setState(() {
+          _animals = List<Animal>.from(newState.animals);
+          _analyzer = GenealogyAnalyzer(newState.animalsById);
+          _refreshPairingCoefficient();
+        });
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            widget.initialRecord == null
+                ? 'Nouvelle saillie'
+                : 'Modifier la saillie',
+          ),
+        ),
+        body: SafeArea(
+          child: Stack(
+            children: <Widget>[
+              if (isInitialLoading)
+                const Center(child: CircularProgressIndicator())
+              else if (hasBlockingError)
+                _BreedingErrorMessage(
+                  message:
+                      state.errorMessage ??
+                      'Impossible de charger les animaux.',
+                  onRetry: () => context.read<BreedingCubit>().loadData(),
+                )
+              else if (_animals.isEmpty)
+                const _BreedingErrorMessage(
+                  message:
+                      "Ajoutez d'abord des animaux pour enregistrer une saillie.",
+                )
+              else
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: Stepper(
+                      currentStep: _currentStep,
+                      type: StepperType.vertical,
+                      controlsBuilder:
+                          (BuildContext context, ControlsDetails details) {
+                            final bool isLast = _currentStep == 2;
+                            return Row(
+                              children: <Widget>[
+                                FilledButton(
+                                  onPressed: _isSaving
+                                      ? null
+                                      : details.onStepContinue,
+                                  child: Text(
+                                    isLast ? 'Enregistrer' : 'Continuer',
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                TextButton(
+                                  onPressed: _isSaving
+                                      ? null
+                                      : details.onStepCancel,
+                                  child: Text(
+                                    _currentStep == 0 ? 'Fermer' : 'Retour',
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                      onStepContinue: () async => _handleContinue(),
+                      onStepCancel: _handleCancel,
+                      steps: _buildSteps(theme, localizations),
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 12),
-                TextButton(
-                  onPressed: details.onStepCancel,
-                  child: Text(_currentStep == 0 ? 'Fermer' : 'Retour'),
-                ),
-              ],
-            );
-          },
-          onStepContinue: _handleContinue,
-          onStepCancel: _handleCancel,
-          steps: _buildSteps(theme, localizations),
+              if (_isSaving) const _SavingOverlay(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BreedingErrorMessage extends StatelessWidget {
+  const _BreedingErrorMessage({required this.message, this.onRetry});
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(message, textAlign: TextAlign.center),
+            if (onRetry != null) ...<Widget>[
+              const SizedBox(height: 12),
+              FilledButton(onPressed: onRetry, child: const Text('RÃ©essayer')),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SavingOverlay extends StatelessWidget {
+  const _SavingOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.black38,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const <Widget>[
+            CircularProgressIndicator(),
+            SizedBox(height: 12),
+            Text('Enregistrement en cours...'),
+          ],
         ),
       ),
     );

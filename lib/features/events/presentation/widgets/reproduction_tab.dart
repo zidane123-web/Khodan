@@ -5,29 +5,27 @@ import '../../../../data/models/animal.dart';
 import '../../../../data/models/breeding_record.dart';
 import '../../presentation/cubit/breeding_cubit.dart';
 import 'breeding_record_card.dart';
-import 'breeding_record_form.dart';
+import '../screens/add_breeding_record_screen.dart';
 import 'breeding_reminders_section.dart';
 
 class ReproductionTabView extends StatelessWidget {
   const ReproductionTabView({super.key});
 
-  Future<void> _editRecord(
-    BuildContext context,
-    BreedingRecord record,
-  ) async {
+  Future<void> _editRecord(BuildContext context, BreedingRecord record) async {
     final BreedingCubit cubit = context.read<BreedingCubit>();
-    final BreedingRecord? updated = await BreedingRecordFormDialog.show(
-      context,
-      animals: cubit.state.animals,
-      initial: record,
+    final bool? updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (BuildContext context) => BlocProvider.value(
+          value: cubit,
+          child: AddBreedingRecordScreen(initialRecord: record),
+        ),
+      ),
     );
-    if (updated != null && context.mounted) {
-      await cubit.updateRecord(updated);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Saillie mise à jour.')),
-        );
-      }
+
+    if (updated == true && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Saillie mise à jour.')));
     }
   }
 
@@ -40,7 +38,7 @@ class ReproductionTabView extends StatelessWidget {
       builder: (BuildContext context) => AlertDialog(
         title: const Text('Supprimer cette saillie ?'),
         content: const Text(
-          'Cette action supprimera les rappels associés. Continuer ?',
+          'Cette action supprimera les rappels associÃ©s. Continuer ?',
         ),
         actions: <Widget>[
           TextButton(
@@ -58,9 +56,9 @@ class ReproductionTabView extends StatelessWidget {
     if (confirmed == true && context.mounted) {
       await context.read<BreedingCubit>().deleteRecord(record.id);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Saillie supprimée.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Saillie supprimÃ©e.')));
       }
     }
   }
@@ -78,7 +76,7 @@ class ReproductionTabView extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                state.errorMessage ?? 'Impossible de charger les données.',
+                state.errorMessage ?? 'Impossible de charger les donnÃ©es.',
                 textAlign: TextAlign.center,
               ),
             ),
@@ -99,7 +97,7 @@ class ReproductionTabView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Suivi des portées',
+                'Suivi des portÃ©es',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 12),
@@ -108,7 +106,7 @@ class ReproductionTabView extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                      'Enregistrez votre première saillie pour suivre les portées.',
+                      'Enregistrez votre premiÃ¨re saillie pour suivre les portÃ©es.',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),

@@ -22,26 +22,37 @@ class AnimalFormDialog extends StatefulWidget {
 }
 
 class _AnimalFormDialogState extends State<AnimalFormDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final List<GlobalKey<FormState>> _stepKeys;
   late final TextEditingController _tagController;
   late final TextEditingController _nameController;
   late final TextEditingController _cageController;
   late final TextEditingController _originController;
+  late final TextEditingController _sireController;
+  late final TextEditingController _damController;
 
+  int _currentStep = 0;
   late String _selectedSex;
   late String _selectedStatus;
   DateTime? _birthDate;
   DateTime? _entryDate;
   DateTime? _firstBreedingDate;
 
+  bool get _isEditing => widget.initial != null;
+
   @override
   void initState() {
     super.initState();
+    _stepKeys = List<GlobalKey<FormState>>.generate(
+      2,
+      (_) => GlobalKey<FormState>(),
+    );
     final Animal? initial = widget.initial;
     _tagController = TextEditingController(text: initial?.tagId ?? '');
     _nameController = TextEditingController(text: initial?.name ?? '');
     _cageController = TextEditingController(text: initial?.cageNumber ?? '');
     _originController = TextEditingController(text: initial?.origin ?? '');
+    _sireController = TextEditingController(text: initial?.sireId ?? '');
+    _damController = TextEditingController(text: initial?.damId ?? '');
     _selectedSex = initial?.sex ?? 'Femelle';
     _selectedStatus = initial?.status ?? 'Vivant';
     _birthDate = initial?.birthDate ?? DateTime.now();
@@ -55,6 +66,8 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
     _nameController.dispose();
     _cageController.dispose();
     _originController.dispose();
+    _sireController.dispose();
+    _damController.dispose();
     super.dispose();
   }
 
@@ -77,6 +90,34 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
     }
   }
 
+  bool _validateStep(int index) {
+    final FormState? form = _stepKeys[index].currentState;
+    return form == null || form.validate();
+  }
+
+  void _handleContinue() {
+    if (!_validateStep(_currentStep)) {
+      return;
+    }
+    if (_currentStep == _stepKeys.length - 1) {
+      _submit();
+    } else {
+      setState(() {
+        _currentStep += 1;
+      });
+    }
+  }
+
+  void _handleCancel() {
+    if (_currentStep == 0) {
+      Navigator.of(context).maybePop();
+    } else {
+      setState(() {
+        _currentStep -= 1;
+      });
+    }
+  }
+
   String? _validateRequired(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Champ obligatoire';
@@ -85,28 +126,28 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
   }
 
   void _submit() {
-    if (!_formKey.currentState!.validate()) {
+    if (!_validateStep(_currentStep)) {
       return;
     }
-    if (_birthDate == null || _entryDate == null) {
+    if (_birthDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez renseigner les dates clés.')),
+        const SnackBar(content: Text('Veuillez indiquer la date de naissance.')),
       );
       return;
     }
 
-    final Animal initial = widget.initial ??
+    final Animal template = widget.initial ??
         Animal(
           id: 'animal-${DateTime.now().millisecondsSinceEpoch}',
           profileId: 'demo-profile',
           speciesId: 1,
           tagId: '',
-          birthDate: DateTime.now(),
+          birthDate: _birthDate!,
           sex: _selectedSex,
           status: _selectedStatus,
         );
 
-    final Animal animal = initial.copyWith(
+    final Animal result = template.copyWith(
       tagId: _tagController.text.trim(),
       name: _nameController.text.trim().isEmpty
           ? null
@@ -122,9 +163,15 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
           : _originController.text.trim(),
       entryDate: _entryDate,
       firstBreedingDate: _firstBreedingDate,
+      sireId: _sireController.text.trim().isEmpty
+          ? null
+          : _sireController.text.trim(),
+      damId: _damController.text.trim().isEmpty
+          ? null
+          : _damController.text.trim(),
     );
 
-    Navigator.of(context).pop(animal);
+    Navigator.of(context).pop(result);
   }
 
   Widget _buildDateField({
@@ -153,26 +200,31 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
+  List<Step> _buildSteps(
+    ThemeData theme,
+    MaterialLocalizations localizations,
+  ) {
     final String? firstBreedingAge = (_firstBreedingDate != null &&
             _birthDate != null)
         ? '${_firstBreedingDate!.difference(_birthDate!).inDays} jours'
         : null;
 
-    return AlertDialog(
-      title: Text(widget.initial == null
-          ? 'Nouvelle fiche animal'
-          : 'Modifier la fiche'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
+    return <Step>[
+      Step(
+        title: const Text('Base'),
+        subtitle: const Text('Identité et naissance'),
+        isActive: _currentStep >= 0,
+        state: _currentStep > 0 ? StepState.complete : StepState.indexed,
+        content: Form(
+          key: _stepKeys[0],
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
+              Text(
+                'Commencez par les informations essentielles afin de créer la fiche.',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _tagController,
                 decoration: const InputDecoration(
@@ -180,13 +232,6 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
                   hintText: 'Numéro de l’animal',
                 ),
                 validator: _validateRequired,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nom',
-                ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -201,6 +246,41 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
                     setState(() => _selectedSex = value);
                   }
                 },
+              ),
+              const SizedBox(height: 12),
+              _buildDateField(
+                label: 'Date de naissance',
+                value: _birthDate,
+                onTap: () => _pickDate(
+                  initialDate: _birthDate,
+                  onSelected: (DateTime value) => _birthDate = value,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      Step(
+        title: const Text('Profil complet'),
+        subtitle: const Text('Informations facultatives'),
+        isActive: _currentStep >= 1,
+        state: _currentStep == 1 ? StepState.editing : StepState.indexed,
+        content: Form(
+          key: _stepKeys[1],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'Affinez la fiche avec les détails utiles pour le suivi quotidien.',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nom',
+                  hintText: 'Optionnel',
+                ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -235,21 +315,14 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
               ),
               const SizedBox(height: 12),
               _buildDateField(
-                label: 'Date de naissance',
-                value: _birthDate,
-                onTap: () => _pickDate(
-                  initialDate: _birthDate,
-                  onSelected: (DateTime value) => _birthDate = value,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildDateField(
                 label: 'Date d’entrée à l’élevage',
                 value: _entryDate,
                 onTap: () => _pickDate(
                   initialDate: _entryDate,
                   onSelected: (DateTime value) => _entryDate = value,
                 ),
+                helper: 'Permet de suivre la durée de présence.',
+                required: false,
               ),
               const SizedBox(height: 12),
               _buildDateField(
@@ -259,41 +332,73 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
                   initialDate: _firstBreedingDate ?? _birthDate,
                   onSelected: (DateTime value) => _firstBreedingDate = value,
                 ),
-                helper: 'Permet de calculer l’âge à la première saillie.',
+                helper: 'Optionnel mais utile pour évaluer la précocité.',
                 required: false,
               ),
               if (firstBreedingAge != null) ...<Widget>[
                 const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Âge à la première saillie : $firstBreedingAge',
-                    style: theme.textTheme.bodySmall,
-                  ),
+                Text(
+                  'Âge à la première saillie : $firstBreedingAge',
+                  style: theme.textTheme.bodySmall,
                 ),
               ],
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Animal entré le ${_entryDate != null ? localizations.formatMediumDate(_entryDate!) : '—'}',
-                  style: theme.textTheme.bodySmall,
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _sireController,
+                decoration: const InputDecoration(
+                  labelText: 'Identifiant du père',
+                  hintText: 'Optionnel',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _damController,
+                decoration: const InputDecoration(
+                  labelText: 'Identifiant de la mère',
+                  hintText: 'Optionnel',
                 ),
               ),
             ],
           ),
         ),
       ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          child: const Text('Annuler'),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final MaterialLocalizations localizations =
+        MaterialLocalizations.of(context);
+
+    return AlertDialog(
+      title: Text(_isEditing ? 'Modifier la fiche' : 'Nouvelle fiche animal'),
+      content: SizedBox(
+        width: 520,
+        child: Stepper(
+          currentStep: _currentStep,
+          type: StepperType.vertical,
+          onStepContinue: _handleContinue,
+          onStepCancel: _handleCancel,
+          controlsBuilder: (BuildContext context, ControlsDetails details) {
+            final bool isLast = _currentStep == _stepKeys.length - 1;
+            return Row(
+              children: <Widget>[
+                FilledButton(
+                  onPressed: details.onStepContinue,
+                  child: Text(isLast ? 'Enregistrer' : 'Continuer'),
+                ),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: details.onStepCancel,
+                  child: Text(_currentStep == 0 ? 'Fermer' : 'Retour'),
+                ),
+              ],
+            );
+          },
+          steps: _buildSteps(theme, localizations),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('Enregistrer'),
-        ),
-      ],
+      ),
     );
   }
 }

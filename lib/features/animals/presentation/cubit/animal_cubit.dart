@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../data/models/animal.dart';
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/services/offline_sync_manager.dart';
+import '../models/animal_quick_filter.dart';
 
 enum AnimalStatus { initial, loading, success, failure }
 
@@ -13,17 +14,26 @@ class AnimalFilters extends Equatable {
     this.sex,
     this.origin,
     this.cageNumber,
+    this.statusQuery,
+    this.includeIds,
+    this.quickLabel,
   });
 
   final String searchTerm;
   final String? sex;
   final String? origin;
   final String? cageNumber;
+  final String? statusQuery;
+  final Set<String>? includeIds;
+  final String? quickLabel;
 
   bool get hasAdvancedFilters =>
       sex != null ||
       (origin != null && origin!.isNotEmpty) ||
-      (cageNumber != null && cageNumber!.isNotEmpty);
+      (cageNumber != null && cageNumber!.isNotEmpty) ||
+      statusQuery != null ||
+      includeIds != null ||
+      quickLabel != null;
 
   AnimalFilters copyWith({
     String? searchTerm,
@@ -33,6 +43,12 @@ class AnimalFilters extends Equatable {
     bool clearOrigin = false,
     String? cageNumber,
     bool clearCageNumber = false,
+    String? statusQuery,
+    bool clearStatusQuery = false,
+    Set<String>? includeIds,
+    bool clearIncludeIds = false,
+    String? quickLabel,
+    bool clearQuickLabel = false,
   }) {
     return AnimalFilters(
       searchTerm: searchTerm ?? this.searchTerm,
@@ -40,6 +56,11 @@ class AnimalFilters extends Equatable {
       origin: clearOrigin ? null : (origin ?? this.origin),
       cageNumber:
           clearCageNumber ? null : (cageNumber ?? this.cageNumber),
+      statusQuery:
+          clearStatusQuery ? null : (statusQuery ?? this.statusQuery),
+      includeIds:
+          clearIncludeIds ? null : (includeIds ?? this.includeIds),
+      quickLabel: clearQuickLabel ? null : (quickLabel ?? this.quickLabel),
     );
   }
 
@@ -67,12 +88,28 @@ class AnimalFilters extends Equatable {
             animal.cageNumber!
                 .toLowerCase()
                 .contains(cageNumber!.toLowerCase()));
+    final bool matchesStatus = statusQuery == null ||
+        animal.status.toLowerCase().contains(statusQuery!.toLowerCase());
+    final bool matchesIds = includeIds == null || includeIds!.contains(animal.id);
 
-    return matchesSearch && matchesSex && matchesOrigin && matchesCage;
+    return matchesSearch &&
+        matchesSex &&
+        matchesOrigin &&
+        matchesCage &&
+        matchesStatus &&
+        matchesIds;
   }
 
   @override
-  List<Object?> get props => <Object?>[searchTerm, sex, origin, cageNumber];
+  List<Object?> get props => <Object?>[
+        searchTerm,
+        sex,
+        origin,
+        cageNumber,
+        statusQuery,
+        includeIds,
+        quickLabel,
+      ];
 }
 
 class AnimalState extends Equatable {
@@ -290,23 +327,52 @@ class AnimalCubit extends Cubit<AnimalState> {
   }
 
   void updateSearchTerm(String searchTerm) {
-    final AnimalFilters filters = AnimalFilters(
+    final AnimalFilters filters = state.filters.copyWith(
       searchTerm: searchTerm,
-      sex: state.filters.sex,
-      origin: state.filters.origin,
-      cageNumber: state.filters.cageNumber,
     );
-    final List<Animal> filtered = _applyFilters(state.allAnimals, filters);
-    emit(state.copyWith(filters: filters, animals: filtered));
+    emit(
+      state.copyWith(
+        filters: filters,
+        animals: _applyFilters(state.allAnimals, filters),
+      ),
+    );
+  }
+
+  void applyQuickFilter(AnimalQuickFilter quickFilter) {
+    final AnimalFilters filters = state.filters.copyWith(
+      sex: quickFilter.sex,
+      statusQuery: quickFilter.statusQuery,
+      includeIds: quickFilter.includeIds,
+      quickLabel: quickFilter.label,
+      clearSex: quickFilter.sex == null,
+      clearStatusQuery: quickFilter.statusQuery == null,
+      clearIncludeIds: quickFilter.includeIds == null,
+      clearQuickLabel: false,
+    );
+    emit(
+      state.copyWith(
+        filters: filters,
+        animals: _applyFilters(state.allAnimals, filters),
+      ),
+    );
   }
 
   void setFilters(AnimalFilters filters) {
-    final AnimalFilters nextFilters = AnimalFilters(
+    final AnimalFilters nextFilters = state.filters.copyWith(
       searchTerm: filters.searchTerm,
       sex: filters.sex,
       origin: filters.origin?.isEmpty == true ? null : filters.origin,
       cageNumber:
           filters.cageNumber?.isEmpty == true ? null : filters.cageNumber,
+      statusQuery: filters.statusQuery,
+      includeIds: filters.includeIds,
+      quickLabel: filters.quickLabel,
+      clearSex: filters.sex == null,
+      clearOrigin: filters.origin == null,
+      clearCageNumber: filters.cageNumber == null,
+      clearStatusQuery: filters.statusQuery == null,
+      clearIncludeIds: filters.includeIds == null,
+      clearQuickLabel: filters.quickLabel == null,
     );
     emit(
       state.copyWith(
@@ -317,8 +383,19 @@ class AnimalCubit extends Cubit<AnimalState> {
   }
 
   void clearAdvancedFilters() {
-    final AnimalFilters filters = AnimalFilters(
-      searchTerm: state.filters.searchTerm,
+    final AnimalFilters filters = state.filters.copyWith(
+      sex: null,
+      origin: null,
+      cageNumber: null,
+      statusQuery: null,
+      includeIds: null,
+      quickLabel: null,
+      clearSex: true,
+      clearOrigin: true,
+      clearCageNumber: true,
+      clearStatusQuery: true,
+      clearIncludeIds: true,
+      clearQuickLabel: true,
     );
     emit(
       state.copyWith(
@@ -329,10 +406,11 @@ class AnimalCubit extends Cubit<AnimalState> {
   }
 
   void clearAllFilters() {
+    const AnimalFilters cleared = AnimalFilters();
     emit(
       state.copyWith(
-        filters: const AnimalFilters(),
-        animals: _applyFilters(state.allAnimals, const AnimalFilters()),
+        filters: cleared,
+        animals: _applyFilters(state.allAnimals, cleared),
       ),
     );
   }

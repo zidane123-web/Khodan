@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -218,89 +221,203 @@ class _AnimalDetailView extends StatelessWidget {
     return BlocBuilder<AnimalDetailCubit, AnimalDetailState>(
       builder: (BuildContext context, AnimalDetailState state) {
         final Animal animal = state.animal;
-        Widget body;
         switch (state.status) {
           case AnimalDetailStatus.initial:
           case AnimalDetailStatus.loading:
-            body = const Center(child: CircularProgressIndicator());
-            break;
+            return Scaffold(
+              appBar: AppBar(
+                title: Text(animal.name ?? animal.tagId),
+              ),
+              body: const Center(child: CircularProgressIndicator()),
+            );
           case AnimalDetailStatus.failure:
-            body = Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text(
-                      state.errorMessage ??
-                          'Impossible de charger la fiche détaillée.',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: () =>
-                          context.read<AnimalDetailCubit>().load(),
-                      child: const Text('Réessayer'),
-                    ),
-                  ],
+            return Scaffold(
+              appBar: AppBar(
+                title: Text(animal.name ?? animal.tagId),
+              ),
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        state.errorMessage ??
+                            'Impossible de charger la fiche détaillée.',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed: () =>
+                            context.read<AnimalDetailCubit>().load(),
+                        child: const Text('Réessayer'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
-            break;
           case AnimalDetailStatus.success:
-            final List<Widget> sections = <Widget>[
-              _IdentityCard(
-                animal: animal,
-                primaryPhoto:
-                    state.gallery.isNotEmpty ? state.gallery.first : null,
-              ),
-              const SizedBox(height: 16),
-              AnimalPerformanceOverview(performance: state.performance!),
-              const SizedBox(height: 16),
-              AnimalPhotoGallery(
-                photos: state.gallery,
-                onAddPhoto: () => _addPhoto(context),
-                onRemovePhoto: state.gallery.isEmpty
-                    ? null
-                    : (String url) => _removePhoto(context, url),
-              ),
-              const SizedBox(height: 16),
-              GenealogyView(
-                animal: animal,
-                analysis: state.genealogy,
-              ),
-              const SizedBox(height: 16),
-              AnimalTimeline(entries: state.timeline),
-            ];
-
-            body = RefreshIndicator(
-              onRefresh: () => context.read<AnimalDetailCubit>().load(),
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                children: sections,
-              ),
-            );
-            break;
-        }
-
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(animal.name ?? animal.tagId),
-            actions: state.status == AnimalDetailStatus.success
-                ? <Widget>[
+            return DefaultTabController(
+              length: 5,
+              child: Scaffold(
+                appBar: AppBar(
+                  title: Text(animal.name ?? animal.tagId),
+                  actions: <Widget>[
                     IconButton(
                       icon: const Icon(Icons.picture_as_pdf_outlined),
                       tooltip: 'Exporter en PDF',
                       onPressed: () => _exportPdf(context, state),
                     ),
-                  ]
-                : null,
-          ),
-          body: body,
-        );
+                  ],
+                  bottom: const TabBar(
+                    isScrollable: true,
+                    tabs: <Widget>[
+                      Tab(text: 'Synthèse'),
+                      Tab(text: 'Reproduction'),
+                      Tab(text: 'Santé'),
+                      Tab(text: 'Généalogie'),
+                      Tab(text: 'Galerie'),
+                    ],
+                  ),
+                ),
+                body: TabBarView(
+                  children: <Widget>[
+                    _buildSummaryTab(context, state),
+                    _buildReproductionTab(context, state),
+                    _buildHealthTab(context, state),
+                    _buildGenealogyTab(context, state),
+                    _buildGalleryTab(context, state),
+                  ],
+                ),
+              ),
+            );
+        }
       },
     );
+  }
+
+  Widget _buildSummaryTab(
+    BuildContext context,
+    AnimalDetailState state,
+  ) {
+    final List<AnimalTimelineEntry> generalTimeline = _filterTimeline(
+      state.timeline,
+      const <AnimalTimelineCategory>{
+        AnimalTimelineCategory.birth,
+        AnimalTimelineCategory.housing,
+        AnimalTimelineCategory.general,
+      },
+    );
+    final List<Widget> sections = <Widget>[
+      _IdentityCard(
+        animal: state.animal,
+        primaryPhoto: state.gallery.isNotEmpty ? state.gallery.first : null,
+      ),
+      AnimalTimeline(
+        entries: generalTimeline,
+        title: 'Historique général',
+        emptyMessage: 'Aucun événement général enregistré.',
+      ),
+    ];
+    return _buildTabContent(context, sections);
+  }
+
+  Widget _buildReproductionTab(
+    BuildContext context,
+    AnimalDetailState state,
+  ) {
+    final List<AnimalTimelineEntry> reproductionTimeline = _filterTimeline(
+      state.timeline,
+      const <AnimalTimelineCategory>{AnimalTimelineCategory.breeding},
+    );
+    final List<Widget> sections = <Widget>[
+      if (state.performance != null)
+        AnimalPerformanceOverview(performance: state.performance!),
+      _LitterHistoryCard(entries: state.litterStats),
+      AnimalTimeline(
+        entries: reproductionTimeline,
+        title: 'Chronologie de reproduction',
+        emptyMessage: 'Aucune saillie enregistrée pour le moment.',
+      ),
+    ];
+    return _buildTabContent(context, sections);
+  }
+
+  Widget _buildHealthTab(
+    BuildContext context,
+    AnimalDetailState state,
+  ) {
+    final List<AnimalTimelineEntry> healthTimeline = _filterTimeline(
+      state.timeline,
+      const <AnimalTimelineCategory>{
+        AnimalTimelineCategory.health,
+        AnimalTimelineCategory.weight,
+      },
+    );
+    final List<Widget> sections = <Widget>[
+      _WeightHistoryCard(entries: state.weightHistory),
+      AnimalTimeline(
+        entries: healthTimeline,
+        title: 'Suivi santé',
+        emptyMessage: 'Aucun soin enregistré pour cet animal.',
+      ),
+    ];
+    return _buildTabContent(context, sections);
+  }
+
+  Widget _buildGenealogyTab(
+    BuildContext context,
+    AnimalDetailState state,
+  ) {
+    final List<Widget> sections = <Widget>[
+      GenealogyView(
+        animal: state.animal,
+        analysis: state.genealogy,
+      ),
+    ];
+    return _buildTabContent(context, sections);
+  }
+
+  Widget _buildGalleryTab(
+    BuildContext context,
+    AnimalDetailState state,
+  ) {
+    final List<Widget> sections = <Widget>[
+      AnimalPhotoGallery(
+        photos: state.gallery,
+        onAddPhoto: () => _addPhoto(context),
+        onRemovePhoto: state.gallery.isEmpty
+            ? null
+            : (String url) => _removePhoto(context, url),
+      ),
+    ];
+    return _buildTabContent(context, sections);
+  }
+
+  Widget _buildTabContent(
+    BuildContext context,
+    List<Widget> sections,
+  ) {
+    return RefreshIndicator(
+      onRefresh: () => context.read<AnimalDetailCubit>().load(),
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        itemCount: sections.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 16),
+        itemBuilder: (BuildContext context, int index) => sections[index],
+      ),
+    );
+  }
+
+  List<AnimalTimelineEntry> _filterTimeline(
+    List<AnimalTimelineEntry> entries,
+    Set<AnimalTimelineCategory> categories,
+  ) {
+    return entries
+        .where((AnimalTimelineEntry entry) => categories.contains(entry.category))
+        .toList();
   }
 }
 
@@ -380,8 +497,7 @@ class _IdentityCard extends StatelessWidget {
                 if (animal.firstBreedingDate != null)
                   _InfoRow(
                     label: '1ère saillie',
-                    value:
-                        '${MaterialLocalizations.of(context).formatMediumDate(animal.firstBreedingDate!)} · ${animal.firstBreedingDate!.difference(animal.birthDate).inDays} jours',
+                    value: _formatFirstBreedingLabel(context, animal),
                   ),
               ],
             ),
@@ -389,6 +505,15 @@ class _IdentityCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatFirstBreedingLabel(BuildContext context, Animal animal) {
+    final MaterialLocalizations localizations =
+        MaterialLocalizations.of(context);
+    final String date = localizations.formatMediumDate(animal.firstBreedingDate!);
+    final int ageInDays =
+        animal.firstBreedingDate!.difference(animal.birthDate).inDays;
+    return '$date · $ageInDays jours';
   }
 }
 
@@ -413,6 +538,432 @@ class _InfoRow extends StatelessWidget {
           Text(value, style: theme.textTheme.titleMedium),
         ],
       ),
+    );
+  }
+}
+
+class _WeightHistoryCard extends StatelessWidget {
+  const _WeightHistoryCard({required this.entries});
+
+  final List<AnimalWeightEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final MaterialLocalizations localizations =
+        MaterialLocalizations.of(context);
+
+    if (entries.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text('Évolution du poids', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 12),
+              Text(
+                'Aucune pesée enregistrée pour le moment.',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final List<FlSpot> spots = <FlSpot>[
+      for (int i = 0; i < entries.length; i++)
+        FlSpot(i.toDouble(), entries[i].weightKg),
+    ];
+
+    final double minWeight = entries
+        .map((AnimalWeightEntry entry) => entry.weightKg)
+        .reduce(math.min);
+    final double maxWeight = entries
+        .map((AnimalWeightEntry entry) => entry.weightKg)
+        .reduce(math.max);
+    final double range = maxWeight - minWeight;
+    final double padding = range == 0 ? math.max(0.2, maxWeight * 0.1) : range * 0.25;
+    final double minY = math.max(0, minWeight - padding);
+    final double maxY = maxWeight + padding;
+    final double rawInterval = (maxY - minY) / 4;
+    final double interval = rawInterval > 0 ? rawInterval : 0.5;
+    final int step = math.max(1, (entries.length / 4).ceil());
+    final TextStyle tooltipStyle =
+        (theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 12))
+            .copyWith(
+      color: theme.colorScheme.onPrimary,
+      fontWeight: FontWeight.w600,
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text('Évolution du poids', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 220,
+              child: LineChart(
+                LineChartData(
+                  minX: 0,
+                  maxX: (entries.length - 1).toDouble(),
+                  minY: minY,
+                  maxY: maxY,
+                  borderData: FlBorderData(show: false),
+                  gridData: FlGridData(
+                    drawVerticalLine: false,
+                    horizontalInterval: interval,
+                    getDrawingHorizontalLine: (double value) {
+                      return FlLine(
+                        color: theme.colorScheme.outlineVariant,
+                        strokeWidth: 1,
+                        dashArray: const <int>[4, 4],
+                      );
+                    },
+                  ),
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 44,
+                        getTitlesWidget: (double value, TitleMeta meta) {
+                          return Text(
+                            value.toStringAsFixed(1),
+                            style: theme.textTheme.bodySmall,
+                          );
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: 1,
+                        reservedSize: 40,
+                        getTitlesWidget: (double value, TitleMeta meta) {
+                          final int index = value.round();
+                          if (index < 0 || index >= entries.length) {
+                            return const SizedBox.shrink();
+                          }
+                          if (index != 0 &&
+                              index != entries.length - 1 &&
+                              index % step != 0) {
+                            return const SizedBox.shrink();
+                          }
+                          final DateTime date = entries[index].date;
+                          final String label = entries.length > 6
+                              ? localizations.formatShortDate(date)
+                              : localizations.formatMediumDate(date);
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              label,
+                              style: theme.textTheme.bodySmall,
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (LineBarSpot touchedSpot) => theme.colorScheme.primary,
+                      getTooltipItems:
+                          (List<LineBarSpot> touchedSpots) {
+                        return touchedSpots.map((LineBarSpot spot) {
+                          final int index =
+                              spot.x.round().clamp(0, entries.length - 1);
+                          final AnimalWeightEntry entry = entries[index];
+                          final String date =
+                              localizations.formatShortDate(entry.date);
+                          return LineTooltipItem(
+                            '$date\n${spot.y.toStringAsFixed(2)} kg',
+                            tooltipStyle,
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
+                  lineBarsData: <LineChartBarData>[
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: true,
+                      barWidth: 3,
+                      color: theme.colorScheme.primary,
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (
+                          FlSpot spot,
+                          double percent,
+                          LineChartBarData bar,
+                          int index,
+                        ) {
+                          return FlDotCirclePainter(
+                            radius: 3.5,
+                            color: theme.colorScheme.primary,
+                            strokeColor: theme.colorScheme.onPrimary,
+                            strokeWidth: 1,
+                          );
+                        },
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: <Color>[
+                            theme.colorScheme.primary.withValues(alpha: 0.18),
+                            theme.colorScheme.primary.withValues(alpha: 0.02),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LitterHistoryCard extends StatelessWidget {
+  const _LitterHistoryCard({required this.entries});
+
+  final List<AnimalLitterStat> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final MaterialLocalizations localizations =
+        MaterialLocalizations.of(context);
+
+    final bool hasValues = entries.any(
+      (AnimalLitterStat stat) =>
+          stat.kitsBornAlive != null || stat.kitsWeaned != null,
+    );
+
+    if (!hasValues) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text('Historique des portées', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 12),
+              Text(
+                'Aucune portée enregistrée pour cet animal.',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final Color bornColor = theme.colorScheme.primary;
+    final Color weanedColor = theme.colorScheme.tertiary;
+
+    final List<BarChartGroupData> groups = <BarChartGroupData>[
+      for (int i = 0; i < entries.length; i++)
+        BarChartGroupData(
+          x: i,
+          barsSpace: 8,
+          barRods: <BarChartRodData>[
+            BarChartRodData(
+              toY: (entries[i].kitsBornAlive ?? 0).toDouble(),
+              color: bornColor,
+              width: 12,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            BarChartRodData(
+              toY: (entries[i].kitsWeaned ?? 0).toDouble(),
+              color: weanedColor,
+              width: 12,
+              borderRadius: BorderRadius.circular(6),
+            ),
+          ],
+        ),
+    ];
+
+    final int maxValue = entries.fold<int>(
+      0,
+      (int previous, AnimalLitterStat stat) => math.max(
+        previous,
+        math.max(stat.kitsBornAlive ?? 0, stat.kitsWeaned ?? 0),
+      ),
+    );
+    final double maxY = math.max(5, maxValue + 2).toDouble();
+    final int step = math.max(1, (entries.length / 4).ceil());
+    final TextStyle tooltipStyle =
+        (theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 12))
+            .copyWith(
+      color: theme.colorScheme.onPrimary,
+      fontWeight: FontWeight.w600,
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text('Historique des portées', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 240,
+              child: BarChart(
+                BarChartData(
+                  maxY: maxY,
+                  minY: 0,
+                  gridData: FlGridData(
+                    drawVerticalLine: false,
+                    horizontalInterval: 1,
+                    getDrawingHorizontalLine: (double value) {
+                      return FlLine(
+                        color: theme.colorScheme.outlineVariant,
+                        strokeWidth: 1,
+                      );
+                    },
+                  ),
+                  borderData: FlBorderData(show: false),
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 32,
+                        getTitlesWidget: (double value, TitleMeta meta) {
+                          if (value % 1 != 0) {
+                            return const SizedBox.shrink();
+                          }
+                          return Text(
+                            value.toStringAsFixed(0),
+                            style: theme.textTheme.bodySmall,
+                          );
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: 1,
+                        reservedSize: 40,
+                        getTitlesWidget: (double value, TitleMeta meta) {
+                          final int index = value.round();
+                          if (index < 0 || index >= entries.length) {
+                            return const SizedBox.shrink();
+                          }
+                          if (index != 0 &&
+                              index != entries.length - 1 &&
+                              index % step != 0) {
+                            return const SizedBox.shrink();
+                          }
+                          final DateTime date = entries[index].date;
+                          final String label = entries.length > 6
+                              ? localizations.formatShortDate(date)
+                              : localizations.formatMediumDate(date);
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              label,
+                              style: theme.textTheme.bodySmall,
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  barTouchData: BarTouchData(
+                    enabled: true,
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipColor: (BarChartGroupData group) => theme.colorScheme.primary,
+                      getTooltipItem: (
+                        BarChartGroupData group,
+                        int groupIndex,
+                        BarChartRodData rod,
+                        int rodIndex,
+                      ) {
+                        final AnimalLitterStat stat = entries[groupIndex];
+                        final String category =
+                            rodIndex == 0 ? 'Nés vivants' : 'Sevrés';
+                        final int? rawValue =
+                            rodIndex == 0 ? stat.kitsBornAlive : stat.kitsWeaned;
+                        final String valueLabel = rawValue?.toString() ?? '—';
+                        final String date =
+                            localizations.formatShortDate(stat.date);
+                        return BarTooltipItem(
+                          '$date\n$category : $valueLabel',
+                          tooltipStyle,
+                        );
+                      },
+                    ),
+                  ),
+                  barGroups: groups,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: <Widget>[
+                _LegendIndicator(color: bornColor, label: 'Nés vivants'),
+                _LegendIndicator(color: weanedColor, label: 'Sevrés'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LegendIndicator extends StatelessWidget {
+  const _LegendIndicator({
+    required this.color,
+    required this.label,
+  });
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: theme.textTheme.bodySmall),
+      ],
     );
   }
 }

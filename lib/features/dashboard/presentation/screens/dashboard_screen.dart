@@ -5,12 +5,14 @@ import 'package:go_router/go_router.dart';
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
+import '../../../animals/presentation/models/animal_quick_filter.dart';
 import '../cubit/dashboard_cubit.dart';
 import '../widgets/alerts_list.dart';
 import '../widgets/breeding_performance_card.dart';
 import '../widgets/dashboard_calendar.dart';
 import '../widgets/kpi_card.dart';
 import '../widgets/tasks_list.dart';
+import '../../../../app/config/router.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -31,7 +33,7 @@ class DashboardScreen extends StatelessWidget {
 class _DashboardView extends StatelessWidget {
   const _DashboardView();
 
-  Future<void> _openKpiPreferences(
+  Future<void> _openCustomization(
     BuildContext context,
     DashboardState state,
   ) async {
@@ -44,18 +46,23 @@ class _DashboardView extends StatelessWidget {
       }
     }
 
-    final List<DashboardKpiType>? result =
-        await showModalBottomSheet<List<DashboardKpiType>>(
+    final _DashboardCustomizationResult? result =
+        await showModalBottomSheet<_DashboardCustomizationResult>(
       context: context,
       isScrollControlled: true,
-      builder: (BuildContext context) => _KpiPreferencesSheet(
+      builder: (BuildContext context) => _DashboardCustomizationSheet(
         initialOrder: initialOrder,
         state: state,
       ),
     );
 
     if (result != null) {
-      cubit.updateKpiOrder(result);
+      cubit
+        ..updateKpiOrder(result.kpiOrder)
+        ..updateModulePreferences(
+          order: result.moduleOrder,
+          hidden: result.hiddenModules,
+        );
     }
   }
 
@@ -90,34 +97,10 @@ class _DashboardView extends StatelessWidget {
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: <Widget>[
                   SliverPadding(
-                    padding: const EdgeInsets.all(16),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate(
-                        <Widget>[
-                          Text(
-                            'Indicateurs clés',
-                            style: theme.textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 12),
-                          _DashboardKpiGrid(state: state),
-                          const SizedBox(height: 24),
-                          AlertsList(alerts: state.alerts),
-                          const SizedBox(height: 24),
-                          DashboardCalendar(events: state.calendarEvents),
-                          const SizedBox(height: 24),
-                          BreedingPerformanceCard(stats: state.performance),
-                          const SizedBox(height: 24),
-                          TasksList(
-                            title: 'Aujourd’hui',
-                            tasks: state.todayTasks,
-                          ),
-                          const SizedBox(height: 16),
-                          TasksList(
-                            title: 'À venir',
-                            tasks: state.upcomingTasks,
-                          ),
-                        ],
-                      ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    sliver: SliverToBoxAdapter(
+                      child: _DashboardModuleGrid(state: state),
                     ),
                   ),
                 ],
@@ -132,8 +115,8 @@ class _DashboardView extends StatelessWidget {
             actions: <Widget>[
               IconButton(
                 icon: const Icon(Icons.tune),
-                tooltip: 'Personnaliser les indicateurs',
-                onPressed: () => _openKpiPreferences(context, state),
+                tooltip: 'Personnaliser le tableau de bord',
+                onPressed: () => _openCustomization(context, state),
               ),
               IconButton(
                 icon: const Icon(Icons.notifications_outlined),
@@ -169,24 +152,200 @@ class _DashboardKpiGrid extends StatelessWidget {
       }
     }
 
+    final Map<DashboardKpiType, DashboardKpiFilter> filters = state.kpiFilters;
+
     return Wrap(
       spacing: 12,
       runSpacing: 12,
       children: order.take(4).map((DashboardKpiType type) {
         final _KpiPresentation presentation = presentations[type]!;
+        final DashboardKpiFilter? filter = filters[type];
         return KpiCard(
           title: presentation.title,
           value: presentation.value,
           subtitle: presentation.subtitle,
           icon: presentation.icon,
+          onTap: filter == null
+              ? null
+              : () {
+                  context.go(
+                    const AnimalsRoute().location,
+                    extra: AnimalQuickFilter(
+                      label: filter.label,
+                      sex: filter.sex,
+                      statusQuery: filter.statusQuery,
+                      includeIds: filter.includeIds == null
+                          ? null
+                          : Set<String>.from(filter.includeIds!),
+                    ),
+                  );
+                },
         );
       }).toList(),
     );
   }
 }
 
-class _KpiPreferencesSheet extends StatefulWidget {
-  const _KpiPreferencesSheet({
+class _DashboardModuleGrid extends StatelessWidget {
+  const _DashboardModuleGrid({required this.state});
+
+  final DashboardState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final List<DashboardModuleType> modules = state.moduleOrder
+        .where((DashboardModuleType type) =>
+            !state.hiddenModules.contains(type))
+        .toList();
+
+    if (modules.isEmpty) {
+      return _buildInfoCard(
+        theme,
+        title: 'Aucun widget sélectionné',
+        icon: Icons.dashboard_customize,
+        message:
+            'Activez des widgets depuis le menu de personnalisation pour composer votre tableau de bord.',
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double width = constraints.maxWidth;
+        final int columns = width >= 1100
+            ? 3
+            : width >= 760
+                ? 2
+                : 1;
+        final double spacing = 12;
+        final double itemWidth = columns == 1
+            ? width
+            : (width - spacing * (columns - 1)) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: modules.map((DashboardModuleType type) {
+            final Widget module = _buildModule(theme, type);
+            return SizedBox(
+              width: columns == 1 ? width : itemWidth,
+              child: module,
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildModule(ThemeData theme, DashboardModuleType type) {
+    switch (type) {
+      case DashboardModuleType.kpis:
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text('Indicateurs clés', style: theme.textTheme.titleLarge),
+                const SizedBox(height: 12),
+                _DashboardKpiGrid(state: state),
+              ],
+            ),
+          ),
+        );
+      case DashboardModuleType.alerts:
+        return AlertsList(alerts: state.alerts);
+      case DashboardModuleType.calendar:
+        return DashboardCalendar(events: state.calendarEvents);
+      case DashboardModuleType.tasksToday:
+        return TasksList(
+          title: 'Aujourd’hui',
+          tasks: state.todayTasks,
+        );
+      case DashboardModuleType.tasksUpcoming:
+        return TasksList(
+          title: 'À venir',
+          tasks: state.upcomingTasks,
+        );
+      case DashboardModuleType.performance:
+        return BreedingPerformanceCard(stats: state.performance);
+      case DashboardModuleType.weightTracking:
+        return _buildInfoCard(
+          theme,
+          title: 'Suivi des poids',
+          icon: Icons.monitor_weight,
+          message:
+              'Ajoutez des évènements de pesée à vos animaux pour visualiser leur évolution directement ici.',
+        );
+      case DashboardModuleType.healthAlerts:
+        return _buildInfoCard(
+          theme,
+          title: 'Alertes santé',
+          icon: Icons.medical_services_outlined,
+          message:
+              'Planifiez les traitements et vaccinations pour recevoir des rappels automatiques.',
+        );
+      case DashboardModuleType.feedInventory:
+        return _buildInfoCard(
+          theme,
+          title: 'Inventaire des aliments',
+          icon: Icons.inventory_2_outlined,
+          message:
+              'Suivez vos stocks d’aliments et anticipez les réapprovisionnements.',
+        );
+    }
+  }
+
+  Widget _buildInfoCard(
+    ThemeData theme, {
+    required String title,
+    required IconData icon,
+    required String message,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Icon(icon, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleLarge,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardCustomizationResult {
+  const _DashboardCustomizationResult({
+    required this.kpiOrder,
+    required this.moduleOrder,
+    required this.hiddenModules,
+  });
+
+  final List<DashboardKpiType> kpiOrder;
+  final List<DashboardModuleType> moduleOrder;
+  final Set<DashboardModuleType> hiddenModules;
+}
+
+class _DashboardCustomizationSheet extends StatefulWidget {
+  const _DashboardCustomizationSheet({
     required this.initialOrder,
     required this.state,
   });
@@ -195,11 +354,15 @@ class _KpiPreferencesSheet extends StatefulWidget {
   final DashboardState state;
 
   @override
-  State<_KpiPreferencesSheet> createState() => _KpiPreferencesSheetState();
+  State<_DashboardCustomizationSheet> createState() =>
+      _DashboardCustomizationSheetState();
 }
 
-class _KpiPreferencesSheetState extends State<_KpiPreferencesSheet> {
+class _DashboardCustomizationSheetState
+    extends State<_DashboardCustomizationSheet> {
   late List<DashboardKpiType> _order;
+  late List<DashboardModuleType> _moduleOrder;
+  late Set<DashboardModuleType> _hiddenModules;
 
   @override
   void initState() {
@@ -210,6 +373,13 @@ class _KpiPreferencesSheetState extends State<_KpiPreferencesSheet> {
         _order.add(type);
       }
     }
+    _moduleOrder = List<DashboardModuleType>.from(widget.state.moduleOrder);
+    for (final DashboardModuleType type in DashboardModuleType.values) {
+      if (!_moduleOrder.contains(type)) {
+        _moduleOrder.add(type);
+      }
+    }
+    _hiddenModules = Set<DashboardModuleType>.from(widget.state.hiddenModules);
   }
 
   void _onReorder(int oldIndex, int newIndex) {
@@ -222,6 +392,16 @@ class _KpiPreferencesSheetState extends State<_KpiPreferencesSheet> {
     });
   }
 
+  void _onModuleReorder(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+      final DashboardModuleType item = _moduleOrder.removeAt(oldIndex);
+      _moduleOrder.insert(newIndex, item);
+    });
+  }
+
   void _reset() {
     setState(() {
       _order = List<DashboardKpiType>.from(const DashboardState().kpiOrder);
@@ -230,7 +410,63 @@ class _KpiPreferencesSheetState extends State<_KpiPreferencesSheet> {
           _order.add(type);
         }
       }
+      _moduleOrder =
+          List<DashboardModuleType>.from(const DashboardState().moduleOrder);
+      for (final DashboardModuleType type in DashboardModuleType.values) {
+        if (!_moduleOrder.contains(type)) {
+          _moduleOrder.add(type);
+        }
+      }
+      _hiddenModules = Set<DashboardModuleType>.from(
+        const DashboardState().hiddenModules,
+      );
     });
+  }
+
+  String _moduleLabel(DashboardModuleType type) {
+    switch (type) {
+      case DashboardModuleType.kpis:
+        return 'Indicateurs clés';
+      case DashboardModuleType.alerts:
+        return 'Alertes de santé';
+      case DashboardModuleType.calendar:
+        return 'Calendrier';
+      case DashboardModuleType.tasksToday:
+        return 'Tâches du jour';
+      case DashboardModuleType.tasksUpcoming:
+        return 'Tâches à venir';
+      case DashboardModuleType.performance:
+        return 'Performances repro';
+      case DashboardModuleType.weightTracking:
+        return 'Suivi des poids';
+      case DashboardModuleType.healthAlerts:
+        return 'Alertes santé avancées';
+      case DashboardModuleType.feedInventory:
+        return 'Inventaire des aliments';
+    }
+  }
+
+  String _moduleDescription(DashboardModuleType type) {
+    switch (type) {
+      case DashboardModuleType.kpis:
+        return 'Résumé rapide des métriques clés.';
+      case DashboardModuleType.alerts:
+        return 'Notifications importantes et rappels critiques.';
+      case DashboardModuleType.calendar:
+        return 'Vue condensée des évènements à venir.';
+      case DashboardModuleType.tasksToday:
+        return 'Actions à réaliser dans la journée.';
+      case DashboardModuleType.tasksUpcoming:
+        return 'Préparez les tâches des prochains jours.';
+      case DashboardModuleType.performance:
+        return 'Statistiques globales de reproduction.';
+      case DashboardModuleType.weightTracking:
+        return 'Synthèse des pesées enregistrées.';
+      case DashboardModuleType.healthAlerts:
+        return 'Suivi des traitements et soins en cours.';
+      case DashboardModuleType.feedInventory:
+        return 'Gestion des stocks d’aliments.';
+    }
   }
 
   @override
@@ -240,7 +476,7 @@ class _KpiPreferencesSheetState extends State<_KpiPreferencesSheet> {
         _buildAllKpiPresentations(widget.state);
 
     return FractionallySizedBox(
-      heightFactor: 0.85,
+      heightFactor: 0.9,
       child: SafeArea(
         child: Padding(
           padding: EdgeInsets.only(
@@ -298,7 +534,8 @@ class _KpiPreferencesSheetState extends State<_KpiPreferencesSheet> {
                       key: ValueKey<DashboardKpiType>(type),
                       margin: const EdgeInsets.symmetric(vertical: 6),
                       color: isHighlighted
-                          ? theme.colorScheme.primaryContainer.withAlpha((255 * 0.3).round())
+                          ? theme.colorScheme.primaryContainer
+                              .withAlpha((255 * 0.3).round())
                           : null,
                       child: ListTile(
                         leading: Icon(presentation.icon),
@@ -315,6 +552,49 @@ class _KpiPreferencesSheetState extends State<_KpiPreferencesSheet> {
                   },
                 ),
               ),
+              const SizedBox(height: 16),
+              Text(
+                'Widgets du tableau de bord',
+                style: theme.textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 280,
+                child: ReorderableListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  itemCount: _moduleOrder.length,
+                  onReorder: _onModuleReorder,
+                  buildDefaultDragHandles: false,
+                  itemBuilder: (BuildContext context, int index) {
+                    final DashboardModuleType type = _moduleOrder[index];
+                    final bool isEnabled = !_hiddenModules.contains(type);
+                    return Card(
+                      key: ValueKey<DashboardModuleType>(type),
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      child: SwitchListTile(
+                        contentPadding: const EdgeInsets.only(left: 56, right: 16),
+                        title: Text(_moduleLabel(type)),
+                        subtitle: Text(_moduleDescription(type)),
+                        value: isEnabled,
+                        onChanged: (bool value) {
+                          setState(() {
+                            if (value) {
+                              _hiddenModules.remove(type);
+                            } else {
+                              _hiddenModules.add(type);
+                            }
+                          });
+                        },
+                        secondary: ReorderableDragStartListener(
+                          index: index,
+                          child: const Icon(Icons.drag_indicator),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: <Widget>[
                   TextButton(
@@ -328,8 +608,15 @@ class _KpiPreferencesSheetState extends State<_KpiPreferencesSheet> {
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
-                    onPressed: () => Navigator.of(context)
-                        .pop(List<DashboardKpiType>.from(_order)),
+                    onPressed: () => Navigator.of(context).pop(
+                      _DashboardCustomizationResult(
+                        kpiOrder: List<DashboardKpiType>.from(_order),
+                        moduleOrder:
+                            List<DashboardModuleType>.from(_moduleOrder),
+                        hiddenModules:
+                            Set<DashboardModuleType>.from(_hiddenModules),
+                      ),
+                    ),
                     child: const Text('Enregistrer'),
                   ),
                 ],

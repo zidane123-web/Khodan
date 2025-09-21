@@ -5,10 +5,14 @@ import '../cubit/animal_detail_cubit.dart';
 class AnimalTimeline extends StatelessWidget {
   const AnimalTimeline({
     required this.entries,
+    this.title = 'Historique complet',
+    this.emptyMessage = 'Aucun événement enregistré pour le moment.',
     super.key,
   });
 
   final List<AnimalTimelineEntry> entries;
+  final String title;
+  final String emptyMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -20,13 +24,13 @@ class AnimalTimeline extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              'Historique complet',
+              title,
               style: theme.textTheme.titleLarge,
             ),
             const SizedBox(height: 12),
             if (entries.isEmpty)
               Text(
-                'Aucun événement enregistré pour le moment.',
+                emptyMessage,
                 style: theme.textTheme.bodyMedium,
               )
             else
