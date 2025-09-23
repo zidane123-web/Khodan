@@ -87,7 +87,7 @@ class _GalleryTile extends StatelessWidget {
             fit: BoxFit.cover,
             errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
               return Container(
-                color: theme.colorScheme.surfaceVariant,
+                color: theme.colorScheme.surfaceContainerHighest,
                 alignment: Alignment.center,
                 child: const Icon(Icons.image_not_supported_outlined),
               );
@@ -99,7 +99,7 @@ class _GalleryTile extends StatelessWidget {
               right: 4,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withAlpha((255 * 0.5).round()),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: IconButton(

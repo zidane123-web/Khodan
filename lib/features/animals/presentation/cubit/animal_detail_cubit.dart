@@ -8,6 +8,7 @@ import '../../../../data/models/event.dart';
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
+import '../../domain/genealogy_analyzer.dart';
 
 enum AnimalDetailStatus { initial, loading, success, failure }
 
@@ -18,6 +19,7 @@ class AnimalDetailState extends Equatable {
     this.timeline = const <AnimalTimelineEntry>[],
     this.performance,
     this.gallery = const <String>[],
+    this.genealogy,
     this.errorMessage,
   });
 
@@ -26,6 +28,7 @@ class AnimalDetailState extends Equatable {
   final List<AnimalTimelineEntry> timeline;
   final AnimalPerformanceStats? performance;
   final List<String> gallery;
+  final GenealogyAnalysis? genealogy;
   final String? errorMessage;
 
   AnimalDetailState copyWith({
@@ -34,6 +37,7 @@ class AnimalDetailState extends Equatable {
     List<AnimalTimelineEntry>? timeline,
     AnimalPerformanceStats? performance,
     List<String>? gallery,
+    GenealogyAnalysis? genealogy,
     String? errorMessage,
   }) {
     return AnimalDetailState(
@@ -42,6 +46,7 @@ class AnimalDetailState extends Equatable {
       timeline: timeline ?? this.timeline,
       performance: performance ?? this.performance,
       gallery: gallery ?? this.gallery,
+      genealogy: genealogy ?? this.genealogy,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
@@ -53,6 +58,7 @@ class AnimalDetailState extends Equatable {
         timeline,
         performance,
         gallery,
+        genealogy,
         errorMessage,
       ];
 }
@@ -76,6 +82,7 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
       final Map<String, Animal> animalsById = <String, Animal>{
         for (final Animal animal in animals) animal.id: animal,
       };
+      final GenealogyAnalyzer analyzer = GenealogyAnalyzer(animalsById);
 
       final List<BreedingRecord> records =
           await _breedingRepository.fetchBreedingRecords();
@@ -107,6 +114,7 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
       );
 
       final List<String> gallery = _buildInitialGallery(state.animal);
+      final GenealogyAnalysis genealogy = analyzer.analyze(state.animal.id);
 
       emit(
         state.copyWith(
@@ -114,6 +122,7 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
           timeline: timeline,
           performance: performance,
           gallery: gallery,
+          genealogy: genealogy,
           errorMessage: null,
         ),
       );

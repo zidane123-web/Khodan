@@ -4,35 +4,40 @@ publish_to: 'none'
 version: 0.1.0
 
 environment:
-  sdk: ^3.8.1
+  sdk: '>=3.8.1 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations: # <--- AJOUTÉ
+    sdk: flutter         # <--- AJOUTÉ
   supabase_flutter: ^2.6.0
   go_router: ^14.2.1
   flutter_bloc: ^8.1.6
   equatable: ^2.0.5
 
-  # --- Nouvelles dépendances ajoutées ---
-
-  # Pour la galerie d'images
+  # --- Pour la galerie d'images ---
   image_picker: ^1.1.2
   image_cropper: ^7.0.5
 
-  # Pour les graphiques et rapports
+  # --- Pour les graphiques et rapports ---
   fl_chart: ^0.68.0
 
-  # Pour le mode hors-ligne (base de données locale)
+  # --- Pour le mode hors-ligne (base de données locale) ---
   drift: ^2.17.0
   connectivity_plus: ^6.0.3
+  shared_preferences: ^2.3.2
 
-  # Pour le scan de QR Code
+  # --- Pour le scan de QR Code ---
   mobile_scanner: ^5.1.1
 
-  # Pour l'export PDF et le partage
+  # --- Pour l'export PDF et le partage ---
   pdf: ^3.10.8
+  printing: ^5.13.1
   share_plus: ^9.0.0
+  
+  # --- Suggestion pour le tableau de bord personnalisable ---
+  reorderable_grid_view: ^2.2.8
 
 
 dev_dependencies:

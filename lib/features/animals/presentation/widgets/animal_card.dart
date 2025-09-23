@@ -8,6 +8,10 @@ class AnimalCard extends StatelessWidget {
     this.onTap,
     this.onEdit,
     this.onDelete,
+    this.onQuickBreed,
+    this.selectionEnabled = false,
+    this.isSelected = false,
+    this.onSelectionChanged,
     super.key,
   });
 
@@ -15,6 +19,10 @@ class AnimalCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onQuickBreed;
+  final bool selectionEnabled;
+  final bool isSelected;
+  final ValueChanged<bool>? onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -26,13 +34,32 @@ class AnimalCard extends StatelessWidget {
     final MaterialLocalizations localizations =
         MaterialLocalizations.of(context);
 
+    final bool isFemale = animal.sex.toLowerCase().contains('fem');
+
+    void handleSelection() {
+      if (selectionEnabled && onSelectionChanged != null) {
+        onSelectionChanged!(!isSelected);
+      } else {
+        onTap?.call();
+      }
+    }
+
     return Card(
       child: ListTile(
-        onTap: onTap,
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primaryContainer,
-          child: Text(animal.tagId),
-        ),
+        onTap: handleSelection,
+        leading: selectionEnabled
+            ? Checkbox(
+                value: isSelected,
+                onChanged: (bool? value) {
+                  if (onSelectionChanged != null && value != null) {
+                    onSelectionChanged!(value);
+                  }
+                },
+              )
+            : CircleAvatar(
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Text(animal.tagId),
+              ),
         title: Text(animal.name ?? animal.tagId),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,7 +98,7 @@ class AnimalCard extends StatelessWidget {
             ),
           ],
         ),
-        trailing: (onEdit != null || onDelete != null)
+        trailing: (onEdit != null || onDelete != null || onQuickBreed != null)
             ? PopupMenuButton<String>(
                 onSelected: (String value) {
                   switch (value) {
@@ -81,9 +108,17 @@ class AnimalCard extends StatelessWidget {
                     case 'delete':
                       onDelete?.call();
                       break;
+                    case 'breed':
+                      onQuickBreed?.call();
+                      break;
                   }
                 },
                 itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  if (onQuickBreed != null && isFemale)
+                    const PopupMenuItem<String>(
+                      value: 'breed',
+                      child: Text('Nouvelle saillie'),
+                    ),
                   if (onEdit != null)
                     const PopupMenuItem<String>(
                       value: 'edit',

@@ -298,7 +298,7 @@ class _KpiPreferencesSheetState extends State<_KpiPreferencesSheet> {
                       key: ValueKey<DashboardKpiType>(type),
                       margin: const EdgeInsets.symmetric(vertical: 6),
                       color: isHighlighted
-                          ? theme.colorScheme.primaryContainer.withOpacity(0.3)
+                          ? theme.colorScheme.primaryContainer.withAlpha((255 * 0.3).round())
                           : null,
                       child: ListTile(
                         leading: Icon(presentation.icon),
@@ -363,8 +363,7 @@ Map<DashboardKpiType, _KpiPresentation> _buildAllKpiPresentations(
 ) {
   final Map<DashboardKpiType, _KpiPresentation> map =
       <DashboardKpiType, _KpiPresentation>{};
-  final List<DashboardTask> allTasks = <DashboardTask>[...state.todayTasks]
-    ..addAll(state.upcomingTasks);
+  final List<DashboardTask> allTasks = <DashboardTask>[...state.todayTasks, ...state.upcomingTasks];
   final int plannedWithinWeek = allTasks
       .where((DashboardTask task) => task.kind == DashboardTaskKind.mating)
       .length;

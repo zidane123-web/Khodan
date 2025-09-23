@@ -1,12 +1,20 @@
+// lib/features/animals/presentation/screens/animal_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../data/models/animal.dart';
+import '../../../../data/models/breeding_record.dart';
+import '../../../../data/models/event.dart';
 import '../../../../data/repositories/animal_repository.dart';
+import '../../../../data/repositories/breeding_repository.dart';
+import '../../../../data/repositories/event_repository.dart';
+import '../../../events/presentation/widgets/batch_event_form_dialog.dart';
+import '../../../events/presentation/widgets/breeding_record_form.dart';
 import '../cubit/animal_cubit.dart';
 import '../widgets/animal_card.dart';
-import '../widgets/animal_form_dialog.dart';
 import 'animal_detail_screen.dart';
+import 'animal_form_screen.dart';
+import 'scan_animal_screen.dart';
 
 class AnimalListScreen extends StatelessWidget {
   const AnimalListScreen({super.key});
@@ -30,12 +38,18 @@ class _AnimalListView extends StatefulWidget {
 
 class _AnimalListViewState extends State<_AnimalListView> {
   late final TextEditingController _searchController;
+  late final EventRepository _eventRepository;
+  late final BreedingRepository _breedingRepository;
+  bool _selectionMode = false;
+  final Set<String> _selectedIds = <String>{};
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
     _searchController.addListener(_onSearchChanged);
+    _eventRepository = InMemoryEventRepository();
+    _breedingRepository = InMemoryBreedingRepository();
   }
 
   @override
@@ -49,27 +63,139 @@ class _AnimalListViewState extends State<_AnimalListView> {
     context.read<AnimalCubit>().updateSearchTerm(_searchController.text);
   }
 
-  Future<void> _createAnimal() async {
-    final Animal? newAnimal = await AnimalFormDialog.show(context);
-    if (newAnimal != null && mounted) {
-      await context.read<AnimalCubit>().createAnimal(newAnimal);
-      if (!mounted) {
-        return;
+  void _toggleSelectionMode() {
+    setState(() {
+      _selectionMode = !_selectionMode;
+      if (!_selectionMode) {
+        _selectedIds.clear();
       }
+    });
+  }
+
+  void _updateSelection(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedIds.add(id);
+      } else {
+        _selectedIds.remove(id);
+      }
+    });
+  }
+
+  void _selectAll(List<Animal> animals) {
+    setState(() {
+      if (_selectedIds.length == animals.length) {
+        _selectedIds.clear();
+      } else {
+        _selectedIds
+          ..clear()
+          ..addAll(animals.map((Animal animal) => animal.id));
+      }
+    });
+  }
+
+  Future<void> _createAnimal() async {
+    // Pass the cubit to the new screen
+    final newAnimal = await Navigator.of(context).push<Animal>(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<AnimalCubit>(),
+          child: const AnimalFormScreen(),
+        ),
+      ),
+    );
+
+    if (newAnimal != null && mounted) {
+      // The create logic is now handled inside the form screen
+      // So we just refresh the list
+      await context.read<AnimalCubit>().fetchAnimals();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Fiche animal créée.')),
       );
     }
   }
 
-  Future<void> _editAnimal(Animal animal) async {
-    final Animal? updated =
-        await AnimalFormDialog.show(context, initial: animal);
-    if (updated != null && mounted) {
-      await context.read<AnimalCubit>().updateAnimal(updated);
+  Future<void> _openQuickBreeding(Animal animal, AnimalState state) async {
+    final BreedingRecord? record = await BreedingRecordFormDialog.show(
+      context,
+      animals: state.allAnimals,
+      initialDoeId: animal.id,
+    );
+
+    if (record != null && mounted) {
+      await _breedingRepository.createBreedingRecord(record);
       if (!mounted) {
         return;
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Saillie enregistrée pour ${animal.name ?? animal.tagId}.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openBatchEventForm(List<Animal> animals) async {
+    final List<LivestockEvent>? created = await BatchEventFormDialog.show(
+      context,
+      animals: animals,
+      repository: _eventRepository,
+    );
+
+    if (created != null && created.isNotEmpty && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            created.length > 1
+                ? '${created.length} évènements créés.'
+                : 'Évènement créé.',
+          ),
+        ),
+      );
+      setState(() {
+        _selectedIds.clear();
+        _selectionMode = false;
+      });
+    }
+  }
+
+  Future<void> _openScanner(AnimalState state) async {
+    final Animal? result = await Navigator.of(context).push<Animal>(
+      MaterialPageRoute<Animal>(
+        builder: (BuildContext context) =>
+            ScanAnimalScreen(animals: state.allAnimals),
+      ),
+    );
+    if (result != null && mounted) {
+      if (!mounted) {
+        return;
+      }
+      await Navigator.of(context).push(
+        MaterialPageRoute<Widget>(
+          builder: (BuildContext context) => AnimalDetailScreen(animal: result),
+        ),
+      );
+    }
+  }
+
+  Future<void> _editAnimal(Animal animal) async {
+    // Pass the cubit to the new screen
+    final updatedAnimal = await Navigator.of(context).push<Animal>(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<AnimalCubit>(),
+          child: AnimalFormScreen(animal: animal),
+        ),
+      ),
+    );
+    if (updatedAnimal != null && mounted) {
+      // The update logic is now handled inside the form screen
+      // So we just refresh the list
+      await context.read<AnimalCubit>().fetchAnimals();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Fiche animal mise à jour.')),
       );
@@ -208,8 +334,16 @@ class _AnimalListViewState extends State<_AnimalListView> {
                         AnimalDetailScreen(animal: animal),
                   ),
                 ),
-                onEdit: () => _editAnimal(animal),
-                onDelete: () => _deleteAnimal(animal),
+                onEdit: _selectionMode ? null : () => _editAnimal(animal),
+                onDelete: _selectionMode ? null : () => _deleteAnimal(animal),
+                onQuickBreed: _selectionMode
+                    ? null
+                    : () => _openQuickBreeding(animal, state),
+                selectionEnabled: _selectionMode,
+                isSelected: _selectedIds.contains(animal.id),
+                onSelectionChanged: _selectionMode
+                    ? (bool selected) => _updateSelection(animal.id, selected)
+                    : null,
               );
             },
           );
@@ -264,12 +398,26 @@ class _AnimalListViewState extends State<_AnimalListView> {
       },
       child: BlocBuilder<AnimalCubit, AnimalState>(
         builder: (BuildContext context, AnimalState state) {
+          final List<Animal> currentAnimals = state.animals;
+          final bool hasSelection = _selectedIds.isNotEmpty;
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Mes animaux'),
+              leading: _selectionMode
+                  ? IconButton(
+                      icon: const Icon(Icons.close),
+                      tooltip: 'Fermer la sélection',
+                      onPressed: _toggleSelectionMode,
+                    )
+                  : null,
+              title: Text(
+                _selectionMode
+                    ? '${_selectedIds.length} sélectionné(s)'
+                    : 'Mes animaux',
+              ),
               actions: <Widget>[
-                if (state.filters.searchTerm.isNotEmpty ||
-                    state.filters.hasAdvancedFilters)
+                if (!_selectionMode &&
+                    (state.filters.searchTerm.isNotEmpty ||
+                        state.filters.hasAdvancedFilters))
                   IconButton(
                     tooltip: 'Réinitialiser les filtres',
                     icon: const Icon(Icons.filter_alt_off),
@@ -278,18 +426,64 @@ class _AnimalListViewState extends State<_AnimalListView> {
                       context.read<AnimalCubit>().clearAllFilters();
                     },
                   ),
+                if (!_selectionMode)
+                  IconButton(
+                    icon: const Icon(Icons.filter_alt_outlined),
+                    tooltip: 'Filtres',
+                    onPressed: () => _openFilters(state),
+                  ),
+                if (!_selectionMode)
+                  IconButton(
+                    icon: const Icon(Icons.qr_code_scanner),
+                    tooltip: 'Scanner un identifiant',
+                    onPressed: () => _openScanner(state),
+                  ),
+                if (_selectionMode)
+                  IconButton(
+                    icon: const Icon(Icons.select_all),
+                    tooltip: 'Tout sélectionner',
+                    onPressed: () => _selectAll(currentAnimals),
+                  ),
                 IconButton(
-                  icon: const Icon(Icons.filter_alt_outlined),
-                  tooltip: 'Filtres',
-                  onPressed: () => _openFilters(state),
+                  icon: Icon(
+                    _selectionMode ? Icons.check_box : Icons.check_box_outlined,
+                  ),
+                  tooltip:
+                      _selectionMode ? 'Quitter la sélection' : 'Sélection multiple',
+                  onPressed: _toggleSelectionMode,
                 ),
               ],
             ),
             body: _buildBody(state),
-            floatingActionButton: FloatingActionButton.extended(
-              onPressed: _createAnimal,
-              icon: const Icon(Icons.add),
-              label: const Text('Nouvelle fiche'),
+            floatingActionButton: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: _selectionMode
+                  ? FloatingActionButton.extended(
+                      key: const ValueKey<String>('batch-event'),
+                      onPressed: hasSelection
+                          ? () {
+                              final List<Animal> selected = currentAnimals
+                                  .where(
+                                    (Animal animal) =>
+                                        _selectedIds.contains(animal.id),
+                                  )
+                                  .toList();
+                              _openBatchEventForm(selected);
+                            }
+                          : null,
+                      icon: const Icon(Icons.playlist_add_check),
+                      label: Text(
+                        hasSelection
+                            ? 'Évènement groupé (${_selectedIds.length})'
+                            : 'Sélectionner des animaux',
+                      ),
+                    )
+                  : FloatingActionButton.extended(
+                      key: const ValueKey<String>('new-animal'),
+                      onPressed: _createAnimal,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Nouvelle fiche'),
+                    ),
             ),
           );
         },

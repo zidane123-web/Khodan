@@ -122,7 +122,7 @@ class _DashboardCalendarState extends State<DashboardCalendar> {
                     isToday ? theme.colorScheme.primary : theme.dividerColor,
               ),
               color: isToday
-                  ? theme.colorScheme.primary.withOpacity(0.08)
+                  ? theme.colorScheme.primary.withAlpha((255 * 0.08).round())
                   : theme.colorScheme.surface,
             ),
             child: Column(
@@ -181,7 +181,7 @@ class _DashboardCalendarState extends State<DashboardCalendar> {
                         ],
                       ),
                     );
-                  }).toList(),
+                  }),
                 if (events.length > 3)
                   Text(
                     '+${events.length - 3} autres',
@@ -284,7 +284,7 @@ class _DashboardCalendarState extends State<DashboardCalendar> {
             width: isToday ? 1.5 : 1,
           ),
           color:
-              isToday ? theme.colorScheme.primary.withOpacity(0.08) : null,
+              isToday ? theme.colorScheme.primary.withAlpha((255 * 0.08).round()) : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

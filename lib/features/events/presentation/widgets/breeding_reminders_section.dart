@@ -78,7 +78,7 @@ class BreedingRemindersSection extends StatelessWidget {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

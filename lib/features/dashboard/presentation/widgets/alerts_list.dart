@@ -39,7 +39,7 @@ class AlertsList extends StatelessWidget {
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
-                      backgroundColor: color.withOpacity(0.12),
+                      backgroundColor: color.withAlpha((255 * 0.12).round()),
                       foregroundColor: color,
                       child: Icon(icon),
                     ),

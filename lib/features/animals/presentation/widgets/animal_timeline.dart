@@ -64,7 +64,7 @@ class _TimelineItem extends StatelessWidget {
             children: <Widget>[
               CircleAvatar(
                 radius: 12,
-                backgroundColor: color.withOpacity(0.15),
+                backgroundColor: color.withAlpha((255 * 0.15).round()),
                 foregroundColor: color,
                 child: Icon(icon, size: 16),
               ),
