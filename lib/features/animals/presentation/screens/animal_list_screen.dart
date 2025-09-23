@@ -1,3 +1,4 @@
+// lib/features/animals/presentation/screens/animal_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -11,8 +12,8 @@ import '../../../events/presentation/widgets/batch_event_form_dialog.dart';
 import '../../../events/presentation/widgets/breeding_record_form.dart';
 import '../cubit/animal_cubit.dart';
 import '../widgets/animal_card.dart';
-import '../widgets/animal_form_dialog.dart';
 import 'animal_detail_screen.dart';
+import 'animal_form_screen.dart';
 import 'scan_animal_screen.dart';
 
 class AnimalListScreen extends StatelessWidget {
@@ -94,12 +95,21 @@ class _AnimalListViewState extends State<_AnimalListView> {
   }
 
   Future<void> _createAnimal() async {
-    final Animal? newAnimal = await AnimalFormDialog.show(context);
+    // Pass the cubit to the new screen
+    final newAnimal = await Navigator.of(context).push<Animal>(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<AnimalCubit>(),
+          child: const AnimalFormScreen(),
+        ),
+      ),
+    );
+
     if (newAnimal != null && mounted) {
-      await context.read<AnimalCubit>().createAnimal(newAnimal);
-      if (!mounted) {
-        return;
-      }
+      // The create logic is now handled inside the form screen
+      // So we just refresh the list
+      await context.read<AnimalCubit>().fetchAnimals();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Fiche animal créée.')),
       );
@@ -172,13 +182,20 @@ class _AnimalListViewState extends State<_AnimalListView> {
   }
 
   Future<void> _editAnimal(Animal animal) async {
-    final Animal? updated =
-        await AnimalFormDialog.show(context, initial: animal);
-    if (updated != null && mounted) {
-      await context.read<AnimalCubit>().updateAnimal(updated);
-      if (!mounted) {
-        return;
-      }
+    // Pass the cubit to the new screen
+    final updatedAnimal = await Navigator.of(context).push<Animal>(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<AnimalCubit>(),
+          child: AnimalFormScreen(animal: animal),
+        ),
+      ),
+    );
+    if (updatedAnimal != null && mounted) {
+      // The update logic is now handled inside the form screen
+      // So we just refresh the list
+      await context.read<AnimalCubit>().fetchAnimals();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Fiche animal mise à jour.')),
       );

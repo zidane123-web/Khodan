@@ -4,11 +4,13 @@ publish_to: 'none'
 version: 0.1.0
 
 environment:
-  sdk: ^3.8.1
+  sdk: '>=3.8.1 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations: # <--- AJOUTÉ
+    sdk: flutter         # <--- AJOUTÉ
   supabase_flutter: ^2.6.0
   go_router: ^14.2.1
   flutter_bloc: ^8.1.6
@@ -31,11 +33,11 @@ dependencies:
 
   # --- Pour l'export PDF et le partage ---
   pdf: ^3.10.8
-  printing: ^5.13.4
+  printing: ^5.13.1
   share_plus: ^9.0.0
   
   # --- Suggestion pour le tableau de bord personnalisable ---
-  reorderable_grid_view: ^4.1.0
+  reorderable_grid_view: ^2.2.8
 
 
 dev_dependencies:

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; // <-- 1. IMPORTATION AJOUTÉE
 
 import 'app/config/router.dart';
 import 'app/config/theme.dart';
@@ -42,6 +43,18 @@ class KhodanApp extends StatelessWidget {
         theme: buildKhodanTheme(),
         routerConfig: KhodanRouter().router,
         debugShowCheckedModeBanner: false,
+
+        // --- 2. CONFIGURATION DE LA LOCALISATION AJOUTÉE ---
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('fr', ''), // Français
+          // Ajoutez d'autres langues ici si nécessaire
+        ],
+        // ----------------------------------------------------
       ),
     );
   }

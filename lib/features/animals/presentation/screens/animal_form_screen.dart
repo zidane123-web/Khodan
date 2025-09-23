@@ -1,0 +1,485 @@
+// lib/features/animals/presentation/screens/animal_form_screen.dart
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../../data/models/animal.dart';
+import '../cubit/animal_cubit.dart';
+
+class AnimalFormScreen extends StatefulWidget {
+  const AnimalFormScreen({super.key, this.animal});
+
+  final Animal? animal;
+
+  @override
+  State<AnimalFormScreen> createState() => _AnimalFormScreenState();
+}
+
+class _AnimalFormScreenState extends State<AnimalFormScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _tagController;
+  late final TextEditingController _nameController;
+  late final TextEditingController _cageController;
+  late final TextEditingController _originController;
+
+  late String _selectedSex;
+  late String _selectedStatus;
+  DateTime? _birthDate;
+  DateTime? _entryDate;
+  DateTime? _firstBreedingDate;
+  String? _sireId;
+  String? _damId;
+  XFile? _imageFile;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeForm(widget.animal);
+  }
+
+  void _initializeForm(Animal? initial) {
+    _tagController = TextEditingController(text: initial?.tagId ?? '');
+    _nameController = TextEditingController(text: initial?.name ?? '');
+    _cageController = TextEditingController(text: initial?.cageNumber ?? '');
+    _originController = TextEditingController(text: initial?.origin ?? '');
+    _selectedSex = initial?.sex ?? 'Femelle';
+    _selectedStatus = initial?.status ?? 'Vivant';
+    _birthDate = initial?.birthDate ?? DateTime.now();
+    _entryDate = initial?.entryDate ?? DateTime.now();
+    _firstBreedingDate = initial?.firstBreedingDate;
+    _sireId = initial?.sireId;
+    _damId = initial?.damId;
+    _imageFile = initial?.imageUrl != null ? XFile(initial!.imageUrl!) : null;
+  }
+
+  @override
+  void dispose() {
+    _tagController.dispose();
+    _nameController.dispose();
+    _cageController.dispose();
+    _originController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (BuildContext context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Galerie'),
+              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Appareil photo'),
+              onTap: () => Navigator.of(context).pop(ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source != null) {
+      final XFile? pickedFile = await picker.pickImage(source: source);
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = pickedFile;
+        });
+      }
+    }
+  }
+
+  Animal? _submit() {
+    if (!_formKey.currentState!.validate()) {
+      return null;
+    }
+
+    // --- Date Validation ---
+    if (_entryDate!.isBefore(_birthDate!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                "La date d'entrée ne peut pas être antérieure à la date de naissance.")),
+      );
+      return null;
+    }
+    if (_firstBreedingDate != null &&
+        _firstBreedingDate!.isBefore(_birthDate!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'La date de première saillie ne peut pas être antérieure à la date de naissance.')),
+      );
+      return null;
+    }
+
+    final Animal baseAnimal = widget.animal ??
+        Animal(
+          id: 'animal-${DateTime.now().millisecondsSinceEpoch}',
+          profileId: 'demo-profile', // This should be dynamic in a real app
+          speciesId: 1, // Default to rabbit for now
+          tagId: '',
+          birthDate: _birthDate!,
+          sex: _selectedSex,
+          status: _selectedStatus,
+        );
+
+    final Animal result = baseAnimal.copyWith(
+      tagId: _tagController.text.trim(),
+      name:
+          _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
+      sex: _selectedSex,
+      status: _selectedStatus,
+      birthDate: _birthDate,
+      entryDate: _entryDate,
+      firstBreedingDate: _firstBreedingDate,
+      cageNumber: _cageController.text.trim().isEmpty
+          ? null
+          : _cageController.text.trim(),
+      origin: _originController.text.trim().isEmpty
+          ? null
+          : _originController.text.trim(),
+      sireId: _sireId,
+      damId: _damId,
+      imageUrl: _imageFile?.path,
+    );
+
+    return result;
+  }
+
+  void _submitAndClose() {
+    final animal = _submit();
+    if (animal != null) {
+      Navigator.of(context).pop(animal);
+    }
+  }
+
+  void _submitAndReset() {
+    final animal = _submit();
+    if (animal != null) {
+      // Add the animal to the state via the cubit
+      if (widget.animal == null) {
+        context.read<AnimalCubit>().createAnimal(animal);
+      } else {
+        context.read<AnimalCubit>().updateAnimal(animal);
+      }
+
+      // Show a confirmation message
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text('${animal.tagId} a été enregistré.')),
+        );
+
+      // Reset the form for a new entry
+      setState(() {
+        _formKey.currentState?.reset();
+        _initializeForm(null); // Reset all fields to default for a new animal
+      });
+    }
+  }
+
+  Future<void> _pickDate(
+      {required DateTime? initialDate,
+      required ValueChanged<DateTime> onSelected}) async {
+    final DateTime now = DateTime.now();
+    final DateTime? result = await showDatePicker(
+      context: context,
+      initialDate: initialDate ?? now,
+      firstDate: DateTime(now.year - 10),
+      lastDate: DateTime(now.year + 1),
+    );
+    if (result != null) {
+      setState(() {
+        onSelected(result);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isEditing = widget.animal != null;
+    final ThemeData theme = Theme.of(context);
+
+    final allAnimals = context.read<AnimalCubit>().state.allAnimals;
+    final males = allAnimals
+        .where((a) =>
+            a.sex.toLowerCase().contains('mâ') ||
+            a.sex.toLowerCase().contains('mal'))
+        .toList();
+    final females =
+        allAnimals.where((a) => a.sex.toLowerCase().contains('fem')).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(isEditing ? 'Modifier la fiche' : 'Nouvel animal'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            tooltip: 'Enregistrer',
+            onPressed: _submitAndClose,
+          ),
+        ],
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: <Widget>[
+            // --- Section Photo ---
+            GestureDetector(
+              onTap: _pickImage,
+              child: Card(
+                clipBehavior: Clip.antiAlias,
+                child: Container(
+                  height: 200,
+                  width: double.infinity,
+                  child: _imageFile != null
+                      ? Image.file(
+                          File(_imageFile!.path),
+                          fit: BoxFit.cover,
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_a_photo_outlined,
+                                size: 64, color: theme.colorScheme.primary),
+                            const SizedBox(height: 8),
+                            const Text('Ajouter une photo'),
+                          ],
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // --- Section Identification ---
+            Text('Identification', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _tagController,
+                      decoration:
+                          const InputDecoration(labelText: 'Identifiant (Tag)'),
+                      validator: (value) =>
+                          value?.isEmpty ?? true ? 'Champ obligatoire' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _nameController,
+                      decoration:
+                          const InputDecoration(labelText: 'Nom (Optionnel)'),
+                    ),
+                    const SizedBox(height: 16),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('Sexe'),
+                    ),
+                    const SizedBox(height: 8),
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'Femelle', label: Text('Femelle')),
+                        ButtonSegment(value: 'Mâle', label: Text('Mâle')),
+                      ],
+                      selected: {_selectedSex},
+                      onSelectionChanged: (Set<String> newSelection) {
+                        setState(() {
+                          _selectedSex = newSelection.first;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _selectedStatus,
+                      decoration: const InputDecoration(labelText: 'Statut'),
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'Vivant', child: Text('Vivant')),
+                        DropdownMenuItem(value: 'Vendu', child: Text('Vendu')),
+                        DropdownMenuItem(value: 'Mort', child: Text('Mort')),
+                        DropdownMenuItem(
+                            value: 'Réformé', child: Text('Réformé')),
+                      ],
+                      onChanged: (String? value) {
+                        if (value != null) {
+                          setState(() => _selectedStatus = value);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // --- Section Généalogie ---
+            Text('Généalogie', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: _sireId,
+                      decoration: const InputDecoration(labelText: 'Père (Sire)'),
+                      items: males
+                          .map((animal) => DropdownMenuItem(
+                              value: animal.id, child: Text(animal.tagId)))
+                          .toList(),
+                      onChanged: (value) => setState(() => _sireId = value),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _damId,
+                      decoration: const InputDecoration(labelText: 'Mère (Dam)'),
+                      items: females
+                          .map((animal) => DropdownMenuItem(
+                              value: animal.id, child: Text(animal.tagId)))
+                          .toList(),
+                      onChanged: (value) => setState(() => _damId = value),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // --- Section Dates et Origine ---
+            Text('Dates et Origine', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _DateField(
+                      label: 'Date de naissance',
+                      date: _birthDate,
+                      onTap: () => _pickDate(
+                        initialDate: _birthDate,
+                        onSelected: (date) => _birthDate = date,
+                      ),
+                      validator: (value) =>
+                          value == null ? 'Date obligatoire' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    _DateField(
+                      label: "Date d'entrée",
+                      date: _entryDate,
+                      onTap: () => _pickDate(
+                        initialDate: _entryDate,
+                        onSelected: (date) => _entryDate = date,
+                      ),
+                      validator: (value) =>
+                          value == null ? 'Date obligatoire' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    _DateField(
+                      label: 'Première saillie (Optionnel)',
+                      date: _firstBreedingDate,
+                      onTap: () => _pickDate(
+                        initialDate: _firstBreedingDate,
+                        onSelected: (date) => _firstBreedingDate = date,
+                      ),
+                      validator: (_) => null, // Not required
+                    ),
+                     const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _originController,
+                      decoration:
+                          const InputDecoration(labelText: 'Origine (Optionnel)'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _cageController,
+                      decoration:
+                          const InputDecoration(labelText: 'Cage (Optionnel)'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // --- Section Actions ---
+            if (!isEditing) // Show only on new animal screen
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.add),
+                      onPressed: _submitAndReset,
+                      label: const Text('Enregistrer et Ajouter'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _submitAndClose,
+                      child: const Text('Enregistrer'),
+                    ),
+                  ),
+                ],
+              )
+            else
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _submitAndClose,
+                  child: const Text('Enregistrer les modifications'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Helper widget for date fields to avoid repetition
+class _DateField extends StatelessWidget {
+  const _DateField({
+    required this.label,
+    required this.date,
+    required this.onTap,
+    this.validator,
+  });
+
+  final String label;
+  final DateTime? date;
+  final VoidCallback onTap;
+  final FormFieldValidator<DateTime?>? validator;
+
+  @override
+  Widget build(BuildContext context) {
+    final MaterialLocalizations localizations =
+        MaterialLocalizations.of(context);
+    return TextFormField(
+      readOnly: true,
+      controller: TextEditingController(
+        text: date != null ? localizations.formatMediumDate(date!) : '',
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        suffixIcon: const Icon(Icons.calendar_today_outlined),
+      ),
+      onTap: onTap,
+      validator: (value) {
+        if (validator != null) {
+          return validator!(date);
+        }
+        return null;
+      },
+    );
+  }
+}
