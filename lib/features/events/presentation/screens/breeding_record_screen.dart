@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../../data/models/animal.dart';
 import '../../../../data/models/breeding_record.dart';
-import '../../animals/domain/genealogy_analyzer.dart';
+import '../../../animals/domain/genealogy_analyzer.dart';
 
 class BreedingRecordScreen extends StatefulWidget {
   const BreedingRecordScreen({
@@ -233,6 +233,12 @@ class _BreedingRecordScreenState extends State<BreedingRecordScreen> {
     );
   }
 
+  void _createKits() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Bientôt disponible !')),
+    );
+  }
+
   Widget _buildDateTile({
     required String title,
     required IconData icon,
@@ -340,7 +346,7 @@ class _BreedingRecordScreenState extends State<BreedingRecordScreen> {
     final double value =
         _pairingCoefficient!.clamp(0.0, 0.125).toDouble();
     final double normalized = value / 0.125;
-    final _RiskLevel risk = _RiskLevel.fromValue(_pairingCoefficient!);
+    final _RiskLevel risk = _riskLevelFromValue(_pairingCoefficient!);
     final Color color = risk.color(theme);
     final String message = risk.message(_pairingCoefficient!);
 
@@ -368,7 +374,7 @@ class _BreedingRecordScreenState extends State<BreedingRecordScreen> {
           child: LinearProgressIndicator(
             value: normalized.isFinite ? normalized : 0,
             minHeight: 10,
-            backgroundColor: theme.colorScheme.surfaceVariant,
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
@@ -411,7 +417,7 @@ class _BreedingRecordScreenState extends State<BreedingRecordScreen> {
                     Text('Accouplement', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _selectedDoeId,
+                      initialValue: _selectedDoeId,
                       decoration: const InputDecoration(
                         labelText: 'Femelle',
                       ),
@@ -436,7 +442,7 @@ class _BreedingRecordScreenState extends State<BreedingRecordScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _selectedBuckId,
+                      initialValue: _selectedBuckId,
                       decoration: const InputDecoration(
                         labelText: 'Mâle',
                       ),
@@ -508,7 +514,7 @@ class _BreedingRecordScreenState extends State<BreedingRecordScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _palpationResult,
+                      initialValue: _palpationResult,
                       decoration: const InputDecoration(
                         labelText: 'Résultat',
                       ),
@@ -623,6 +629,18 @@ class _BreedingRecordScreenState extends State<BreedingRecordScreen> {
                 child: const Text('Enregistrer la saillie'),
               ),
             ),
+            if (widget.initial != null && (_parseInt(_bornAliveController.text) ?? 0) > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text('Créer les fiches des lapereaux'),
+                    onPressed: _createKits,
+                  ),
+                ),
+              ),
             const SizedBox(height: 24),
           ],
         ),
@@ -678,7 +696,7 @@ class _TimelineStepTile extends StatelessWidget {
             children: <Widget>[
               CircleAvatar(
                 radius: 14,
-                backgroundColor: indicatorColor.withOpacity(0.15),
+                backgroundColor: indicatorColor.withAlpha((255 * 0.15).round()),
                 child: Icon(
                   data.icon,
                   size: 16,
@@ -689,7 +707,7 @@ class _TimelineStepTile extends StatelessWidget {
                 Container(
                   width: 2,
                   height: 48,
-                  color: indicatorColor.withOpacity(0.3),
+                  color: indicatorColor.withAlpha((255 * 0.3).round()),
                 ),
             ],
           ),
@@ -853,7 +871,7 @@ class _KindlingSection extends StatelessWidget {
           const SizedBox(height: 12),
           DecoratedBox(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceVariant,
+              color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Padding(
@@ -986,7 +1004,7 @@ class _WeaningCard extends StatelessWidget {
               const SizedBox(height: 12),
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceVariant,
+                  color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Padding(
@@ -1016,19 +1034,19 @@ class _WeaningCard extends StatelessWidget {
   }
 }
 
+_RiskLevel _riskLevelFromValue(double value) {
+  if (value >= 0.0625) {
+    return _RiskLevel.high;
+  }
+  if (value >= 0.03125) {
+    return _RiskLevel.medium;
+  }
+  return _RiskLevel.low;
+}
+
 enum _RiskLevel { low, medium, high }
 
 extension on _RiskLevel {
-  static _RiskLevel fromValue(double value) {
-    if (value >= 0.0625) {
-      return _RiskLevel.high;
-    }
-    if (value >= 0.03125) {
-      return _RiskLevel.medium;
-    }
-    return _RiskLevel.low;
-  }
-
   Color color(ThemeData theme) {
     switch (this) {
       case _RiskLevel.low:
