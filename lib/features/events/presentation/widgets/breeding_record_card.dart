@@ -10,6 +10,7 @@ class BreedingRecordCard extends StatelessWidget {
     required this.buck,
     this.onEdit,
     this.onDelete,
+    this.onCreateKits,
     super.key,
   });
 
@@ -18,6 +19,7 @@ class BreedingRecordCard extends StatelessWidget {
   final Animal? buck;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onCreateKits;
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +117,24 @@ class BreedingRecordCard extends StatelessWidget {
               Text('Notes', style: theme.textTheme.titleSmall),
               const SizedBox(height: 4),
               Text(record.notes!),
+            ],
+            if ((record.kitsBornAlive ?? 0) > 0) ...<Widget>[
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.tonalIcon(
+                  icon: const Icon(Icons.pets),
+                  onPressed: onCreateKits ??
+                      () => ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Rendez-vous dans la liste des animaux pour ajouter la portée.',
+                              ),
+                            ),
+                          ),
+                  label: const Text('Créer les fiches des lapereaux'),
+                ),
+              ),
             ],
           ],
         ),
