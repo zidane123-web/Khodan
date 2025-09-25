@@ -8,7 +8,7 @@ import '../../../../data/models/event.dart';
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
-import '../../../events/presentation/screens/breeding_record_screen.dart';
+import '../../../events/presentation/screens/add_breeding_record_screen.dart';
 import '../../../events/presentation/widgets/batch_event_form_dialog.dart';
 import '../cubit/animal_cubit.dart';
 import '../widgets/animal_card.dart';
@@ -117,10 +117,13 @@ class _AnimalListViewState extends State<_AnimalListView> {
   }
 
   Future<void> _openQuickBreeding(Animal animal, AnimalState state) async {
-    final BreedingRecord? record = await BreedingRecordScreen.show(
-      context,
-      animals: state.allAnimals,
-      initialDoeId: animal.id,
+    final BreedingRecord? record = await Navigator.of(context).push<BreedingRecord>(
+      MaterialPageRoute<BreedingRecord>(
+        builder: (_) => AddBreedingRecordScreen(
+          animals: state.allAnimals,
+          initialDoeId: animal.id,
+        ),
+      ),
     );
 
     if (record != null && mounted) {

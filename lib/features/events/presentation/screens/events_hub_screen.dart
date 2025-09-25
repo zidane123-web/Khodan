@@ -8,7 +8,7 @@ import '../../../../data/repositories/breeding_repository.dart';
 import '../cubit/breeding_cubit.dart';
 import '../widgets/event_timeline.dart';
 import '../widgets/reproduction_tab.dart';
-import 'breeding_record_screen.dart';
+import 'add_breeding_record_screen.dart';
 
 class EventsHubScreen extends StatelessWidget {
   const EventsHubScreen({super.key});
@@ -69,9 +69,12 @@ class _EventsHubViewState extends State<_EventsHubView>
       return;
     }
 
-    final BreedingRecord? record = await BreedingRecordScreen.show(
-      context,
-      animals: state.animals,
+    final BreedingRecord? record = await Navigator.of(context).push<BreedingRecord>(
+      MaterialPageRoute<BreedingRecord>(
+        builder: (_) => AddBreedingRecordScreen(
+          animals: state.animals,
+        ),
+      ),
     );
 
     if (!mounted || record == null) {

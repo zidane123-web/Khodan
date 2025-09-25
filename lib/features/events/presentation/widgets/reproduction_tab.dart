@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../data/models/animal.dart';
 import '../../../../data/models/breeding_record.dart';
 import '../../presentation/cubit/breeding_cubit.dart';
+import '../screens/add_breeding_record_screen.dart';
 import 'breeding_record_card.dart';
 import 'breeding_reminders_section.dart';
 import '../screens/breeding_record_screen.dart';
@@ -11,15 +12,26 @@ import '../screens/breeding_record_screen.dart';
 class ReproductionTabView extends StatelessWidget {
   const ReproductionTabView({super.key});
 
+  void _viewRecord(BuildContext context, BreedingRecord record) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => BreedingRecordScreen(record: record),
+      ),
+    );
+  }
+
   Future<void> _editRecord(
     BuildContext context,
     BreedingRecord record,
   ) async {
     final BreedingCubit cubit = context.read<BreedingCubit>();
-    final BreedingRecord? updated = await BreedingRecordScreen.show(
-      context,
-      animals: cubit.state.animals,
-      initial: record,
+    final BreedingRecord? updated = await Navigator.of(context).push<BreedingRecord>(
+      MaterialPageRoute<BreedingRecord>(
+        builder: (_) => AddBreedingRecordScreen(
+          animals: cubit.state.animals,
+          initial: record,
+        ),
+      ),
     );
     if (updated != null && context.mounted) {
       await cubit.updateRecord(updated);
@@ -140,6 +152,7 @@ class ReproductionTabView extends StatelessWidget {
                       record: record,
                       doe: animalsById[record.doeId],
                       buck: animalsById[record.buckId],
+                      onTap: () => _viewRecord(context, record),
                       onEdit: () => _editRecord(context, record),
                       onDelete: () => _deleteRecord(context, record),
                       onCreateKits: () => _promptCreateKits(context, record),

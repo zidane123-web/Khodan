@@ -6,4 +6,7 @@ flutter run --dart-define-from-file=.env (lien plus court)
 
 flutter pub get
 
+git stash
+git stash pop (pour récupérer les modifications mises de côté)
+
 supabase migrations new Nom_du_fichier

@@ -8,6 +8,7 @@ class BreedingRecordCard extends StatelessWidget {
     required this.record,
     required this.doe,
     required this.buck,
+    this.onTap,
     this.onEdit,
     this.onDelete,
     this.onCreateKits,
@@ -17,6 +18,7 @@ class BreedingRecordCard extends StatelessWidget {
   final BreedingRecord record;
   final Animal? doe;
   final Animal? buck;
+  final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onCreateKits;
@@ -31,112 +33,115 @@ class BreedingRecordCard extends StatelessWidget {
     final String pairingLabel = '$doeLabel × $buckLabel';
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(pairingLabel, style: theme.textTheme.titleMedium),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Saillie du ${localizations.formatMediumDate(record.matingDate)}',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                ),
-                if (onEdit != null || onDelete != null)
-                  PopupMenuButton<String>(
-                    onSelected: (String value) {
-                      switch (value) {
-                        case 'edit':
-                          onEdit?.call();
-                          break;
-                        case 'delete':
-                          onDelete?.call();
-                          break;
-                      }
-                    },
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                      if (onEdit != null)
-                        const PopupMenuItem<String>(
-                          value: 'edit',
-                          child: Text('Modifier'),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(pairingLabel, style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Saillie du ${localizations.formatMediumDate(record.matingDate)}',
+                          style: theme.textTheme.bodyMedium,
                         ),
-                      if (onDelete != null)
-                        const PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Text('Supprimer'),
-                        ),
-                    ],
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: record.tasks
-                  .map(
-                    (BreedingTask task) => Chip(
-                      avatar: Icon(
-                        _iconForTask(task.type),
-                        size: 18,
-                        color: task.isCompleted
-                            ? theme.colorScheme.onSecondaryContainer
-                            : theme.colorScheme.onPrimaryContainer,
-                      ),
-                      label: Text(
-                        '${_labelForTask(task.type)} · ${localizations.formatMediumDate(task.dueDate)}',
-                      ),
-                      backgroundColor: task.isCompleted
-                          ? theme.colorScheme.secondaryContainer
-                          : task.isOverdue
-                              ? theme.colorScheme.errorContainer
-                              : theme.colorScheme.primaryContainer,
+                      ],
                     ),
-                  )
-                  .toList(),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _statusLabel(localizations),
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
-            ..._buildSummaryLines(context),
-            if (record.notes != null && record.notes!.isNotEmpty) ...<Widget>[
+                  ),
+                  if (onEdit != null || onDelete != null)
+                    PopupMenuButton<String>(
+                      onSelected: (String value) {
+                        switch (value) {
+                          case 'edit':
+                            onEdit?.call();
+                            break;
+                          case 'delete':
+                            onDelete?.call();
+                            break;
+                        }
+                      },
+                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                        if (onEdit != null)
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Text('Modifier'),
+                          ),
+                        if (onDelete != null)
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Text('Supprimer'),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
               const SizedBox(height: 12),
-              Text('Notes', style: theme.textTheme.titleSmall),
-              const SizedBox(height: 4),
-              Text(record.notes!),
-            ],
-            if ((record.kitsBornAlive ?? 0) > 0) ...<Widget>[
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.tonalIcon(
-                  icon: const Icon(Icons.pets),
-                  onPressed: onCreateKits ??
-                      () => ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Rendez-vous dans la liste des animaux pour ajouter la portée.',
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: record.tasks
+                    .map(
+                      (BreedingTask task) => Chip(
+                        avatar: Icon(
+                          _iconForTask(task.type),
+                          size: 18,
+                          color: task.isCompleted
+                              ? theme.colorScheme.onSecondaryContainer
+                              : theme.colorScheme.onPrimaryContainer,
+                        ),
+                        label: Text(
+                          '${_labelForTask(task.type)} · ${localizations.formatMediumDate(task.dueDate)}',
+                        ),
+                        backgroundColor: task.isCompleted
+                            ? theme.colorScheme.secondaryContainer
+                            : task.isOverdue
+                                ? theme.colorScheme.errorContainer
+                                : theme.colorScheme.primaryContainer,
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _statusLabel(localizations),
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              ..._buildSummaryLines(context),
+              if (record.notes != null && record.notes!.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 12),
+                Text('Notes', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 4),
+                Text(record.notes!),
+              ],
+              if ((record.kitsBornAlive ?? 0) > 0) ...<Widget>[
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.tonalIcon(
+                    icon: const Icon(Icons.pets),
+                    onPressed: onCreateKits ??
+                        () => ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Rendez-vous dans la liste des animaux pour ajouter la portée.',
+                                ),
                               ),
                             ),
-                          ),
-                  label: const Text('Créer les fiches des lapereaux'),
+                    label: const Text('Créer les fiches des lapereaux'),
+                  ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
