@@ -44,6 +44,11 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
   DateTime? _weaningDate;
   double? _pairingCoefficient;
 
+  // Trigger UI refresh when numeric fields change so summaries update live.
+  void _onNumbersChanged() {
+    if (mounted) setState(() {});
+  }
+
   List<Animal> get _does => widget.animals
       .where(
         (Animal animal) =>
@@ -96,6 +101,12 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
     };
     _analyzer = GenealogyAnalyzer(animalsById);
     _refreshPairingCoefficient();
+    // Listen to numeric field changes to recompute summaries in UI
+    _bornAliveController.addListener(_onNumbersChanged);
+    _bornDeadController.addListener(_onNumbersChanged);
+    _adoptedController.addListener(_onNumbersChanged);
+    _removedController.addListener(_onNumbersChanged);
+    _weanedController.addListener(_onNumbersChanged);
   }
 
   @override
@@ -154,6 +165,41 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
       return;
     }
 
+    // Additional validations
+    if (_selectedDoeId == _selectedBuckId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La femelle et le male doivent etre differents.')),
+      );
+      return;
+    }
+
+    final Animal? doe = _findAnimalById(_selectedDoeId);
+    final Animal? buck = _findAnimalById(_selectedBuckId);
+    if (doe != null && _matingDate.isBefore(doe.birthDate)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Date de saillie invalide pour la femelle (avant sa naissance).')),
+      );
+      return;
+    }
+    if (buck != null && _matingDate.isBefore(buck.birthDate)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Date de saillie invalide pour le male (avant sa naissance).')),
+      );
+      return;
+    }
+
+    final int alive = _parseInt(_bornAliveController.text) ?? 0;
+    final int adopted = _parseInt(_adoptedController.text) ?? 0;
+    final int removed = _parseInt(_removedController.text) ?? 0;
+    final int availableAtWeaning = (alive + adopted - removed) < 0 ? 0 : (alive + adopted - removed);
+    final int weaned = _parseInt(_weanedController.text) ?? 0;
+    if (weaned > availableAtWeaning) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sevres ($weaned) > disponibles ($availableAtWeaning).')),
+      );
+      return;
+    }
+
     final BreedingRecord base = widget.initial ??
         BreedingRecord(
           id: 'breeding-${DateTime.now().millisecondsSinceEpoch}',
@@ -203,6 +249,14 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
 
   double? _parseDouble(String value) {
     return value.trim().isEmpty ? null : double.tryParse(value.trim());
+  }
+
+  Animal? _findAnimalById(String? id) {
+    if (id == null) return null;
+    for (final Animal a in widget.animals) {
+      if (a.id == id) return a;
+    }
+    return null;
   }
 
   Future<void> _declareKindlingManually() async {
@@ -368,6 +422,35 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
     );
   }
 
+  Widget _buildSelectedAnimalInfo(Animal? animal) {
+    if (animal == null) return const SizedBox.shrink();
+    final int ageDays = animal.ageInDays;
+    final int months = ageDays ~/ 30;
+    final int days = ageDays % 30;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: <Widget>[
+          Chip(
+            label: Text('Age: ${months}m ${days}j'),
+            visualDensity: VisualDensity.compact,
+          ),
+          if (animal.cageNumber != null && animal.cageNumber!.trim().isNotEmpty)
+            Chip(
+              label: Text('Cage ${animal.cageNumber}'),
+              visualDensity: VisualDensity.compact,
+            ),
+          Chip(
+            label: Text(animal.status),
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -421,6 +504,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
                         _refreshPairingCoefficient();
                       },
                     ),
+                    _buildSelectedAnimalInfo(_findAnimalById(_selectedDoeId)),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       initialValue: _selectedBuckId,
@@ -446,6 +530,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
                         _refreshPairingCoefficient();
                       },
                     ),
+                    _buildSelectedAnimalInfo(_findAnimalById(_selectedBuckId)),
                     const SizedBox(height: 12),
                     _buildDateTile(
                       title: 'Date de saillie',
@@ -563,6 +648,18 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 8),
+            Builder(
+              builder: (BuildContext context) {
+                final int alive = _parseInt(_bornAliveController.text) ?? 0;
+                final int dead = _parseInt(_bornDeadController.text) ?? 0;
+                final int adopted = _parseInt(_adoptedController.text) ?? 0;
+                final int removed = _parseInt(_removedController.text) ?? 0;
+                final int totalBorn = alive + dead;
+                final int toRaise = (alive + adopted - removed) < 0 ? 0 : (alive + adopted - removed);
+                return Text('Total nes: $totalBorn · A elever: $toRaise', style: theme.textTheme.bodySmall);
+              },
+            ),
             const SizedBox(height: 16),
             _WeaningCard(
               enabled: _palpationResult == 'positive' || _kindlingDate != null,
@@ -579,6 +676,9 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
               },
               weanedController: _weanedController,
               weightController: _weightController,
+              availableAtWeaning: (_parseInt(_bornAliveController.text) ?? 0)
+                  + (_parseInt(_adoptedController.text) ?? 0)
+                  - (_parseInt(_removedController.text) ?? 0),
               onRequestManualKindling: _declareKindlingManually,
             ),
             const SizedBox(height: 16),
@@ -889,6 +989,7 @@ class _WeaningCard extends StatelessWidget {
     required this.onClearDate,
     required this.weanedController,
     required this.weightController,
+    required this.availableAtWeaning,
     required this.onRequestManualKindling,
   });
 
@@ -899,6 +1000,7 @@ class _WeaningCard extends StatelessWidget {
   final VoidCallback onClearDate;
   final TextEditingController weanedController;
   final TextEditingController weightController;
+  final int availableAtWeaning;
   final Future<void> Function() onRequestManualKindling;
 
   @override
@@ -976,6 +1078,12 @@ class _WeaningCard extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Disponible au sevrage: '
+                      '${availableAtWeaning < 0 ? 0 : availableAtWeaning}',
+                      style: theme.textTheme.bodySmall,
                     ),
                   ],
                 ),
