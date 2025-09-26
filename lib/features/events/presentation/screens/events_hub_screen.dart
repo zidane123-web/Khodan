@@ -143,6 +143,10 @@ class _EventsHubViewState extends State<_EventsHubView>
       appBar: AppBar(
         title: const Text('Evenements'),
         bottom: TabBar(
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: Colors.white,
+          
           controller: _tabController,
           tabs: const <Widget>[
             Tab(text: 'Reproduction'),
@@ -209,6 +213,7 @@ class _EventsTab extends StatelessWidget {
     return EventTimeline(events: _demoEventsForCategory());
   }
 }
+
 
 
 
