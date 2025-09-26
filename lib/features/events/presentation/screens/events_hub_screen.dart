@@ -54,7 +54,7 @@ class _EventsHubViewState extends State<_EventsHubView>
     if (state.status == BreedingStatus.loading) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Chargement des données de reproduction…'),
+          content: Text('Chargement des donnees de reproduction...'),
         ),
       );
       return;
@@ -63,7 +63,7 @@ class _EventsHubViewState extends State<_EventsHubView>
     if (state.animals.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Ajoutez d’abord vos animaux pour créer une saillie.'),
+          content: Text('Ajoutez d'abord vos animaux pour creer une saillie.'),
         ),
       );
       return;
@@ -88,7 +88,7 @@ class _EventsHubViewState extends State<_EventsHubView>
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Saillie enregistrée.')),
+      const SnackBar(content: Text('Saillie enregistree.')),
     );
   }
 
@@ -96,12 +96,12 @@ class _EventsHubViewState extends State<_EventsHubView>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Événements'),
+        title: const Text('Evenements'),
         bottom: TabBar(
           controller: _tabController,
           tabs: const <Widget>[
             Tab(text: 'Reproduction'),
-            Tab(text: 'Santé'),
+            Tab(text: 'Sante'),
             Tab(text: 'Autres'),
           ],
         ),
@@ -110,7 +110,7 @@ class _EventsHubViewState extends State<_EventsHubView>
         controller: _tabController,
         children: const <Widget>[
           ReproductionTabView(),
-          _EventsTab(category: 'Santé'),
+          _EventsTab(category: 'Sante'),
           _EventsTab(category: 'Autres'),
         ],
       ),
@@ -156,3 +156,11 @@ class _EventsTab extends StatelessWidget {
     return EventTimeline(events: _demoEventsForCategory());
   }
 }
+
+
+
+
+
+
+
+

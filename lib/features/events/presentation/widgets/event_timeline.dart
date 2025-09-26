@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../data/models/event.dart';
+import '../screens/event_detail_screen.dart';
 
 class EventTimeline extends StatelessWidget {
   const EventTimeline({
@@ -16,7 +17,7 @@ class EventTimeline extends StatelessWidget {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: Text('Aucun Ã©vÃ©nement pour le moment.'),
+          child: Text('Aucun évènement pour le moment.'),
         ),
       );
     }
@@ -32,7 +33,7 @@ class EventTimeline extends StatelessWidget {
             MaterialLocalizations.of(context).formatMediumDate(event.eventDate),
           ),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () {},
+          onTap: () { Navigator.of(context).push<void>(MaterialPageRoute<void>(builder: (_) => EventDetailScreen(event: event),),); },
         );
       },
       separatorBuilder: (_, __) => const Divider(height: 1),
@@ -40,3 +41,6 @@ class EventTimeline extends StatelessWidget {
     );
   }
 }
+
+
+
