@@ -42,10 +42,8 @@ class BatchEventFormDialog extends StatefulWidget {
   }) {
     return showDialog<List<LivestockEvent>>(
       context: context,
-      builder: (BuildContext context) => BatchEventFormDialog(
-        animals: animals,
-        repository: repository,
-      ),
+      builder: (BuildContext context) =>
+          BatchEventFormDialog(animals: animals, repository: repository),
     );
   }
 
@@ -128,14 +126,16 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
 
     switch (_eventType) {
       case 'weight':
-        final double? effectiveWeight = weight ??
+        final double? effectiveWeight =
+            weight ??
             double.tryParse(_weightController.text.replaceAll(',', '.'));
         if (effectiveWeight != null) {
           details['weightKg'] = effectiveWeight;
         }
         break;
       case 'sale':
-        final double? effectivePrice = price ??
+        final double? effectivePrice =
+            price ??
             double.tryParse(_priceController.text.replaceAll(',', '.'));
         if (effectivePrice != null) {
           details['salePrice'] = effectivePrice;
@@ -143,9 +143,9 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
         break;
       case 'treatment':
       case 'vaccination':
-        final String? effectiveProduct =
-            product ?? _treatmentController.text.trim();
-        if (effectiveProduct != null && effectiveProduct.isNotEmpty) {
+        final String effectiveProduct = (product ?? _treatmentController.text)
+            .trim();
+        if (effectiveProduct.isNotEmpty) {
           details['product'] = effectiveProduct;
         }
         break;
@@ -173,17 +173,20 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
         : null;
     final String? parsedProduct = _requiresTreatment
         ? (_treatmentController.text.trim().isEmpty
-            ? null
-            : _treatmentController.text.trim())
+              ? null
+              : _treatmentController.text.trim())
         : null;
-    final String? trimmedNotes =
-        _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+    final String? trimmedNotes = _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim();
 
     if (_saveAsTemplate) {
       final String name = _templateNameController.text.trim();
       if (name.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Indiquez un nom pour enregistrer le modèle.')),
+          const SnackBar(
+            content: Text('Indiquez un nom pour enregistrer le modèle.'),
+          ),
         );
         return;
       }
@@ -195,8 +198,9 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
         product: parsedProduct,
         notes: trimmedNotes,
       );
-      final int existingIndex = _savedEventTemplates
-          .indexWhere((_EventTemplate value) => value.name == name);
+      final int existingIndex = _savedEventTemplates.indexWhere(
+        (_EventTemplate value) => value.name == name,
+      );
       if (existingIndex >= 0) {
         _savedEventTemplates[existingIndex] = template;
       } else {
@@ -225,7 +229,11 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
       final LivestockEvent created = await widget.repository.createEvent(
         draft,
         links: <AnimalEventLink>[
-          AnimalEventLink(eventId: draft.id, animalId: animal.id, role: 'subject'),
+          AnimalEventLink(
+            eventId: draft.id,
+            animalId: animal.id,
+            role: 'subject',
+          ),
         ],
       );
       createdEvents.add(created);
@@ -241,8 +249,9 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
+    final MaterialLocalizations localizations = MaterialLocalizations.of(
+      context,
+    );
     final String selectedSummary = widget.animals
         .map((Animal animal) => animal.tagId)
         .join(', ');
@@ -263,10 +272,7 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
-              Text(
-                selectedSummary,
-                style: theme.textTheme.bodySmall,
-              ),
+              Text(selectedSummary, style: theme.textTheme.bodySmall),
               const SizedBox(height: 16),
               if (_savedEventTemplates.isNotEmpty) ...<Widget>[
                 DropdownButtonFormField<String>(
@@ -291,7 +297,9 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
                       });
                     } else {
                       final _EventTemplate template = _savedEventTemplates
-                          .firstWhere((_EventTemplate element) => element.name == value);
+                          .firstWhere(
+                            (_EventTemplate element) => element.name == value,
+                          );
                       _applyTemplate(template);
                     }
                   },
@@ -300,7 +308,9 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
               ],
               DropdownButtonFormField<String>(
                 value: _eventType,
-                decoration: const InputDecoration(labelText: 'Type d’évènement'),
+                decoration: const InputDecoration(
+                  labelText: 'Type d’évènement',
+                ),
                 items: const <DropdownMenuItem<String>>[
                   DropdownMenuItem<String>(
                     value: 'weight',
@@ -314,10 +324,7 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
                     value: 'treatment',
                     child: Text('Traitement'),
                   ),
-                  DropdownMenuItem<String>(
-                    value: 'sale',
-                    child: Text('Vente'),
-                  ),
+                  DropdownMenuItem<String>(value: 'sale', child: Text('Vente')),
                 ],
                 onChanged: (String? value) {
                   setState(() {
@@ -426,8 +433,9 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
                   setState(() {
                     _saveAsTemplate = value;
                     if (value && _templateNameController.text.isEmpty) {
-                      final String suggestion =
-                          _eventType != null ? 'Modèle ${_eventType!}' : '';
+                      final String suggestion = _eventType != null
+                          ? 'Modèle ${_eventType!}'
+                          : '';
                       _templateNameController.text =
                           _selectedTemplateName ?? suggestion;
                     }
@@ -453,10 +461,7 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
           onPressed: () => Navigator.of(context).maybePop(),
           child: const Text('Annuler'),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('Enregistrer'),
-        ),
+        FilledButton(onPressed: _submit, child: const Text('Enregistrer')),
       ],
     );
   }

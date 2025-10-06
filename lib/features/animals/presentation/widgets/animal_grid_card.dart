@@ -22,11 +22,15 @@ class AnimalGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
-    final List<AnimalStatusIndicator> indicators =
-        statusIndicatorsForAnimal(animal, theme);
-    final bool hasImage = animal.imageUrl != null && animal.imageUrl!.isNotEmpty;
+    final MaterialLocalizations localizations = MaterialLocalizations.of(
+      context,
+    );
+    final List<AnimalStatusIndicator> indicators = statusIndicatorsForAnimal(
+      animal,
+      theme,
+    );
+    final bool hasImage =
+        animal.imageUrl != null && animal.imageUrl!.isNotEmpty;
 
     void handleTap() {
       if (selectionEnabled && onSelectionChanged != null) {
@@ -51,15 +55,21 @@ class AnimalGridCard extends StatelessWidget {
                       ? Image.network(
                           animal.imageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (BuildContext context, Object error,
-                              StackTrace? stackTrace) {
-                            return Container(
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              alignment: Alignment.center,
-                              child:
-                                  const Icon(Icons.image_not_supported_outlined),
-                            );
-                          },
+                          errorBuilder:
+                              (
+                                BuildContext context,
+                                Object error,
+                                StackTrace? stackTrace,
+                              ) {
+                                return Container(
+                                  color:
+                                      theme.colorScheme.surfaceContainerHighest,
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.image_not_supported_outlined,
+                                  ),
+                                );
+                              },
                         )
                       : Container(
                           color: theme.colorScheme.surfaceContainerHighest,
@@ -77,10 +87,7 @@ class AnimalGridCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(
-                        animal.tagId,
-                        style: theme.textTheme.titleMedium,
-                      ),
+                      Text(animal.tagId, style: theme.textTheme.titleMedium),
                       if (animal.name != null && animal.name!.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
@@ -133,11 +140,13 @@ class AnimalGridCard extends StatelessWidget {
                 radius: 16,
                 backgroundColor: isSelected
                     ? theme.colorScheme.primary
-                    : theme.colorScheme.surface.withOpacity(0.75),
+                    : theme.colorScheme.surface.withValues(alpha: 0.75),
                 foregroundColor: isSelected
                     ? theme.colorScheme.onPrimary
                     : theme.colorScheme.onSurfaceVariant,
-                child: Icon(isSelected ? Icons.check : Icons.check_box_outline_blank),
+                child: Icon(
+                  isSelected ? Icons.check : Icons.check_box_outline_blank,
+                ),
               ),
             ),
           if (selectionEnabled && isSelected)
@@ -146,7 +155,7 @@ class AnimalGridCard extends StatelessWidget {
                 ignoring: true,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.08),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.08),
                   ),
                 ),
               ),

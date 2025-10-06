@@ -38,8 +38,9 @@ class _DashboardView extends StatelessWidget {
     DashboardState state,
   ) async {
     final DashboardCubit cubit = context.read<DashboardCubit>();
-    final List<DashboardKpiType> initialOrder =
-        List<DashboardKpiType>.from(state.kpiOrder);
+    final List<DashboardKpiType> initialOrder = List<DashboardKpiType>.from(
+      state.kpiOrder,
+    );
     for (final DashboardKpiType type in DashboardKpiType.values) {
       if (!initialOrder.contains(type)) {
         initialOrder.add(type);
@@ -48,13 +49,13 @@ class _DashboardView extends StatelessWidget {
 
     final _DashboardCustomizationResult? result =
         await showModalBottomSheet<_DashboardCustomizationResult>(
-      context: context,
-      isScrollControlled: true,
-      builder: (BuildContext context) => _DashboardCustomizationSheet(
-        initialOrder: initialOrder,
-        state: state,
-      ),
-    );
+          context: context,
+          isScrollControlled: true,
+          builder: (BuildContext context) => _DashboardCustomizationSheet(
+            initialOrder: initialOrder,
+            state: state,
+          ),
+        );
 
     if (result != null) {
       cubit
@@ -70,7 +71,6 @@ class _DashboardView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<DashboardCubit, DashboardState>(
       builder: (BuildContext context, DashboardState state) {
-        final ThemeData theme = Theme.of(context);
         Widget body;
         switch (state.status) {
           case DashboardStatus.initial:
@@ -91,14 +91,15 @@ class _DashboardView extends StatelessWidget {
             break;
           case DashboardStatus.success:
             body = RefreshIndicator(
-              onRefresh: () =>
-                  context.read<DashboardCubit>().loadDashboard(),
+              onRefresh: () => context.read<DashboardCubit>().loadDashboard(),
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: <Widget>[
                   SliverPadding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 16,
+                    ),
                     sliver: SliverToBoxAdapter(
                       child: _DashboardModuleGrid(state: state),
                     ),
@@ -195,8 +196,9 @@ class _DashboardModuleGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final List<DashboardModuleType> modules = state.moduleOrder
-        .where((DashboardModuleType type) =>
-            !state.hiddenModules.contains(type))
+        .where(
+          (DashboardModuleType type) => !state.hiddenModules.contains(type),
+        )
         .toList();
 
     if (modules.isEmpty) {
@@ -215,8 +217,8 @@ class _DashboardModuleGrid extends StatelessWidget {
         final int columns = width >= 1100
             ? 3
             : width >= 760
-                ? 2
-                : 1;
+            ? 2
+            : 1;
         final double spacing = 12;
         final double itemWidth = columns == 1
             ? width
@@ -258,15 +260,9 @@ class _DashboardModuleGrid extends StatelessWidget {
       case DashboardModuleType.calendar:
         return DashboardCalendar(events: state.calendarEvents);
       case DashboardModuleType.tasksToday:
-        return TasksList(
-          title: 'Aujourd’hui',
-          tasks: state.todayTasks,
-        );
+        return TasksList(title: 'Aujourd’hui', tasks: state.todayTasks);
       case DashboardModuleType.tasksUpcoming:
-        return TasksList(
-          title: 'À venir',
-          tasks: state.upcomingTasks,
-        );
+        return TasksList(title: 'À venir', tasks: state.upcomingTasks);
       case DashboardModuleType.performance:
         return BreedingPerformanceCard(stats: state.performance);
       case DashboardModuleType.weightTracking:
@@ -312,19 +308,11 @@ class _DashboardModuleGrid extends StatelessWidget {
               children: <Widget>[
                 Icon(icon, color: theme.colorScheme.primary),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
+                Expanded(child: Text(title, style: theme.textTheme.titleLarge)),
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              message,
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text(message, style: theme.textTheme.bodyMedium),
           ],
         ),
       ),
@@ -410,8 +398,9 @@ class _DashboardCustomizationSheetState
           _order.add(type);
         }
       }
-      _moduleOrder =
-          List<DashboardModuleType>.from(const DashboardState().moduleOrder);
+      _moduleOrder = List<DashboardModuleType>.from(
+        const DashboardState().moduleOrder,
+      );
       for (final DashboardModuleType type in DashboardModuleType.values) {
         if (!_moduleOrder.contains(type)) {
           _moduleOrder.add(type);
@@ -499,10 +488,7 @@ class _DashboardCustomizationSheetState
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Indicateurs favoris',
-                style: theme.textTheme.titleLarge,
-              ),
+              Text('Indicateurs favoris', style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
                 'Réorganisez la liste ci-dessous. Les 4 premiers seront affichés sur votre tableau de bord.',
@@ -534,8 +520,9 @@ class _DashboardCustomizationSheetState
                       key: ValueKey<DashboardKpiType>(type),
                       margin: const EdgeInsets.symmetric(vertical: 6),
                       color: isHighlighted
-                          ? theme.colorScheme.primaryContainer
-                              .withAlpha((255 * 0.3).round())
+                          ? theme.colorScheme.primaryContainer.withAlpha(
+                              (255 * 0.3).round(),
+                            )
                           : null,
                       child: ListTile(
                         leading: Icon(presentation.icon),
@@ -572,7 +559,10 @@ class _DashboardCustomizationSheetState
                       key: ValueKey<DashboardModuleType>(type),
                       margin: const EdgeInsets.symmetric(vertical: 6),
                       child: SwitchListTile(
-                        contentPadding: const EdgeInsets.only(left: 56, right: 16),
+                        contentPadding: const EdgeInsets.only(
+                          left: 56,
+                          right: 16,
+                        ),
                         title: Text(_moduleLabel(type)),
                         subtitle: Text(_moduleDescription(type)),
                         value: isEnabled,
@@ -611,10 +601,12 @@ class _DashboardCustomizationSheetState
                     onPressed: () => Navigator.of(context).pop(
                       _DashboardCustomizationResult(
                         kpiOrder: List<DashboardKpiType>.from(_order),
-                        moduleOrder:
-                            List<DashboardModuleType>.from(_moduleOrder),
-                        hiddenModules:
-                            Set<DashboardModuleType>.from(_hiddenModules),
+                        moduleOrder: List<DashboardModuleType>.from(
+                          _moduleOrder,
+                        ),
+                        hiddenModules: Set<DashboardModuleType>.from(
+                          _hiddenModules,
+                        ),
                       ),
                     ),
                     child: const Text('Enregistrer'),
@@ -650,7 +642,10 @@ Map<DashboardKpiType, _KpiPresentation> _buildAllKpiPresentations(
 ) {
   final Map<DashboardKpiType, _KpiPresentation> map =
       <DashboardKpiType, _KpiPresentation>{};
-  final List<DashboardTask> allTasks = <DashboardTask>[...state.todayTasks, ...state.upcomingTasks];
+  final List<DashboardTask> allTasks = <DashboardTask>[
+    ...state.todayTasks,
+    ...state.upcomingTasks,
+  ];
   final int plannedWithinWeek = allTasks
       .where((DashboardTask task) => task.kind == DashboardTaskKind.mating)
       .length;
@@ -683,8 +678,8 @@ _KpiPresentation _buildKpiPresentation(
       final String subtitle = state.totalAnimals == 0
           ? 'Aucun animal enregistré'
           : inactive > 0
-              ? '$inactive inactifs'
-              : 'Tous sont actifs';
+          ? '$inactive inactifs'
+          : 'Tous sont actifs';
       return _KpiPresentation(
         title: 'Animaux actifs',
         value: state.activeAnimals.toString(),
