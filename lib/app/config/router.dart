@@ -12,9 +12,12 @@ import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/events/presentation/screens/events_hub_screen.dart';
 import '../../features/events/presentation/screens/add_breeding_record_screen.dart';
+import '../../features/events/presentation/screens/add_event_screen.dart';
 import '../../features/events/presentation/cubit/breeding_cubit.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../data/models/animal.dart';
+import '../../data/repositories/event_repository.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'rootNavigator',
@@ -96,6 +99,38 @@ class KhodanRouter {
                           return BlocProvider.value(
                             value: breedingCubit,
                             child: const AddBreedingRecordScreen(),
+                          );
+                        },
+                      ),
+                      GoRoute(
+                        path: 'add-event',
+                        builder: (BuildContext context, GoRouterState state) {
+                          final Object? extra = state.extra;
+                          EventRepository? repository;
+                          List<Animal>? animals;
+
+                          if (extra is Map) {
+                            final Object? repo = extra['repository'];
+                            final Object? list = extra['animals'];
+                            if (repo is EventRepository) repository = repo;
+                            if (list is List<Animal>) animals = list;
+                          }
+
+                          repository ??= InMemoryEventRepository();
+
+                          // Try to fallback to breeding cubit animals if not provided
+                          animals ??= () {
+                            try {
+                              final BreedingCubit cubit = context.read<BreedingCubit>();
+                              return cubit.state.animals;
+                            } catch (_) {
+                              return <Animal>[];
+                            }
+                          }();
+
+                          return AddEventScreen(
+                            animals: animals,
+                            repository: repository,
                           );
                         },
                       ),

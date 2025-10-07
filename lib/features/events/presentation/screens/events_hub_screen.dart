@@ -139,6 +139,48 @@ class _EventsHubViewState extends State<_EventsHubView>
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _openAddHealthOrOtherEventPage() async {
+    final BreedingCubit breedingCubit = context.read<BreedingCubit>();
+    final BreedingState breedingState = breedingCubit.state;
+
+    if (breedingState.status == BreedingStatus.loading &&
+        breedingState.animals.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Chargement des données')));
+      return;
+    }
+
+    if (breedingState.animals.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Ajoutez d’abord vos animaux pour enregistrer un événement.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final List<LivestockEvent>? created = await context.push<List<LivestockEvent>>(
+      '/events/add-event',
+      extra: <String, Object>{
+        'animals': breedingState.animals,
+        'repository': widget.eventRepository,
+      },
+    );
+
+    if (!mounted || created == null) {
+      return;
+    }
+
+    await context.read<EventsCubit>().loadEvents();
+
+    final String message = created.length > 1
+        ? 'Événements enregistrés.'
+        : 'Événement enregistré.';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -207,7 +249,7 @@ class _EventsHubViewState extends State<_EventsHubView>
             }
             if (index == 1 || index == 2) {
               return FloatingActionButton.extended(
-                onPressed: _createHealthOrOtherEvent,
+                onPressed: _openAddHealthOrOtherEventPage,
                 icon: const Icon(Icons.event_available_outlined),
                 label: const Text('Ajouter un événement'),
               );
