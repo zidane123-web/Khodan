@@ -108,12 +108,15 @@ class KhodanRouter {
                           final Object? extra = state.extra;
                           EventRepository? repository;
                           List<Animal>? animals;
+                          String? category;
 
                           if (extra is Map) {
                             final Object? repo = extra['repository'];
                             final Object? list = extra['animals'];
+                            final Object? cat = extra['category'];
                             if (repo is EventRepository) repository = repo;
                             if (list is List<Animal>) animals = list;
+                            if (cat is String) category = cat;
                           }
 
                           repository ??= InMemoryEventRepository();
@@ -131,6 +134,7 @@ class KhodanRouter {
                           return AddEventScreen(
                             animals: animals,
                             repository: repository,
+                            category: category,
                           );
                         },
                       ),

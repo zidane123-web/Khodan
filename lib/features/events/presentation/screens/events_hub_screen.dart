@@ -161,11 +161,13 @@ class _EventsHubViewState extends State<_EventsHubView>
       return;
     }
 
+    final String category = _tabController.index == 1 ? 'health' : 'other';
     final List<LivestockEvent>? created = await context.push<List<LivestockEvent>>(
       '/events/add-event',
       extra: <String, Object>{
         'animals': breedingState.animals,
         'repository': widget.eventRepository,
+        'category': category,
       },
     );
 
@@ -247,11 +249,18 @@ class _EventsHubViewState extends State<_EventsHubView>
                 label: const Text('Nouvelle saillie'),
               );
             }
-            if (index == 1 || index == 2) {
+            if (index == 1) {
               return FloatingActionButton.extended(
                 onPressed: _openAddHealthOrOtherEventPage,
                 icon: const Icon(Icons.event_available_outlined),
-                label: const Text('Ajouter un événement'),
+                label: const Text('Nouvel événement santé'),
+              );
+            }
+            if (index == 2) {
+              return FloatingActionButton.extended(
+                onPressed: _openAddHealthOrOtherEventPage,
+                icon: const Icon(Icons.event_available_outlined),
+                label: const Text('Nouvel événement (autres)'),
               );
             }
             return const SizedBox.shrink();

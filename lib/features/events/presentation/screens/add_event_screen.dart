@@ -9,11 +9,13 @@ class AddEventScreen extends StatefulWidget {
   const AddEventScreen({
     required this.animals,
     required this.repository,
+    this.category, // 'health' | 'other' | null
     super.key,
   });
 
   final List<Animal> animals;
   final EventRepository repository;
+  final String? category;
 
   @override
   State<AddEventScreen> createState() => _AddEventScreenState();
@@ -26,14 +28,27 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _treatmentController = TextEditingController();
   final TextEditingController _templateNameController = TextEditingController();
-
+  final TextEditingController _veterinarianController = TextEditingController();
+  final TextEditingController _doseController = TextEditingController();
+  final TextEditingController _doseUnitController = TextEditingController();
+  final TextEditingController _lotNumberController = TextEditingController();
+  
   DateTime _eventDate = DateTime.now();
   String? _eventType;
   String? _selectedTemplateName;
   bool _saveAsTemplate = false;
+  DateTime? _nextDueDate;
 
   // Simple in-memory templates for this session/screen
   static final List<_EventTemplate> _savedTemplates = <_EventTemplate>[];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.category == 'health' && _eventType == null) {
+      _eventType = 'vaccination';
+    }
+  }
 
   @override
   void dispose() {
@@ -42,6 +57,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
     _priceController.dispose();
     _treatmentController.dispose();
     _templateNameController.dispose();
+    _veterinarianController.dispose();
+    _doseController.dispose();
+    _doseUnitController.dispose();
+    _lotNumberController.dispose();
     super.dispose();
   }
 
@@ -55,6 +74,20 @@ class _AddEventScreenState extends State<AddEventScreen> {
     );
     if (selected != null) {
       setState(() => _eventDate = selected);
+    }
+  }
+
+  Future<void> _pickNextDueDate() async {
+    final DateTime now = DateTime.now();
+    final DateTime initial = _nextDueDate ?? now;
+    final DateTime? selected = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 3),
+    );
+    if (selected != null) {
+      setState(() => _nextDueDate = selected);
     }
   }
 
@@ -113,6 +146,32 @@ class _AddEventScreenState extends State<AddEventScreen> {
         final String effectiveProduct = (product ?? _treatmentController.text).trim();
         if (effectiveProduct.isNotEmpty) {
           details['product'] = effectiveProduct;
+        }
+        if (_veterinarianController.text.trim().isNotEmpty) {
+          details['veterinarian'] = _veterinarianController.text.trim();
+        }
+        if (_doseController.text.trim().isNotEmpty) {
+          final double? dose = double.tryParse(_doseController.text.replaceAll(',', '.'));
+          if (dose != null) {
+            details['dose'] = dose;
+          }
+        }
+        if (_doseUnitController.text.trim().isNotEmpty) {
+          details['doseUnit'] = _doseUnitController.text.trim();
+        }
+        if (_lotNumberController.text.trim().isNotEmpty) {
+          details['lotNumber'] = _lotNumberController.text.trim();
+        }
+        if (_nextDueDate != null) {
+          details['nextDueDate'] = _nextDueDate!.toIso8601String();
+        }
+        break;
+      case 'health_check':
+        if (_veterinarianController.text.trim().isNotEmpty) {
+          details['veterinarian'] = _veterinarianController.text.trim();
+        }
+        if (_nextDueDate != null) {
+          details['nextDueDate'] = _nextDueDate!.toIso8601String();
         }
         break;
     }
@@ -204,7 +263,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ajouter un événement'),
+        title: Text(widget.category == 'health' ? 'Nouvel événement santé' : 'Ajouter un événement'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -249,13 +308,18 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 12),
                 ],
                 DropdownButtonFormField<String>(
-                  value: _eventType,
+                  value: _eventType ?? (widget.category == 'health' ? 'vaccination' : null),
                   decoration: const InputDecoration(labelText: "Type d'évènement"),
-                  items: const <DropdownMenuItem<String>>[
-                    DropdownMenuItem<String>(value: 'weight', child: Text('Pesée')),
-                    DropdownMenuItem<String>(value: 'vaccination', child: Text('Vaccination')),
-                    DropdownMenuItem<String>(value: 'treatment', child: Text('Traitement')),
-                    DropdownMenuItem<String>(value: 'sale', child: Text('Vente')),
+                  items: <DropdownMenuItem<String>>[
+                    if (widget.category == 'health' || widget.category == null) ...const <DropdownMenuItem<String>>[
+                      DropdownMenuItem<String>(value: 'weight', child: Text('Pesée')),
+                      DropdownMenuItem<String>(value: 'vaccination', child: Text('Vaccination')),
+                      DropdownMenuItem<String>(value: 'treatment', child: Text('Traitement')),
+                      DropdownMenuItem<String>(value: 'health_check', child: Text('Contrôle de santé')),
+                    ],
+                    if (widget.category != 'health' || widget.category == null) ...const <DropdownMenuItem<String>>[
+                      DropdownMenuItem<String>(value: 'sale', child: Text('Vente')),
+                    ],
                   ],
                   onChanged: (String? value) => setState(() => _eventType = value),
                   validator: (String? value) => value == null ? 'Sélection obligatoire' : null,
@@ -324,6 +388,73 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       }
                       return null;
                     },
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _doseController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Dosage',
+                      hintText: 'Ex: 2.0',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _doseUnitController,
+                    decoration: const InputDecoration(
+                      labelText: 'Unité (mg, ml, …)',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _lotNumberController,
+                    decoration: const InputDecoration(
+                      labelText: 'N° de lot',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _veterinarianController,
+                    decoration: const InputDecoration(
+                      labelText: 'Vétérinaire',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Date de rappel / suivi'),
+                    subtitle: Text(
+                      _nextDueDate == null
+                          ? 'Aucun'
+                          : localizations.formatMediumDate(_nextDueDate!),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.event_note_outlined),
+                      onPressed: _pickNextDueDate,
+                    ),
+                  ),
+                ],
+                if (_eventType == 'health_check') ...<Widget>[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _veterinarianController,
+                    decoration: const InputDecoration(
+                      labelText: 'Vétérinaire',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Date de suivi'),
+                    subtitle: Text(
+                      _nextDueDate == null
+                          ? 'Aucun'
+                          : localizations.formatMediumDate(_nextDueDate!),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.event_note_outlined),
+                      onPressed: _pickNextDueDate,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -410,4 +541,3 @@ class _EventTemplate {
   final String? product;
   final String? notes;
 }
-
