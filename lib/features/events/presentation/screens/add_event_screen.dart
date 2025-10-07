@@ -37,12 +37,48 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final TextEditingController _inventoryScopeController = TextEditingController();
   final TextEditingController _inventoryDescriptionController = TextEditingController();
   final TextEditingController _noteTitleController = TextEditingController();
+  // Champs supplémentaires pour "Autres"
+  final TextEditingController _fromLocationController = TextEditingController();
+  final TextEditingController _toLocationController = TextEditingController();
+  final TextEditingController _operatorController = TextEditingController();
+  final TextEditingController _costController = TextEditingController();
+  // Nettoyage / Désinfection
+  final TextEditingController _zoneController = TextEditingController();
+  final TextEditingController _cleaningProductController = TextEditingController();
+  final TextEditingController _concentrationController = TextEditingController();
+  final TextEditingController _contactTimeController = TextEditingController();
+  // Maintenance
+  final TextEditingController _equipmentController = TextEditingController();
+  final TextEditingController _maintenanceActionController = TextEditingController();
+  // Achat / Arrivage
+  final TextEditingController _supplierController = TextEditingController();
+  final TextEditingController _quantityController = TextEditingController();
+  final TextEditingController _unitPriceController = TextEditingController();
+  final TextEditingController _purchaseLotController = TextEditingController();
+  DateTime? _quarantineStartDate;
+  DateTime? _quarantineEndDate;
+  // Décès / Réforme
+  final TextEditingController _deathCauseController = TextEditingController();
+  final TextEditingController _deathMethodController = TextEditingController();
+  final TextEditingController _deathWeightController = TextEditingController();
+  final TextEditingController _handledByController = TextEditingController();
+  // Changement de bague / ID
+  final TextEditingController _oldTagController = TextEditingController();
+  final TextEditingController _newTagController = TextEditingController();
+  final TextEditingController _reasonController = TextEditingController();
+  // Changement d'alimentation
+  final TextEditingController _feedNameController = TextEditingController();
+  final TextEditingController _rationController = TextEditingController();
+  final TextEditingController _frequencyController = TextEditingController();
+  final TextEditingController _feedReasonController = TextEditingController();
   
   DateTime _eventDate = DateTime.now();
   String? _eventType;
   String? _selectedTemplateName;
   bool _saveAsTemplate = false;
   DateTime? _nextDueDate;
+  bool _isGlobalEvent = false;
+  late Set<String> _selectedAnimalIds;
 
   // Simple in-memory templates for this session/screen
   static final List<_EventTemplate> _savedTemplates = <_EventTemplate>[];
@@ -53,6 +89,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
     if (widget.category == 'health' && _eventType == null) {
       _eventType = 'vaccination';
     }
+    _selectedAnimalIds = widget.animals.map((Animal a) => a.id).toSet();
   }
 
   @override
@@ -71,6 +108,31 @@ class _AddEventScreenState extends State<AddEventScreen> {
     _inventoryScopeController.dispose();
     _inventoryDescriptionController.dispose();
     _noteTitleController.dispose();
+    _fromLocationController.dispose();
+    _toLocationController.dispose();
+    _operatorController.dispose();
+    _costController.dispose();
+    _zoneController.dispose();
+    _cleaningProductController.dispose();
+    _concentrationController.dispose();
+    _contactTimeController.dispose();
+    _equipmentController.dispose();
+    _maintenanceActionController.dispose();
+    _supplierController.dispose();
+    _quantityController.dispose();
+    _unitPriceController.dispose();
+    _purchaseLotController.dispose();
+    _deathCauseController.dispose();
+    _deathMethodController.dispose();
+    _deathWeightController.dispose();
+    _handledByController.dispose();
+    _oldTagController.dispose();
+    _newTagController.dispose();
+    _reasonController.dispose();
+    _feedNameController.dispose();
+    _rationController.dispose();
+    _frequencyController.dispose();
+    _feedReasonController.dispose();
     super.dispose();
   }
 
@@ -98,6 +160,26 @@ class _AddEventScreenState extends State<AddEventScreen> {
     );
     if (selected != null) {
       setState(() => _nextDueDate = selected);
+    }
+  }
+
+  Future<void> _pickQuarantineDate({required bool start}) async {
+    final DateTime now = DateTime.now();
+    final DateTime? initial = start ? _quarantineStartDate : _quarantineEndDate;
+    final DateTime? selected = await showDatePicker(
+      context: context,
+      initialDate: initial ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 3),
+    );
+    if (selected != null) {
+      setState(() {
+        if (start) {
+          _quarantineStartDate = selected;
+        } else {
+          _quarantineEndDate = selected;
+        }
+      });
     }
   }
 
@@ -130,11 +212,14 @@ class _AddEventScreenState extends State<AddEventScreen> {
     double? price,
     String? product,
   }) {
-    final Map<String, dynamic> details = <String, dynamic>{
-      'animalIds': <String>[animal.id],
-      'animalTag': animal.tagId,
-      'animalName': animal.name,
-    };
+    final Map<String, dynamic> details = <String, dynamic>{};
+    if (!_isGlobalEvent) {
+      details.addAll(<String, dynamic>{
+        'animalIds': <String>[animal.id],
+        'animalTag': animal.tagId,
+        'animalName': animal.name,
+      });
+    }
 
     switch (_eventType) {
       case 'weight':
@@ -210,6 +295,114 @@ class _AddEventScreenState extends State<AddEventScreen> {
           details['title'] = title;
         }
         break;
+      case 'transfer':
+        final String from = _fromLocationController.text.trim();
+        final String to = _toLocationController.text.trim();
+        if (from.isNotEmpty) details['from'] = from;
+        if (to.isNotEmpty) details['to'] = to;
+        if (_operatorController.text.trim().isNotEmpty) {
+          details['operator'] = _operatorController.text.trim();
+        }
+        break;
+      case 'cleaning':
+        if (_zoneController.text.trim().isNotEmpty) {
+          details['zone'] = _zoneController.text.trim();
+        }
+        if (_cleaningProductController.text.trim().isNotEmpty) {
+          details['product'] = _cleaningProductController.text.trim();
+        }
+        if (_concentrationController.text.trim().isNotEmpty) {
+          final double? c = double.tryParse(_concentrationController.text.replaceAll(',', '.'));
+          if (c != null) details['concentration'] = c;
+        }
+        if (_contactTimeController.text.trim().isNotEmpty) {
+          final int? t = int.tryParse(_contactTimeController.text);
+          if (t != null) details['contactTimeMin'] = t;
+        }
+        if (_operatorController.text.trim().isNotEmpty) {
+          details['operator'] = _operatorController.text.trim();
+        }
+        break;
+      case 'maintenance':
+        if (_equipmentController.text.trim().isNotEmpty) {
+          details['equipment'] = _equipmentController.text.trim();
+        }
+        if (_maintenanceActionController.text.trim().isNotEmpty) {
+          details['action'] = _maintenanceActionController.text.trim();
+        }
+        if (_nextDueDate != null) {
+          details['nextMaintenance'] = _nextDueDate!.toIso8601String();
+        }
+        break;
+      case 'purchase':
+        if (_supplierController.text.trim().isNotEmpty) {
+          details['supplier'] = _supplierController.text.trim();
+        }
+        if (_quantityController.text.trim().isNotEmpty) {
+          final double? q = double.tryParse(_quantityController.text.replaceAll(',', '.'));
+          if (q != null) details['quantity'] = q;
+        }
+        if (_unitPriceController.text.trim().isNotEmpty) {
+          final double? p = double.tryParse(_unitPriceController.text.replaceAll(',', '.'));
+          if (p != null) details['unitPrice'] = p;
+        }
+        if (_purchaseLotController.text.trim().isNotEmpty) {
+          details['lot'] = _purchaseLotController.text.trim();
+        }
+        if (_quarantineStartDate != null) {
+          details['quarantineStart'] = _quarantineStartDate!.toIso8601String();
+        }
+        if (_quarantineEndDate != null) {
+          details['quarantineEnd'] = _quarantineEndDate!.toIso8601String();
+        }
+        break;
+      case 'death':
+        if (_deathCauseController.text.trim().isNotEmpty) {
+          details['cause'] = _deathCauseController.text.trim();
+        }
+        if (_deathMethodController.text.trim().isNotEmpty) {
+          details['method'] = _deathMethodController.text.trim();
+        }
+        if (_deathWeightController.text.trim().isNotEmpty) {
+          final double? w = double.tryParse(_deathWeightController.text.replaceAll(',', '.'));
+          if (w != null) details['weightKg'] = w;
+        }
+        if (_handledByController.text.trim().isNotEmpty) {
+          details['handledBy'] = _handledByController.text.trim();
+        }
+        break;
+      case 'tag_change':
+        if (_oldTagController.text.trim().isNotEmpty) {
+          details['oldTag'] = _oldTagController.text.trim();
+        }
+        if (_newTagController.text.trim().isNotEmpty) {
+          details['newTag'] = _newTagController.text.trim();
+        }
+        if (_reasonController.text.trim().isNotEmpty) {
+          details['reason'] = _reasonController.text.trim();
+        }
+        break;
+      case 'feed_change':
+        if (_feedNameController.text.trim().isNotEmpty) {
+          details['feed'] = _feedNameController.text.trim();
+        }
+        if (_rationController.text.trim().isNotEmpty) {
+          details['ration'] = _rationController.text.trim();
+        }
+        if (_frequencyController.text.trim().isNotEmpty) {
+          details['frequency'] = _frequencyController.text.trim();
+        }
+        if (_feedReasonController.text.trim().isNotEmpty) {
+          details['reason'] = _feedReasonController.text.trim();
+        }
+        break;
+    }
+
+    if (_costController.text.trim().isNotEmpty) {
+      final double? cost = double.tryParse(_costController.text.replaceAll(',', '.'));
+      if (cost != null) {
+        details['cost'] = cost;
+      }
     }
 
     return details;
@@ -263,28 +456,65 @@ class _AddEventScreenState extends State<AddEventScreen> {
     }
 
     final List<LivestockEvent> createdEvents = <LivestockEvent>[];
-    for (final Animal animal in widget.animals) {
+
+    final List<Animal> targetAnimals = _isGlobalEvent
+        ? <Animal>[]
+        : widget.animals
+            .where((Animal a) => _selectedAnimalIds.contains(a.id))
+            .toList();
+
+    if (!_isGlobalEvent && targetAnimals.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selectionnez au moins un animal.')),
+      );
+      return;
+    }
+
+    if (_isGlobalEvent) {
+      final Animal? representative =
+          widget.animals.isNotEmpty ? widget.animals.first : null;
       final LivestockEvent draft = LivestockEvent(
-        id: 'event-${DateTime.now().millisecondsSinceEpoch}-${animal.id}',
-        profileId: animal.profileId,
+        id: 'event-${DateTime.now().millisecondsSinceEpoch}-global',
+        profileId: representative?.profileId ?? 'demo-profile',
         eventType: _eventType!,
         eventDate: _eventDate,
         details: _buildDetails(
-          animal,
+          representative ?? widget.animals.first,
           weight: parsedWeight,
           price: parsedPrice,
           product: parsedProduct,
         ),
         notes: trimmedNotes,
       );
-
       final LivestockEvent created = await widget.repository.createEvent(
         draft,
-        links: <AnimalEventLink>[
-          AnimalEventLink(eventId: draft.id, animalId: animal.id, role: 'subject'),
-        ],
+        links: const <AnimalEventLink>[],
       );
       createdEvents.add(created);
+    } else {
+      for (final Animal animal in targetAnimals) {
+        final LivestockEvent draft = LivestockEvent(
+          id: 'event-${DateTime.now().millisecondsSinceEpoch}-${animal.id}',
+          profileId: animal.profileId,
+          eventType: _eventType!,
+          eventDate: _eventDate,
+          details: _buildDetails(
+            animal,
+            weight: parsedWeight,
+            price: parsedPrice,
+            product: parsedProduct,
+          ),
+          notes: trimmedNotes,
+        );
+
+        final LivestockEvent created = await widget.repository.createEvent(
+          draft,
+          links: <AnimalEventLink>[
+            AnimalEventLink(eventId: draft.id, animalId: animal.id, role: 'subject'),
+          ],
+        );
+        createdEvents.add(created);
+      }
     }
 
     if (!mounted) return;
@@ -324,6 +554,61 @@ class _AddEventScreenState extends State<AddEventScreen> {
                 const SizedBox(height: 8),
                 Text(selectedSummary, style: theme.textTheme.bodySmall),
                 const SizedBox(height: 16),
+                // Sélection des animaux et mode global
+                if (!_isGlobalEvent) ...<Widget>[
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: <Widget>[
+                      for (final Animal animal in widget.animals)
+                        FilterChip(
+                          label: Text(animal.tagId),
+                          selected: _selectedAnimalIds.contains(animal.id),
+                          onSelected: (bool selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedAnimalIds.add(animal.id);
+                              } else {
+                                _selectedAnimalIds.remove(animal.id);
+                              }
+                            });
+                          },
+                        ),
+                    ],
+                  ),
+                  Row(
+                    children: <Widget>[
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedAnimalIds = widget.animals.map((Animal a) => a.id).toSet();
+                          });
+                        },
+                        child: const Text('Tout selectionner'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedAnimalIds.clear();
+                          });
+                        },
+                        child: const Text('Tout deselectionner'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Etat global (sans animaux)'),
+                  subtitle: const Text('Cree un seul evenement non lie aux animaux'),
+                  value: _isGlobalEvent,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _isGlobalEvent = value;
+                    });
+                  },
+                ),
                 if (_savedTemplates.isNotEmpty) ...<Widget>[
                   DropdownButtonFormField<String>(
                     value: _selectedTemplateName,
@@ -364,6 +649,15 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       DropdownMenuItem<String>(value: 'inventory', child: Text('Inventaire')),
                       DropdownMenuItem<String>(value: 'note', child: Text('Note')),
                       DropdownMenuItem<String>(value: 'sale', child: Text('Vente')),
+                    ],
+                    if (widget.category == 'other' || widget.category == null) ...const <DropdownMenuItem<String>>[
+                      DropdownMenuItem<String>(value: 'transfer', child: Text('Transfert')),
+                      DropdownMenuItem<String>(value: 'cleaning', child: Text('Nettoyage / Desinfection')),
+                      DropdownMenuItem<String>(value: 'maintenance', child: Text('Entretien / Maintenance')),
+                      DropdownMenuItem<String>(value: 'purchase', child: Text('Achat / Arrivage')),
+                      DropdownMenuItem<String>(value: 'death', child: Text('Deces / Reforme')),
+                      DropdownMenuItem<String>(value: 'tag_change', child: Text('Changement de bague / ID')),
+                      DropdownMenuItem<String>(value: 'feed_change', child: Text("Changement d'alimentation")),
                     ],
                   ],
                   onChanged: (String? value) => setState(() => _eventType = value),
@@ -534,6 +828,244 @@ class _AddEventScreenState extends State<AddEventScreen> {
                     controller: _noteTitleController,
                     decoration: const InputDecoration(
                       labelText: 'Titre de la note',
+                    ),
+                  ),
+                ],
+                if (_eventType == 'transfer') ...<Widget>[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _fromLocationController,
+                    decoration: const InputDecoration(
+                      labelText: 'De (lieu/section/batiment)',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _toLocationController,
+                    decoration: const InputDecoration(
+                      labelText: 'Vers (lieu/section/batiment)',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _operatorController,
+                    decoration: const InputDecoration(
+                      labelText: 'Operateur',
+                    ),
+                  ),
+                ],
+                if (_eventType == 'cleaning') ...<Widget>[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _zoneController,
+                    decoration: const InputDecoration(
+                      labelText: 'Zone',
+                      hintText: 'Cage, salle, batiment…',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _cleaningProductController,
+                    decoration: const InputDecoration(
+                      labelText: 'Produit',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _concentrationController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Concentration (%)',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _contactTimeController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Temps de contact (min)',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _operatorController,
+                    decoration: const InputDecoration(
+                      labelText: 'Operateur',
+                    ),
+                  ),
+                ],
+                if (_eventType == 'maintenance') ...<Widget>[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _equipmentController,
+                    decoration: const InputDecoration(
+                      labelText: 'Equipement',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _maintenanceActionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Action realisee',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Prochaine maintenance'),
+                    subtitle: Text(
+                      _nextDueDate == null
+                          ? 'Aucune'
+                          : localizations.formatMediumDate(_nextDueDate!),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.event_note_outlined),
+                      onPressed: _pickNextDueDate,
+                    ),
+                  ),
+                ],
+                if (_eventType == 'purchase') ...<Widget>[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _supplierController,
+                    decoration: const InputDecoration(
+                      labelText: 'Fournisseur',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _quantityController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Quantite',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _unitPriceController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Prix unitaire',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _purchaseLotController,
+                    decoration: const InputDecoration(
+                      labelText: 'N° de lot',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Debut quarantaine'),
+                    subtitle: Text(
+                      _quarantineStartDate == null
+                          ? '—'
+                          : localizations.formatMediumDate(_quarantineStartDate!),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.event_note_outlined),
+                      onPressed: () => _pickQuarantineDate(start: true),
+                    ),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Fin quarantaine'),
+                    subtitle: Text(
+                      _quarantineEndDate == null
+                          ? '—'
+                          : localizations.formatMediumDate(_quarantineEndDate!),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.event_note_outlined),
+                      onPressed: () => _pickQuarantineDate(start: false),
+                    ),
+                  ),
+                ],
+                if (_eventType == 'death') ...<Widget>[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _deathCauseController,
+                    decoration: const InputDecoration(
+                      labelText: 'Cause',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _deathMethodController,
+                    decoration: const InputDecoration(
+                      labelText: 'Methode / gestion',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _deathWeightController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Poids (kg)',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _handledByController,
+                    decoration: const InputDecoration(
+                      labelText: 'Gere par',
+                    ),
+                  ),
+                ],
+                if (_eventType == 'tag_change') ...<Widget>[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _oldTagController,
+                    decoration: const InputDecoration(
+                      labelText: 'Ancienne bague / ID',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _newTagController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nouvelle bague / ID',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _reasonController,
+                    decoration: const InputDecoration(
+                      labelText: 'Raison',
+                    ),
+                  ),
+                ],
+                if (_eventType == 'feed_change') ...<Widget>[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _feedNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Aliment',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _rationController,
+                    decoration: const InputDecoration(
+                      labelText: 'Ration',
+                      hintText: 'Ex: 120 g/j',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _frequencyController,
+                    decoration: const InputDecoration(
+                      labelText: 'Frequence',
+                      hintText: 'Ex: 2x par jour',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _feedReasonController,
+                    decoration: const InputDecoration(
+                      labelText: 'Raison',
                     ),
                   ),
                 ],
