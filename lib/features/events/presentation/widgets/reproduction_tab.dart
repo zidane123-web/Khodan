@@ -38,7 +38,7 @@ class ReproductionTabView extends StatelessWidget {
       builder: (BuildContext context) => AlertDialog(
         title: const Text('Supprimer cette saillie ?'),
         content: const Text(
-          'Cette action supprimera les rappels associÃ©s. Continuer ?',
+          'Cette action supprimera les rappels associés. Continuer ?',
         ),
         actions: <Widget>[
           TextButton(
@@ -58,7 +58,7 @@ class ReproductionTabView extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Saillie supprimÃ©e.')));
+        ).showSnackBar(const SnackBar(content: Text('Saillie supprimée.')));
       }
     }
   }
@@ -76,7 +76,7 @@ class ReproductionTabView extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                state.errorMessage ?? 'Impossible de charger les donnÃ©es.',
+                state.errorMessage ?? 'Impossible de charger les données.',
                 textAlign: TextAlign.center,
               ),
             ),
@@ -97,7 +97,7 @@ class ReproductionTabView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Suivi des portÃ©es',
+                'Suivi des portées',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 12),
@@ -106,7 +106,7 @@ class ReproductionTabView extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                      'Enregistrez votre premiÃ¨re saillie pour suivre les portÃ©es.',
+                      'Enregistrez votre première saillie pour suivre les portées.',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),

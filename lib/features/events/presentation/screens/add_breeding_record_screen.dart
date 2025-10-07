@@ -88,7 +88,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
   List<Animal> get _bucks => _animals
       .where(
         (Animal animal) =>
-            animal.sex.toLowerCase().contains('mÃƒÂ¢') ||
+            animal.sex.toLowerCase().contains('mâ') ||
             animal.sex.toLowerCase().contains('mal'),
       )
       .toList();
@@ -455,7 +455,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
   Future<void> _submit() async {
     if (_selectedDoeId == null || _selectedBuckId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('SÃ©lectionnez une femelle et un mÃ¢le.')),
+        const SnackBar(content: Text('Sélectionnez une femelle et un mâle.')),
       );
 
       return;
@@ -574,290 +574,178 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
     return value.trim().isEmpty ? null : double.tryParse(value.trim());
   }
 
-  List<Step> _buildSteps(ThemeData theme, MaterialLocalizations localizations) {
+  List<Step> _buildSteps(
+    ThemeData theme,
+    MaterialLocalizations localizations, {
+    required bool isWideLayout,
+  }) {
     final bool highRisk = (_pairingCoefficient ?? 0) >= 0.0625;
-
     final String plannedKindling = localizations.formatMediumDate(
       _matingDate.add(const Duration(days: 31)),
     );
-
     final String plannedWeaning = localizations.formatMediumDate(
       (_kindlingDate ?? _matingDate.add(const Duration(days: 31))).add(
         const Duration(days: 28),
       ),
     );
-
     final Animal? selectedDoe = _findAnimalById(_selectedDoeId);
-
     final Animal? selectedBuck = _findAnimalById(_selectedBuckId);
+    final Widget? pairingSummary = _buildPairingSummaryCard(theme, highRisk);
 
     return <Step>[
       Step(
         title: const Text('Saillie'),
-
         isActive: _currentStep >= 0,
-
         state: _currentStep > 0 ? StepState.complete : StepState.indexed,
-
         content: Form(
           key: _stepKeys[0],
-
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              TextFormField(
-                controller: _selectedDoeController,
-
-                readOnly: true,
-
-                showCursor: false,
-
-                decoration: InputDecoration(
-                  labelText: 'Femelle',
-
-                  hintText: 'Sélectionner',
-
-                  helperText: selectedDoe != null
-                      ? _buildAnimalHelperText(selectedDoe)
-                      : 'Choisissez la reproductrice',
-
-                  suffixIcon: const Icon(Icons.expand_more),
-                ),
-
-                validator: (_) =>
-                    _selectedDoeId == null ? 'Sélection obligatoire' : null,
-
-                onTap: () async {
-                  final String? newDoeId = await _openDoePicker();
-
-                  if (!mounted) {
-                    return;
-                  }
-
-                  if (newDoeId != null && newDoeId != _selectedDoeId) {
-                    setState(() {
-                      _selectedDoeId = newDoeId;
-
-                      _syncSelectedAnimalControllers();
-
-                      _refreshPairingCoefficient();
-                    });
-
-                    _stepKeys[0].currentState?.validate();
-                  }
-                },
-              ),
-
-              const SizedBox(height: 12),
-
-              TextFormField(
-                controller: _selectedBuckController,
-
-                readOnly: true,
-
-                showCursor: false,
-
-                decoration: InputDecoration(
-                  labelText: 'Mâle',
-
-                  hintText: 'Sélectionner',
-
-                  helperText: _selectedDoeId == null
-                      ? "Sélectionnez d'abord une femelle"
-                      : selectedBuck != null
-                      ? _buildAnimalHelperText(selectedBuck)
-                      : 'Choisissez un mâle compatible',
-
-                  suffixIcon: const Icon(Icons.expand_more),
-                ),
-
-                validator: (_) =>
-                    _selectedBuckId == null ? 'Sélection obligatoire' : null,
-
-                onTap: () async {
-                  if (_selectedDoeId == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Sélectionnez d'abord une femelle pour calculer la compatibilité.",
-                        ),
-                      ),
-                    );
-
-                    return;
-                  }
-
-                  final String? newBuckId = await _openBuckPicker();
-
-                  if (!mounted) {
-                    return;
-                  }
-
-                  if (newBuckId != null && newBuckId != _selectedBuckId) {
-                    setState(() {
-                      _selectedBuckId = newBuckId;
-
-                      _syncSelectedAnimalControllers();
-
-                      _refreshPairingCoefficient();
-                    });
-
-                    _stepKeys[0].currentState?.validate();
-                  }
-                },
-              ),
-
-              const SizedBox(height: 12),
-
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-
-                title: const Text('Date de saillie'),
-
-                subtitle: Text(localizations.formatMediumDate(_matingDate)),
-
-                trailing: IconButton(
-                  icon: const Icon(Icons.calendar_today_outlined),
-
-                  onPressed: () => _pickDate(
-                    initialDate: _matingDate,
-
-                    onSelected: (DateTime value) => _matingDate = value,
-                  ),
-                ),
-              ),
-
-              if (_pairingCoefficient != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: highRisk
-                          ? theme.colorScheme.errorContainer
-                          : theme.colorScheme.secondaryContainer,
-
-                      borderRadius: BorderRadius.circular(12),
+              if (pairingSummary != null) pairingSummary,
+              _FormSectionCard(
+                title: 'Reproducteurs',
+                subtitle:
+                    'Sélectionnez la femelle et le mâle pour démarrer la saillie.',
+                children: <Widget>[
+                  TextFormField(
+                    controller: _selectedDoeController,
+                    readOnly: true,
+                    showCursor: false,
+                    decoration: InputDecoration(
+                      labelText: 'Femelle',
+                      hintText: 'Sélectionner',
+                      helperText: selectedDoe != null
+                          ? _buildAnimalHelperText(selectedDoe)
+                          : 'Choisissez la reproductrice',
+                      suffixIcon: const Icon(Icons.expand_more),
                     ),
-
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-
-                      child: Row(
-                        children: <Widget>[
-                          Icon(
-                            highRisk
-                                ? Icons.warning_amber
-                                : Icons.volunteer_activism,
-
-                            color: highRisk
-                                ? theme.colorScheme.onErrorContainer
-                                : theme.colorScheme.onSecondaryContainer,
-                          ),
-
-                          const SizedBox(width: 12),
-
-                          Expanded(
-                            child: Text(
-                              highRisk
-                                  ? 'Coefficient de consanguinitÃƒÂ© ÃƒÂ©levÃƒÂ© (${_pairingCoefficient!.toStringAsFixed(3)}). Ãƒâ€°vitez ce croisement ou surveillez la portÃƒÂ©e.'
-                                  : 'Coefficient de consanguinitÃƒÂ© estimÃƒÂ© : ${_pairingCoefficient!.toStringAsFixed(3)}.',
-
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: highRisk
-                                    ? theme.colorScheme.onErrorContainer
-                                    : theme.colorScheme.onSecondaryContainer,
-                              ),
+                    validator: (_) =>
+                        _selectedDoeId == null ? 'Sélection obligatoire' : null,
+                    onTap: () async {
+                      final String? newDoeId = await _openDoePicker();
+                      if (!mounted) {
+                        return;
+                      }
+                      if (newDoeId != null && newDoeId != _selectedDoeId) {
+                        setState(() {
+                          _selectedDoeId = newDoeId;
+                          _syncSelectedAnimalControllers();
+                          _refreshPairingCoefficient();
+                        });
+                        _stepKeys[0].currentState?.validate();
+                      }
+                    },
+                  ),
+                  TextFormField(
+                    controller: _selectedBuckController,
+                    readOnly: true,
+                    showCursor: false,
+                    decoration: InputDecoration(
+                      labelText: 'Mâle',
+                      hintText: 'Sélectionner',
+                      helperText: _selectedDoeId == null
+                          ? "Sélectionnez d'abord une femelle"
+                          : selectedBuck != null
+                          ? _buildAnimalHelperText(selectedBuck)
+                          : 'Choisissez un mâle compatible',
+                      suffixIcon: const Icon(Icons.expand_more),
+                    ),
+                    validator: (_) => _selectedBuckId == null
+                        ? 'Sélection obligatoire'
+                        : null,
+                    onTap: () async {
+                      if (_selectedDoeId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "Sélectionnez d'abord une femelle pour calculer la compatibilité.",
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                        return;
+                      }
+                      final String? newBuckId = await _openBuckPicker();
+                      if (!mounted) {
+                        return;
+                      }
+                      if (newBuckId != null && newBuckId != _selectedBuckId) {
+                        setState(() {
+                          _selectedBuckId = newBuckId;
+                          _syncSelectedAnimalControllers();
+                          _refreshPairingCoefficient();
+                        });
+                        _stepKeys[0].currentState?.validate();
+                      }
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _FormSectionCard(
+                title: 'Détails de la saillie',
+                children: <Widget>[
+                  _buildDateTile(
+                    theme: theme,
+                    icon: Icons.calendar_today_outlined,
+                    title: 'Date de saillie',
+                    subtitle: localizations.formatMediumDate(_matingDate),
+                    onPick: () => _pickDate(
+                      initialDate: _matingDate,
+                      onSelected: (DateTime value) => _matingDate = value,
                     ),
                   ),
-                ),
+                ],
+              ),
             ],
           ),
         ),
       ),
-
       Step(
         title: const Text('Palpation'),
-
         isActive: _currentStep >= 1,
-
         state: _currentStep > 1 ? StepState.complete : StepState.indexed,
-
         content: Form(
           key: _stepKeys[1],
-
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-
+          child: _FormSectionCard(
+            title: 'Suivi de la palpation',
+            subtitle:
+                'Planifiez la date de palpation et enregistrez le résultat.',
             children: <Widget>[
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-
-                title: Text(
-                  _palpationDate != null
-                      ? localizations.formatMediumDate(_palpationDate!)
-                      : 'Programmer une date',
-                ),
-
-                leading: const Icon(Icons.monitor_heart),
-
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-
-                  children: <Widget>[
-                    if (_palpationDate != null)
-                      IconButton(
-                        icon: const Icon(Icons.clear),
-
-                        onPressed: () => setState(() => _palpationDate = null),
-                      ),
-
-                    IconButton(
-                      icon: const Icon(Icons.calendar_today_outlined),
-
-                      onPressed: () => _pickDate(
-                        initialDate: _palpationDate ?? _matingDate,
-
-                        onSelected: (DateTime value) => _palpationDate = value,
-                      ),
-                    ),
-                  ],
+              _buildDateTile(
+                theme: theme,
+                icon: Icons.monitor_heart,
+                title: 'Date de palpation',
+                subtitle: _palpationDate != null
+                    ? localizations.formatMediumDate(_palpationDate!)
+                    : 'Programmer une date',
+                isPlaceholder: _palpationDate == null,
+                onClear: _palpationDate != null
+                    ? () => setState(() => _palpationDate = null)
+                    : null,
+                onPick: () => _pickDate(
+                  initialDate: _palpationDate ?? _matingDate,
+                  onSelected: (DateTime value) => _palpationDate = value,
                 ),
               ),
-
-              const SizedBox(height: 8),
-
-              DropdownButtonFormField<String>(
-                initialValue: _palpationResult,
-
-                decoration: const InputDecoration(labelText: 'RÃƒÂ©sultat'),
-
-                items: const <DropdownMenuItem<String>>[
-                  DropdownMenuItem<String>(
+              DropdownMenu<String>(
+                initialSelection: _palpationResult,
+                label: const Text('Résultat'),
+                dropdownMenuEntries: const <DropdownMenuEntry<String>>[
+                  DropdownMenuEntry<String>(
                     value: 'unknown',
-
-                    child: Text('Ãƒâ‚¬ confirmer'),
+                    label: 'À confirmer',
                   ),
-
-                  DropdownMenuItem<String>(
+                  DropdownMenuEntry<String>(
                     value: 'positive',
-
-                    child: Text('Gestante'),
+                    label: 'Gestante',
                   ),
-
-                  DropdownMenuItem<String>(
+                  DropdownMenuEntry<String>(
                     value: 'negative',
-
-                    child: Text('Non gestante'),
+                    label: 'Non gestante',
                   ),
                 ],
-
-                onChanged: (String? value) {
+                onSelected: (String? value) {
                   if (value != null) {
                     setState(() => _palpationResult = value);
                   }
@@ -867,212 +755,250 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
           ),
         ),
       ),
-
       Step(
         title: const Text('Mise bas & sevrage'),
-
         isActive: _currentStep >= 2,
-
         state: _currentStep == 2 ? StepState.editing : StepState.indexed,
-
         content: Form(
           key: _stepKeys[2],
-
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-
-                title: Text(
-                  _kindlingDate != null
-                      ? localizations.formatMediumDate(_kindlingDate!)
-                      : 'Date prÃƒÂ©vue : $plannedKindling',
-                ),
-
-                leading: const Icon(Icons.nest_cam_wired_stand),
-
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-
-                  children: <Widget>[
-                    if (_kindlingDate != null)
-                      IconButton(
-                        icon: const Icon(Icons.clear),
-
-                        onPressed: () => setState(() => _kindlingDate = null),
-                      ),
-
-                    IconButton(
-                      icon: const Icon(Icons.calendar_today_outlined),
-
-                      onPressed: () => _pickDate(
-                        initialDate: _kindlingDate ?? _matingDate,
-
-                        onSelected: (DateTime value) => _kindlingDate = value,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
+              _FormSectionCard(
+                title: 'Mise bas',
+                subtitle: 'Enregistrez les informations sur la portée.',
                 children: <Widget>[
-                  Expanded(
-                    child: TextFormField(
-                      controller: _bornAliveController,
-
-                      keyboardType: TextInputType.number,
-
-                      decoration: const InputDecoration(
-                        labelText: 'NÃƒÂ©s vivants',
-                      ),
+                  _buildDateTile(
+                    theme: theme,
+                    icon: Icons.nest_cam_wired_stand,
+                    title: 'Date de mise bas',
+                    subtitle: _kindlingDate != null
+                        ? localizations.formatMediumDate(_kindlingDate!)
+                        : 'Date prévue : $plannedKindling',
+                    isPlaceholder: _kindlingDate == null,
+                    onClear: _kindlingDate != null
+                        ? () => setState(() => _kindlingDate = null)
+                        : null,
+                    onPick: () => _pickDate(
+                      initialDate: _kindlingDate ?? _matingDate,
+                      onSelected: (DateTime value) => _kindlingDate = value,
                     ),
                   ),
-
-                  const SizedBox(width: 12),
-
-                  Expanded(
-                    child: TextFormField(
-                      controller: _bornDeadController,
-
-                      keyboardType: TextInputType.number,
-
-                      decoration: const InputDecoration(
-                        labelText: 'NÃƒÂ©s morts',
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 12,
+                    children: <Widget>[
+                      _buildNumberField(
+                        controller: _bornAliveController,
+                        label: 'Nés vivants',
+                        compact: isWideLayout,
                       ),
-                    ),
+                      _buildNumberField(
+                        controller: _bornDeadController,
+                        label: 'Nés morts',
+                        compact: isWideLayout,
+                      ),
+                      _buildNumberField(
+                        controller: _adoptedController,
+                        label: 'Lapereaux adoptés',
+                        compact: isWideLayout,
+                      ),
+                      _buildNumberField(
+                        controller: _removedController,
+                        label: 'Lapereaux retirés',
+                        compact: isWideLayout,
+                      ),
+                    ],
                   ),
                 ],
               ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: TextFormField(
-                      controller: _adoptedController,
-
-                      keyboardType: TextInputType.number,
-
-                      decoration: const InputDecoration(
-                        labelText: 'Lapereaux adoptÃƒÂ©s',
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  Expanded(
-                    child: TextFormField(
-                      controller: _removedController,
-
-                      keyboardType: TextInputType.number,
-
-                      decoration: const InputDecoration(
-                        labelText: 'Lapereaux retirÃƒÂ©s',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
               const SizedBox(height: 16),
-
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-
-                title: Text(
-                  _weaningDate != null
-                      ? localizations.formatMediumDate(_weaningDate!)
-                      : 'Date prÃƒÂ©vue : $plannedWeaning',
-                ),
-
-                leading: const Icon(Icons.child_care_outlined),
-
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-
-                  children: <Widget>[
-                    if (_weaningDate != null)
-                      IconButton(
-                        icon: const Icon(Icons.clear),
-
-                        onPressed: () => setState(() => _weaningDate = null),
-                      ),
-
-                    IconButton(
-                      icon: const Icon(Icons.calendar_today_outlined),
-
-                      onPressed: () => _pickDate(
-                        initialDate:
-                            _weaningDate ??
-                            (_kindlingDate ??
-                                _matingDate.add(const Duration(days: 31))),
-
-                        onSelected: (DateTime value) => _weaningDate = value,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
+              _FormSectionCard(
+                title: 'Sevrage',
+                subtitle: 'Complétez les informations après la mise bas.',
                 children: <Widget>[
-                  Expanded(
-                    child: TextFormField(
-                      controller: _weanedController,
-
-                      keyboardType: TextInputType.number,
-
-                      decoration: const InputDecoration(
-                        labelText: 'Lapereaux sevrÃƒÂ©s',
-                      ),
+                  _buildDateTile(
+                    theme: theme,
+                    icon: Icons.child_care_outlined,
+                    title: 'Date de sevrage',
+                    subtitle: _weaningDate != null
+                        ? localizations.formatMediumDate(_weaningDate!)
+                        : 'Date prévue : $plannedWeaning',
+                    isPlaceholder: _weaningDate == null,
+                    onClear: _weaningDate != null
+                        ? () => setState(() => _weaningDate = null)
+                        : null,
+                    onPick: () => _pickDate(
+                      initialDate:
+                          _weaningDate ??
+                          (_kindlingDate ??
+                              _matingDate.add(const Duration(days: 31))),
+                      onSelected: (DateTime value) => _weaningDate = value,
                     ),
                   ),
-
-                  const SizedBox(width: 12),
-
-                  Expanded(
-                    child: TextFormField(
-                      controller: _weightController,
-
-                      keyboardType: const TextInputType.numberWithOptions(
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 12,
+                    children: <Widget>[
+                      _buildNumberField(
+                        controller: _weanedController,
+                        label: 'Lapereaux sevrés',
+                        compact: isWideLayout,
+                      ),
+                      _buildNumberField(
+                        controller: _weightController,
+                        label: 'Poids moyen (kg)',
+                        compact: isWideLayout,
                         decimal: true,
                       ),
-
-                      decoration: const InputDecoration(
-                        labelText: 'Poids moyen (kg)',
-                      ),
+                    ],
+                  ),
+                  TextFormField(
+                    controller: _notesController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes',
+                      alignLabelWithHint: true,
                     ),
                   ),
                 ],
-              ),
-
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _notesController,
-
-                maxLines: 3,
-
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-
-                  alignLabelWithHint: true,
-                ),
               ),
             ],
           ),
         ),
       ),
     ];
+  }
+
+  Widget? _buildPairingSummaryCard(ThemeData theme, bool highRisk) {
+    final Animal? doe = _findAnimalById(_selectedDoeId);
+    final Animal? buck = _findAnimalById(_selectedBuckId);
+
+    if (doe == null && buck == null && _pairingCoefficient == null) {
+      return null;
+    }
+
+    final Color badgeColor = highRisk
+        ? theme.colorScheme.errorContainer
+        : theme.colorScheme.secondaryContainer;
+    final Color badgeOnColor = highRisk
+        ? theme.colorScheme.onErrorContainer
+        : theme.colorScheme.onSecondaryContainer;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text('Résumé du croisement', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 12),
+            if (doe != null)
+              _SummaryEntry(
+                label: 'Femelle',
+                value: _buildAnimalDisplayName(doe),
+                helper: _buildAnimalHelperText(doe),
+              ),
+            if (buck != null)
+              _SummaryEntry(
+                label: 'Mâle',
+                value: _buildAnimalDisplayName(buck),
+                helper: _buildAnimalHelperText(buck),
+              ),
+            if (_pairingCoefficient != null) ...<Widget>[
+              const SizedBox(height: 12),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: badgeColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(
+                        highRisk ? Icons.warning_amber : Icons.favorite_outline,
+                        color: badgeOnColor,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          highRisk
+                              ? 'Coefficient de consanguinité élevé (${_pairingCoefficient!.toStringAsFixed(3)}). Évitez ce croisement ou surveillez la portée.'
+                              : 'Coefficient de consanguinité estimé : ${_pairingCoefficient!.toStringAsFixed(3)}.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: badgeOnColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateTile({
+    required ThemeData theme,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    bool isPlaceholder = false,
+    VoidCallback? onClear,
+    required VoidCallback onPick,
+  }) {
+    final TextStyle? subtitleStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: isPlaceholder ? theme.colorScheme.onSurfaceVariant : null,
+    );
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon),
+      title: Text(title),
+      subtitle: Text(subtitle, style: subtitleStyle),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (onClear != null)
+            IconButton(
+              tooltip: 'Effacer',
+              icon: const Icon(Icons.close),
+              onPressed: onClear,
+            ),
+          IconButton(
+            tooltip: 'Choisir une date',
+            icon: const Icon(Icons.calendar_today_outlined),
+            onPressed: onPick,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNumberField({
+    required TextEditingController controller,
+    required String label,
+    required bool compact,
+    bool decimal = false,
+  }) {
+    final TextFormField field = TextFormField(
+      controller: controller,
+      keyboardType: decimal
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.number,
+      decoration: InputDecoration(labelText: label),
+    );
+
+    if (!compact) {
+      return field;
+    }
+
+    return SizedBox(width: 220, child: field);
   }
 
   @override
@@ -1137,52 +1063,66 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
               else
                 Align(
                   alignment: Alignment.topCenter,
+                  child: LayoutBuilder(
+                    builder:
+                        (BuildContext context, BoxConstraints constraints) {
+                          final bool isWideLayout = constraints.maxWidth >= 640;
 
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 600),
+                          return ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 720),
+                            child: Stepper(
+                              currentStep: _currentStep,
+                              type: isWideLayout
+                                  ? StepperType.horizontal
+                                  : StepperType.vertical,
+                              controlsBuilder:
+                                  (
+                                    BuildContext context,
+                                    ControlsDetails details,
+                                  ) {
+                                    final bool isLastStep =
+                                        _currentStep == _stepKeys.length - 1;
 
-                    child: Stepper(
-                      currentStep: _currentStep,
-
-                      type: StepperType.vertical,
-
-                      controlsBuilder:
-                          (BuildContext context, ControlsDetails details) {
-                            final bool isLast = _currentStep == 2;
-
-                            return Row(
-                              children: <Widget>[
-                                FilledButton(
-                                  onPressed: _isSaving
-                                      ? null
-                                      : details.onStepContinue,
-
-                                  child: Text(
-                                    isLast ? 'Enregistrer' : 'Continuer',
-                                  ),
-                                ),
-
-                                const SizedBox(width: 12),
-
-                                TextButton(
-                                  onPressed: _isSaving
-                                      ? null
-                                      : details.onStepCancel,
-
-                                  child: Text(
-                                    _currentStep == 0 ? 'Fermer' : 'Retour',
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-
-                      onStepContinue: () async => _handleContinue(),
-
-                      onStepCancel: _handleCancel,
-
-                      steps: _buildSteps(theme, localizations),
-                    ),
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 16),
+                                      child: Wrap(
+                                        spacing: 12,
+                                        runSpacing: 8,
+                                        children: <Widget>[
+                                          FilledButton(
+                                            onPressed: _isSaving
+                                                ? null
+                                                : details.onStepContinue,
+                                            child: Text(
+                                              isLastStep
+                                                  ? 'Enregistrer'
+                                                  : 'Continuer',
+                                            ),
+                                          ),
+                                          OutlinedButton(
+                                            onPressed: _isSaving
+                                                ? null
+                                                : details.onStepCancel,
+                                            child: Text(
+                                              _currentStep == 0
+                                                  ? 'Fermer'
+                                                  : 'Retour',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                              onStepContinue: () async => _handleContinue(),
+                              onStepCancel: _handleCancel,
+                              steps: _buildSteps(
+                                theme,
+                                localizations,
+                                isWideLayout: isWideLayout,
+                              ),
+                            ),
+                          );
+                        },
                   ),
                 ),
 
@@ -1217,7 +1157,7 @@ class _BreedingErrorMessage extends StatelessWidget {
             if (onRetry != null) ...<Widget>[
               const SizedBox(height: 12),
 
-              FilledButton(onPressed: onRetry, child: const Text('RÃ©essayer')),
+              FilledButton(onPressed: onRetry, child: const Text('Réessayer')),
             ],
           ],
         ),
@@ -1246,6 +1186,108 @@ class _SavingOverlay extends StatelessWidget {
             Text('Enregistrement en cours...'),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _FormSectionCard extends StatelessWidget {
+  const _FormSectionCard({
+    required this.title,
+    required this.children,
+    this.subtitle,
+  });
+
+  final String title;
+  final String? subtitle;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final List<Widget> spacedChildren = <Widget>[];
+
+    for (int index = 0; index < children.length; index += 1) {
+      spacedChildren.add(children[index]);
+      if (index != children.length - 1) {
+        spacedChildren.add(const SizedBox(height: 12));
+      }
+    }
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(title, style: theme.textTheme.titleMedium),
+            if (subtitle != null) ...<Widget>[
+              const SizedBox(height: 4),
+              Text(
+                subtitle!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            if (spacedChildren.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 12),
+              ...spacedChildren,
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryEntry extends StatelessWidget {
+  const _SummaryEntry({
+    required this.label,
+    required this.value,
+    this.helper,
+  });
+
+  final String label;
+  final String value;
+  final String? helper;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 72,
+            child: Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(value, style: theme.textTheme.titleSmall),
+                if (helper != null)
+                  Text(
+                    helper!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

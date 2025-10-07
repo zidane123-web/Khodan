@@ -92,53 +92,6 @@ class _EventsHubViewState extends State<_EventsHubView>
     context.go('/events/add-breeding', extra: cubit);
   }
 
-  Future<void> _createHealthOrOtherEvent() async {
-    final BreedingCubit breedingCubit = context.read<BreedingCubit>();
-    final BreedingState breedingState = breedingCubit.state;
-
-    if (breedingState.status == BreedingStatus.loading &&
-        breedingState.animals.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Chargement des données')));
-      return;
-    }
-
-    if (breedingState.animals.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Ajoutez d’abord vos animaux pour enregistrer un événement.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    final List<LivestockEvent>? created = await BatchEventFormDialog.show(
-      context,
-      animals: breedingState.animals,
-      repository: widget.eventRepository,
-    );
-
-    if (!mounted || created == null) {
-      return;
-    }
-
-    await context.read<EventsCubit>().loadEvents();
-
-    if (!mounted || created.isEmpty) {
-      return;
-    }
-
-    final String message = created.length > 1
-        ? 'vénements enregistrés.'
-        : 'vénement enregistré.';
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
   Future<void> _openAddHealthOrOtherEventPage() async {
     final BreedingCubit breedingCubit = context.read<BreedingCubit>();
     final BreedingState breedingState = breedingCubit.state;
@@ -176,6 +129,9 @@ class _EventsHubViewState extends State<_EventsHubView>
     }
 
     await context.read<EventsCubit>().loadEvents();
+    if (!mounted) {
+      return;
+    }
 
     final String message = created.length > 1
         ? 'Événements enregistrés.'

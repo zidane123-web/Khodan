@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import 'package:khodan/data/models/event.dart';
 import 'package:khodan/features/events/presentation/screens/event_detail_screen.dart';

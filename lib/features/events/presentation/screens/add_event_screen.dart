@@ -23,6 +23,8 @@ class AddEventScreen extends StatefulWidget {
 
 class _AddEventScreenState extends State<AddEventScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormFieldState<String>> _eventTypeFieldKey =
+      GlobalKey<FormFieldState<String>>();
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
@@ -88,6 +90,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
     super.initState();
     if (widget.category == 'health' && _eventType == null) {
       _eventType = 'vaccination';
+    } else if (widget.category == 'other' && _eventType == null) {
+      _eventType = 'cage_change';
     }
     _selectedAnimalIds = widget.animals.map((Animal a) => a.id).toSet();
   }
@@ -204,6 +208,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
       _notesController.text = template.notes ?? '';
       _templateNameController.text = template.name;
     });
+    _eventTypeFieldKey.currentState?.didChange(_eventType);
   }
 
   Map<String, dynamic> _buildDetails(
@@ -610,32 +615,36 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   },
                 ),
                 if (_savedTemplates.isNotEmpty) ...<Widget>[
-                  DropdownButtonFormField<String>(
-                    value: _selectedTemplateName,
-                    decoration: const InputDecoration(labelText: 'Appliquer un modèle'),
-                    hint: const Text('Choisir un modèle'),
-                    items: _savedTemplates
-                        .map((
-                          _EventTemplate t,
-                        ) => DropdownMenuItem<String>(value: t.name, child: Text(t.name)))
+                  DropdownMenu<String>(
+                    initialSelection: _selectedTemplateName,
+                    label: const Text('Appliquer un modèle'),
+                    hintText: 'Choisir un modèle',
+                    dropdownMenuEntries: _savedTemplates
+                        .map(
+                          (_EventTemplate template) => DropdownMenuEntry<String>(
+                            value: template.name,
+                            label: template.name,
+                          ),
+                        )
                         .toList(),
-                    onChanged: (String? value) {
+                    onSelected: (String? value) {
                       if (value == null) {
                         setState(() {
                           _selectedTemplateName = null;
                           _templateNameController.clear();
                         });
-                      } else {
-                        final _EventTemplate template =
-                            _savedTemplates.firstWhere((_EventTemplate el) => el.name == value);
-                        _applyTemplate(template);
+                        return;
                       }
+                      final _EventTemplate template =
+                          _savedTemplates.firstWhere((_EventTemplate entry) => entry.name == value);
+                      _applyTemplate(template);
                     },
                   ),
                   const SizedBox(height: 12),
                 ],
                 DropdownButtonFormField<String>(
-                  value: _eventType ?? (widget.category == 'health' ? 'vaccination' : (widget.category == 'other' ? 'cage_change' : null)),
+                  key: _eventTypeFieldKey,
+                  initialValue: _eventType ?? (widget.category == 'health' ? 'vaccination' : (widget.category == 'other' ? 'cage_change' : null)),
                   decoration: const InputDecoration(labelText: "Type d'évènement"),
                   items: <DropdownMenuItem<String>>[
                     if (widget.category == 'health' || widget.category == null) ...const <DropdownMenuItem<String>>[
@@ -652,10 +661,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
                     ],
                     if (widget.category == 'other' || widget.category == null) ...const <DropdownMenuItem<String>>[
                       DropdownMenuItem<String>(value: 'transfer', child: Text('Transfert')),
-                      DropdownMenuItem<String>(value: 'cleaning', child: Text('Nettoyage / Desinfection')),
+                      DropdownMenuItem<String>(value: 'cleaning', child: Text('Nettoyage / Désinfection')),
                       DropdownMenuItem<String>(value: 'maintenance', child: Text('Entretien / Maintenance')),
                       DropdownMenuItem<String>(value: 'purchase', child: Text('Achat / Arrivage')),
-                      DropdownMenuItem<String>(value: 'death', child: Text('Deces / Reforme')),
+                      DropdownMenuItem<String>(value: 'death', child: Text('Décès / Réforme')),
                       DropdownMenuItem<String>(value: 'tag_change', child: Text('Changement de bague / ID')),
                       DropdownMenuItem<String>(value: 'feed_change', child: Text("Changement d'alimentation")),
                     ],
