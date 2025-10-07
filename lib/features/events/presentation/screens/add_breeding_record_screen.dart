@@ -1,55 +1,83 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../data/models/animal.dart';
+
 import '../../../../data/models/breeding_record.dart';
+
 import '../../../animals/domain/genealogy_analyzer.dart';
+
+import '../cubit/breeding_cubit.dart';
 
 class AddBreedingRecordScreen extends StatefulWidget {
   const AddBreedingRecordScreen({
-    required this.animals,
-    this.initial,
+    this.initialRecord,
+
     this.initialDoeId,
+
     this.initialBuckId,
+
     super.key,
   });
 
-  final List<Animal> animals;
-  final BreedingRecord? initial;
+  final BreedingRecord? initialRecord;
+
   final String? initialDoeId;
+
   final String? initialBuckId;
 
   @override
-  State<AddBreedingRecordScreen> createState() => _AddBreedingRecordScreenState();
+  State<AddBreedingRecordScreen> createState() =>
+      _AddBreedingRecordScreenState();
 }
 
 class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final GenealogyAnalyzer _analyzer;
+  late final List<GlobalKey<FormState>> _stepKeys;
+
+  late GenealogyAnalyzer _analyzer;
 
   final TextEditingController _bornAliveController = TextEditingController();
+
   final TextEditingController _bornDeadController = TextEditingController();
+
   final TextEditingController _adoptedController = TextEditingController();
+
   final TextEditingController _removedController = TextEditingController();
+
   final TextEditingController _weanedController = TextEditingController();
+
   final TextEditingController _weightController = TextEditingController();
+
   final TextEditingController _notesController = TextEditingController();
 
+  final TextEditingController _selectedDoeController = TextEditingController();
+
+  final TextEditingController _selectedBuckController = TextEditingController();
+
+  late List<Animal> _animals;
+
+  bool _isSaving = false;
+
   String? _selectedDoeId;
+
   String? _selectedBuckId;
+
   late DateTime _matingDate;
+
   DateTime? _palpationDate;
+
   String _palpationResult = 'unknown';
+
   DateTime? _kindlingDate;
+
   DateTime? _weaningDate;
+
+  int _currentStep = 0;
+
   double? _pairingCoefficient;
 
-  // Trigger UI refresh when numeric fields change so summaries update live.
-  void _onNumbersChanged() {
-    if (mounted) setState(() {});
-  }
-
-  List<Animal> get _does => widget.animals
+  List<Animal> get _does => _animals
       .where(
         (Animal animal) =>
             animal.sex.toLowerCase().contains('fem') ||
@@ -57,190 +85,485 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
       )
       .toList();
 
-  List<Animal> get _bucks => widget.animals
+  List<Animal> get _bucks => _animals
       .where(
         (Animal animal) =>
-            animal.sex.toLowerCase().contains('mâ') ||
+            animal.sex.toLowerCase().contains('mÃƒÂ¢') ||
             animal.sex.toLowerCase().contains('mal'),
       )
       .toList();
 
-  DateTime get _plannedPalpationDate =>
-      _matingDate.add(const Duration(days: 12));
+  Animal? _findAnimalById(String? id) {
+    if (id == null) {
+      return null;
+    }
 
-  DateTime get _plannedKindlingDate =>
-      _matingDate.add(const Duration(days: 31));
+    for (final Animal animal in _animals) {
+      if (animal.id == id) {
+        return animal;
+      }
+    }
 
-  DateTime get _plannedWeaningDate =>
-      (_kindlingDate ?? _plannedKindlingDate).add(const Duration(days: 28));
+    return null;
+  }
+
+  void _syncSelectedAnimalControllers() {
+    final Animal? doe = _findAnimalById(_selectedDoeId);
+
+    final Animal? buck = _findAnimalById(_selectedBuckId);
+
+    _selectedDoeController.text = doe == null
+        ? ''
+        : _buildAnimalDisplayName(doe);
+
+    _selectedBuckController.text = buck == null
+        ? ''
+        : _buildAnimalDisplayName(buck);
+  }
+
+  String _buildAnimalDisplayName(Animal animal) {
+    if (animal.name == null || animal.name!.trim().isEmpty) {
+      return animal.tagId;
+    }
+
+    return '${animal.tagId} · ${animal.name}';
+  }
+
+  String _buildAnimalHelperText(Animal animal) {
+    final String age = _formatAnimalAge(animal);
+
+    return 'Âge : $age · Statut : ${animal.status}';
+  }
+
+  String _formatAnimalAge(Animal animal) {
+    final Duration difference = DateTime.now().difference(animal.birthDate);
+
+    final int days = difference.inDays;
+
+    if (days < 30) {
+      return days <= 1 ? '$days jour' : '$days jours';
+    }
+
+    final int months = days ~/ 30;
+
+    if (months < 12) {
+      return months <= 1 ? '1 mois' : '$months mois';
+    }
+
+    final int years = months ~/ 12;
+
+    final int remainingMonths = months % 12;
+
+    if (remainingMonths == 0) {
+      return years <= 1 ? '1 an' : '$years ans';
+    }
+
+    final String yearsPart = years <= 1 ? '1 an' : '$years ans';
+
+    final String monthsPart = remainingMonths <= 1
+        ? '1 mois'
+        : '$remainingMonths mois';
+
+    return '$yearsPart $monthsPart';
+  }
+
+  Future<String?> _openDoePicker() {
+    if (_does.isEmpty) {
+      return Future<String?>.value(null);
+    }
+
+    return _showAnimalPicker(
+      title: 'Sélectionner la femelle',
+
+      animals: _does,
+
+      selectedId: _selectedDoeId,
+
+      searchHint: 'Rechercher par bague, nom ou statut',
+
+      emptyLabel: 'Aucune femelle disponible.',
+
+      subtitleBuilder: _buildAnimalHelperText,
+    );
+  }
+
+  Future<String?> _openBuckPicker() {
+    if (_bucks.isEmpty) {
+      return Future<String?>.value(null);
+    }
+
+    return _showAnimalPicker(
+      title: 'Sélectionner le mâle',
+
+      animals: _bucks,
+
+      selectedId: _selectedBuckId,
+
+      searchHint: 'Rechercher par bague, nom ou statut',
+
+      emptyLabel: 'Aucun mâle disponible.',
+
+      subtitleBuilder: _buildAnimalHelperText,
+
+      trailingBuilder: (BuildContext context, Animal animal) {
+        if (_selectedDoeId == null) {
+          return null;
+        }
+
+        final double coefficient = _analyzer.computePairCoefficient(
+          _selectedDoeId,
+          animal.id,
+        );
+
+        return _buildCoefficientChip(context, coefficient);
+      },
+    );
+  }
+
+  Future<String?> _showAnimalPicker({
+    required String title,
+
+    required List<Animal> animals,
+
+    required String? selectedId,
+
+    required String searchHint,
+
+    required String emptyLabel,
+
+    String? Function(Animal)? subtitleBuilder,
+
+    Widget? Function(BuildContext, Animal)? trailingBuilder,
+  }) {
+    return showModalBottomSheet<String>(
+      context: context,
+
+      isScrollControlled: true,
+
+      builder: (BuildContext context) {
+        return FractionallySizedBox(
+          heightFactor: 0.9,
+
+          child: Material(
+            color: Theme.of(context).colorScheme.surface,
+
+            child: _AnimalPickerContent(
+              title: title,
+
+              animals: animals,
+
+              initialSelectedId: selectedId,
+
+              searchHint: searchHint,
+
+              emptyLabel: emptyLabel,
+
+              subtitleBuilder: subtitleBuilder,
+
+              trailingBuilder: trailingBuilder,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCoefficientChip(BuildContext context, double coefficient) {
+    final bool highRisk = coefficient >= 0.0625;
+
+    final ThemeData theme = Theme.of(context);
+
+    final ColorScheme colors = theme.colorScheme;
+
+    final Color background = highRisk
+        ? colors.errorContainer
+        : colors.secondaryContainer;
+
+    final Color foreground = highRisk
+        ? colors.onErrorContainer
+        : colors.onSecondaryContainer;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+
+      decoration: BoxDecoration(
+        color: background,
+
+        borderRadius: BorderRadius.circular(8),
+      ),
+
+      child: Text(
+        coefficient.toStringAsFixed(3),
+
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: foreground,
+
+          fontWeight: highRisk ? FontWeight.w700 : FontWeight.w500,
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
     super.initState();
-    final BreedingRecord? initial = widget.initial;
+
+    _stepKeys = List<GlobalKey<FormState>>.generate(
+      3,
+
+      (_) => GlobalKey<FormState>(),
+    );
+
+    final BreedingState breedingState = context.read<BreedingCubit>().state;
+
+    _animals = List<Animal>.from(breedingState.animals);
+
+    final BreedingRecord? initial = widget.initialRecord;
+
     _selectedDoeId = initial?.doeId ?? widget.initialDoeId;
+
     _selectedBuckId = initial?.buckId ?? widget.initialBuckId;
+
     _matingDate = initial?.matingDate ?? DateTime.now();
+
     _palpationDate = initial?.palpationDate;
+
     _palpationResult = initial?.palpationPositive == null
         ? 'unknown'
         : (initial!.palpationPositive! ? 'positive' : 'negative');
+
     _kindlingDate = initial?.kindlingDate;
+
     _weaningDate = initial?.weaningDate;
 
     _bornAliveController.text = initial?.kitsBornAlive?.toString() ?? '';
-    _bornDeadController.text = initial?.kitsBornDead?.toString() ?? '';
-    _adoptedController.text = initial?.adoptedKitsIn?.toString() ?? '';
-    _removedController.text = initial?.kitsRemoved?.toString() ?? '';
-    _weanedController.text = initial?.kitsWeaned?.toString() ?? '';
-    _weightController.text = initial?.averageWeaningWeight?.toString() ?? '';
-    _notesController.text = initial?.notes ?? '';
 
-    final Map<String, Animal> animalsById = <String, Animal>{
-      for (final Animal animal in widget.animals) animal.id: animal,
-    };
+    _bornDeadController.text = initial?.kitsBornDead?.toString() ?? '';
+
+    _adoptedController.text = initial?.adoptedKitsIn?.toString() ?? '';
+
+    _removedController.text = initial?.kitsRemoved?.toString() ?? '';
+
+    _weanedController.text = initial?.kitsWeaned?.toString() ?? '';
+
+    _weightController.text = initial?.averageWeaningWeight?.toString() ?? '';
+
+    final Map<String, Animal> animalsById = breedingState.animalsById;
+
     _analyzer = GenealogyAnalyzer(animalsById);
-    _refreshPairingCoefficient();
-    // Listen to numeric field changes to recompute summaries in UI
-    _bornAliveController.addListener(_onNumbersChanged);
-    _bornDeadController.addListener(_onNumbersChanged);
-    _adoptedController.addListener(_onNumbersChanged);
-    _removedController.addListener(_onNumbersChanged);
-    _weanedController.addListener(_onNumbersChanged);
+
+    _pairingCoefficient = (_selectedDoeId != null && _selectedBuckId != null)
+        ? _analyzer.computePairCoefficient(_selectedDoeId, _selectedBuckId)
+        : null;
+
+    _syncSelectedAnimalControllers();
   }
 
   @override
   void dispose() {
     _bornAliveController.dispose();
+
     _bornDeadController.dispose();
+
     _adoptedController.dispose();
+
     _removedController.dispose();
+
     _weanedController.dispose();
+
     _weightController.dispose();
+
     _notesController.dispose();
+
+    _selectedDoeController.dispose();
+
+    _selectedBuckController.dispose();
+
     super.dispose();
+  }
+
+  void _refreshPairingCoefficient() {
+    _pairingCoefficient = (_selectedDoeId != null && _selectedBuckId != null)
+        ? _analyzer.computePairCoefficient(_selectedDoeId, _selectedBuckId)
+        : null;
   }
 
   Future<void> _pickDate({
     required DateTime initialDate,
+
     required ValueChanged<DateTime> onSelected,
   }) async {
     final DateTime? result = await showDatePicker(
       context: context,
+
       initialDate: initialDate,
+
       firstDate: DateTime(initialDate.year - 1),
+
       lastDate: DateTime(initialDate.year + 2),
     );
+
     if (result != null) {
-      setState(() {
-        onSelected(result);
-      });
+      onSelected(result);
+
+      setState(() {});
     }
   }
 
-  void _refreshPairingCoefficient() {
-    final double? newValue =
-        (_selectedDoeId != null && _selectedBuckId != null)
-            ? _analyzer.computePairCoefficient(
-                _selectedDoeId,
-                _selectedBuckId,
-              )
-            : null;
-    if (newValue != _pairingCoefficient) {
-      setState(() {
-        _pairingCoefficient = newValue;
-      });
+  bool _validateStep(int index) {
+    if (index == 0) {
+      final FormState? form = _stepKeys[0].currentState;
+
+      return form == null || form.validate();
     }
+
+    if (index == 1) {
+      final FormState? form = _stepKeys[1].currentState;
+
+      return form == null || form.validate();
+    }
+
+    final FormState? form = _stepKeys[2].currentState;
+
+    return form == null || form.validate();
   }
 
-  void _submit() {
-    final FormState? form = _formKey.currentState;
-    if (form == null || !form.validate()) {
+  Future<void> _handleContinue() async {
+    if (!_validateStep(_currentStep)) {
       return;
     }
+
+    if (_currentStep == 2) {
+      _submit();
+    } else {
+      setState(() {
+        _currentStep += 1;
+      });
+    }
+  }
+
+  void _handleCancel() {
+    if (_currentStep == 0) {
+      Navigator.of(context).maybePop();
+    } else {
+      setState(() {
+        _currentStep -= 1;
+      });
+    }
+  }
+
+  Future<void> _submit() async {
     if (_selectedDoeId == null || _selectedBuckId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sélectionnez une femelle et un mâle.')),
+        const SnackBar(content: Text('SÃ©lectionnez une femelle et un mÃ¢le.')),
       );
+
       return;
     }
 
-    // Additional validations
-    if (_selectedDoeId == _selectedBuckId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La femelle et le male doivent etre differents.')),
-      );
-      return;
-    }
+    setState(() => _isSaving = true);
 
-    final Animal? doe = _findAnimalById(_selectedDoeId);
-    final Animal? buck = _findAnimalById(_selectedBuckId);
-    if (doe != null && _matingDate.isBefore(doe.birthDate)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Date de saillie invalide pour la femelle (avant sa naissance).')),
-      );
-      return;
-    }
-    if (buck != null && _matingDate.isBefore(buck.birthDate)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Date de saillie invalide pour le male (avant sa naissance).')),
-      );
-      return;
-    }
-
-    final int alive = _parseInt(_bornAliveController.text) ?? 0;
-    final int adopted = _parseInt(_adoptedController.text) ?? 0;
-    final int removed = _parseInt(_removedController.text) ?? 0;
-    final int availableAtWeaning = (alive + adopted - removed) < 0 ? 0 : (alive + adopted - removed);
-    final int weaned = _parseInt(_weanedController.text) ?? 0;
-    if (weaned > availableAtWeaning) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sevres ($weaned) > disponibles ($availableAtWeaning).')),
-      );
-      return;
-    }
-
-    final BreedingRecord base = widget.initial ??
+    final BreedingRecord base =
+        widget.initialRecord ??
         BreedingRecord(
           id: 'breeding-${DateTime.now().millisecondsSinceEpoch}',
+
           profileId: 'demo-profile',
+
           doeId: _selectedDoeId!,
+
           buckId: _selectedBuckId!,
+
           matingDate: _matingDate,
         );
 
     final bool? palpationPositive;
+
     switch (_palpationResult) {
       case 'positive':
         palpationPositive = true;
+
         break;
+
       case 'negative':
         palpationPositive = false;
+
         break;
+
       default:
         palpationPositive = null;
     }
 
     final BreedingRecord record = base.copyWith(
       doeId: _selectedDoeId!,
+
       buckId: _selectedBuckId!,
+
       matingDate: _matingDate,
+
       palpationDate: _palpationDate,
+
       palpationPositive: palpationPositive,
+
       kindlingDate: _kindlingDate,
+
       weaningDate: _weaningDate,
+
       kitsBornAlive: _parseInt(_bornAliveController.text),
+
       kitsBornDead: _parseInt(_bornDeadController.text),
+
       adoptedKitsIn: _parseInt(_adoptedController.text),
+
       kitsRemoved: _parseInt(_removedController.text),
+
       kitsWeaned: _parseInt(_weanedController.text),
+
       averageWeaningWeight: _parseDouble(_weightController.text),
+
       notes: _notesController.text.trim().isEmpty
           ? null
           : _notesController.text.trim(),
     );
 
-    Navigator.of(context).pop(record);
+    final bool success = await _persistRecord(record);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() => _isSaving = false);
+
+    if (success) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<bool> _persistRecord(BreedingRecord record) async {
+    final BreedingCubit cubit = context.read<BreedingCubit>();
+
+    if (widget.initialRecord != null) {
+      await cubit.updateRecord(record);
+    } else {
+      await cubit.addRecord(record);
+    }
+
+    final BreedingState state = cubit.state;
+
+    if (state.status == BreedingStatus.failure) {
+      final String message =
+          state.errorMessage ?? 'Impossible d\'enregistrer la saillie.';
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      }
+
+      return false;
+    }
+
+    return true;
   }
 
   int? _parseInt(String value) {
@@ -251,870 +574,650 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
     return value.trim().isEmpty ? null : double.tryParse(value.trim());
   }
 
-  Animal? _findAnimalById(String? id) {
-    if (id == null) return null;
-    for (final Animal a in widget.animals) {
-      if (a.id == id) return a;
-    }
-    return null;
-  }
+  List<Step> _buildSteps(ThemeData theme, MaterialLocalizations localizations) {
+    final bool highRisk = (_pairingCoefficient ?? 0) >= 0.0625;
 
-  Future<void> _declareKindlingManually() async {
-    await _pickDate(
-      initialDate: _kindlingDate ?? _plannedKindlingDate,
-      onSelected: (DateTime date) {
-        _kindlingDate = date;
-      },
+    final String plannedKindling = localizations.formatMediumDate(
+      _matingDate.add(const Duration(days: 31)),
     );
-  }
 
-  void _createKits() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Bientôt disponible !')),
-    );
-  }
-
-  Widget _buildDateTile({
-    required String title,
-    required IconData icon,
-    DateTime? value,
-    DateTime? planned,
-    VoidCallback? onClear,
-    required VoidCallback onPick,
-  }) {
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
-    final String subtitle;
-    if (value != null) {
-      subtitle = localizations.formatMediumDate(value);
-    } else if (planned != null) {
-      subtitle = 'Prévu le ${localizations.formatMediumDate(planned)}';
-    } else {
-      subtitle = 'À planifier';
-    }
-
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (value != null && onClear != null)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              tooltip: 'Effacer',
-              onPressed: () => setState(onClear),
-            ),
-          IconButton(
-            icon: const Icon(Icons.calendar_today_outlined),
-            tooltip: 'Choisir une date',
-            onPressed: onPick,
-          ),
-        ],
-      ),
-      onTap: onPick,
-    );
-  }
-
-  Widget _buildTimelineCard(ThemeData theme) {
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
-    final DateTime plannedPalpation = _plannedPalpationDate;
-    final DateTime plannedKindling = _plannedKindlingDate;
-    final DateTime plannedWeaning = _plannedWeaningDate;
-
-    final List<_TimelineStep> steps = <_TimelineStep>[
-      _TimelineStep(
-        label: 'Saillie',
-        icon: Icons.favorite_outline,
-        plannedDate: _matingDate,
-        actualDate: _matingDate,
-        highlight: true,
-      ),
-      _TimelineStep(
-        label: 'Palpation',
-        icon: Icons.monitor_heart,
-        plannedDate: plannedPalpation,
-        actualDate: _palpationDate,
-      ),
-      _TimelineStep(
-        label: 'Mise-bas',
-        icon: Icons.nest_cam_wired_stand,
-        plannedDate: plannedKindling,
-        actualDate: _kindlingDate,
-      ),
-      _TimelineStep(
-        label: 'Sevrage',
-        icon: Icons.child_care_outlined,
-        plannedDate: plannedWeaning,
-        actualDate: _weaningDate,
-      ),
-    ];
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text('Chronologie du cycle', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
-            for (int i = 0; i < steps.length; i++)
-              _TimelineStepTile(
-                data: steps[i],
-                isLast: i == steps.length - 1,
-                localizations: localizations,
-              ),
-          ],
-        ),
+    final String plannedWeaning = localizations.formatMediumDate(
+      (_kindlingDate ?? _matingDate.add(const Duration(days: 31))).add(
+        const Duration(days: 28),
       ),
     );
-  }
 
-  Widget _buildPairingSection(ThemeData theme) {
-    if (_pairingCoefficient == null) {
-      return const SizedBox.shrink();
-    }
+    final Animal? selectedDoe = _findAnimalById(_selectedDoeId);
 
-    final double value =
-        _pairingCoefficient!.clamp(0.0, 0.125).toDouble();
-    final double normalized = value / 0.125;
-    final _RiskLevel risk = _riskLevelFromValue(_pairingCoefficient!);
-    final Color color = risk.color(theme);
-    final String message = risk.message(_pairingCoefficient!);
+    final Animal? selectedBuck = _findAnimalById(_selectedBuckId);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Icon(
-              Icons.analytics_outlined,
-              color: color,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Coefficient de consanguinité : ${_pairingCoefficient!.toStringAsFixed(3)}',
-                style: theme.textTheme.bodyMedium?.copyWith(color: color),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: LinearProgressIndicator(
-            value: normalized.isFinite ? normalized : 0,
-            minHeight: 10,
-            backgroundColor: theme.colorScheme.surfaceContainerHighest,
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          message,
-          style: theme.textTheme.bodySmall,
-        ),
-      ],
-    );
-  }
+    return <Step>[
+      Step(
+        title: const Text('Saillie'),
 
-  Widget _buildSelectedAnimalInfo(Animal? animal) {
-    if (animal == null) return const SizedBox.shrink();
-    final int ageDays = animal.ageInDays;
-    final int months = ageDays ~/ 30;
-    final int days = ageDays % 30;
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(
-        spacing: 6,
-        runSpacing: 6,
-        children: <Widget>[
-          Chip(
-            label: Text('Age: ${months}m ${days}j'),
-            visualDensity: VisualDensity.compact,
-          ),
-          if (animal.cageNumber != null && animal.cageNumber!.trim().isNotEmpty)
-            Chip(
-              label: Text('Cage ${animal.cageNumber}'),
-              visualDensity: VisualDensity.compact,
-            ),
-          Chip(
-            label: Text(animal.status),
-            visualDensity: VisualDensity.compact,
-          ),
-        ],
-      ),
-    );
-  }
+        isActive: _currentStep >= 0,
 
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+        state: _currentStep > 0 ? StepState.complete : StepState.indexed,
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.initial == null ? 'Nouvelle saillie' : 'Modifier la saillie',
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: _submit,
-            child: const Text('Enregistrer'),
-          ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: <Widget>[
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text('Accouplement', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedDoeId,
-                      decoration: const InputDecoration(
-                        labelText: 'Femelle',
-                      ),
-                      validator: (String? value) =>
-                          value == null ? 'Sélection obligatoire' : null,
-                      items: _does
-                          .map(
-                            (Animal animal) => DropdownMenuItem<String>(
-                              value: animal.id,
-                              child: Text(
-                                '${animal.tagId}${animal.name != null ? ' · ${animal.name}' : ''}',
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (String? value) {
-                        setState(() {
-                          _selectedDoeId = value;
-                        });
-                        _refreshPairingCoefficient();
-                      },
-                    ),
-                    _buildSelectedAnimalInfo(_findAnimalById(_selectedDoeId)),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedBuckId,
-                      decoration: const InputDecoration(
-                        labelText: 'Mâle',
-                      ),
-                      validator: (String? value) =>
-                          value == null ? 'Sélection obligatoire' : null,
-                      items: _bucks
-                          .map(
-                            (Animal animal) => DropdownMenuItem<String>(
-                              value: animal.id,
-                              child: Text(
-                                '${animal.tagId}${animal.name != null ? ' · ${animal.name}' : ''}',
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (String? value) {
-                        setState(() {
-                          _selectedBuckId = value;
-                        });
-                        _refreshPairingCoefficient();
-                      },
-                    ),
-                    _buildSelectedAnimalInfo(_findAnimalById(_selectedBuckId)),
-                    const SizedBox(height: 12),
-                    _buildDateTile(
-                      title: 'Date de saillie',
-                      icon: Icons.favorite,
-                      value: _matingDate,
-                      onPick: () => _pickDate(
-                        initialDate: _matingDate,
-                        onSelected: (DateTime value) {
-                          _matingDate = value;
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildPairingSection(theme),
-                  ],
+        content: Form(
+          key: _stepKeys[0],
+
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+
+            children: <Widget>[
+              TextFormField(
+                controller: _selectedDoeController,
+
+                readOnly: true,
+
+                showCursor: false,
+
+                decoration: InputDecoration(
+                  labelText: 'Femelle',
+
+                  hintText: 'Sélectionner',
+
+                  helperText: selectedDoe != null
+                      ? _buildAnimalHelperText(selectedDoe)
+                      : 'Choisissez la reproductrice',
+
+                  suffixIcon: const Icon(Icons.expand_more),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildTimelineCard(theme),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Suivi de gestation',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDateTile(
-                      title: 'Palpation',
-                      icon: Icons.monitor_heart,
-                      value: _palpationDate,
-                      planned: _plannedPalpationDate,
-                      onClear: () {
-                        _palpationDate = null;
-                      },
-                      onPick: () => _pickDate(
-                        initialDate: _palpationDate ?? _plannedPalpationDate,
-                        onSelected: (DateTime value) {
-                          _palpationDate = value;
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: _palpationResult,
-                      decoration: const InputDecoration(
-                        labelText: 'Résultat',
-                      ),
-                      items: const <DropdownMenuItem<String>>[
-                        DropdownMenuItem<String>(
-                          value: 'unknown',
-                          child: Text('À confirmer'),
-                        ),
-                        DropdownMenuItem<String>(
-                          value: 'positive',
-                          child: Text('Gestante'),
-                        ),
-                        DropdownMenuItem<String>(
-                          value: 'negative',
-                          child: Text('Non gestante'),
-                        ),
-                      ],
-                      onChanged: (String? value) {
-                        if (value == null) {
-                          return;
-                        }
-                        setState(() {
-                          _palpationResult = value;
-                          if (value != 'positive' && _kindlingDate == null) {
-                            _weaningDate = null;
-                            _bornAliveController.clear();
-                            _bornDeadController.clear();
-                            _adoptedController.clear();
-                            _removedController.clear();
-                            _weanedController.clear();
-                            _weightController.clear();
-                          }
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Mise-bas',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    _KindlingSection(
-                      enabled:
-                          _palpationResult == 'positive' || _kindlingDate != null,
-                      plannedKindling: _plannedKindlingDate,
-                      kindlingDate: _kindlingDate,
-                      bornAliveController: _bornAliveController,
-                      bornDeadController: _bornDeadController,
-                      adoptedController: _adoptedController,
-                      removedController: _removedController,
-                      onSelectDate: () => _pickDate(
-                        initialDate: _kindlingDate ?? _plannedKindlingDate,
-                        onSelected: (DateTime value) {
-                          _kindlingDate = value;
-                        },
-                      ),
-                      onClearDate: () {
-                        _kindlingDate = null;
-                      },
-                      onRequestManual: () async {
-                        await _declareKindlingManually();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Builder(
-              builder: (BuildContext context) {
-                final int alive = _parseInt(_bornAliveController.text) ?? 0;
-                final int dead = _parseInt(_bornDeadController.text) ?? 0;
-                final int adopted = _parseInt(_adoptedController.text) ?? 0;
-                final int removed = _parseInt(_removedController.text) ?? 0;
-                final int totalBorn = alive + dead;
-                final int toRaise = (alive + adopted - removed) < 0 ? 0 : (alive + adopted - removed);
-                return Text('Total nes: $totalBorn · A elever: $toRaise', style: theme.textTheme.bodySmall);
-              },
-            ),
-            const SizedBox(height: 16),
-            _WeaningCard(
-              enabled: _palpationResult == 'positive' || _kindlingDate != null,
-              plannedWeaning: _plannedWeaningDate,
-              weaningDate: _weaningDate,
-              onSelectDate: () => _pickDate(
-                initialDate: _weaningDate ?? _plannedWeaningDate,
-                onSelected: (DateTime value) {
-                  _weaningDate = value;
+
+                validator: (_) =>
+                    _selectedDoeId == null ? 'Sélection obligatoire' : null,
+
+                onTap: () async {
+                  final String? newDoeId = await _openDoePicker();
+
+                  if (!mounted) {
+                    return;
+                  }
+
+                  if (newDoeId != null && newDoeId != _selectedDoeId) {
+                    setState(() {
+                      _selectedDoeId = newDoeId;
+
+                      _syncSelectedAnimalControllers();
+
+                      _refreshPairingCoefficient();
+                    });
+
+                    _stepKeys[0].currentState?.validate();
+                  }
                 },
               ),
-              onClearDate: () {
-                _weaningDate = null;
-              },
-              weanedController: _weanedController,
-              weightController: _weightController,
-              availableAtWeaning: (_parseInt(_bornAliveController.text) ?? 0)
-                  + (_parseInt(_adoptedController.text) ?? 0)
-                  - (_parseInt(_removedController.text) ?? 0),
-              onRequestManualKindling: _declareKindlingManually,
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text('Notes', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _notesController,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        hintText: 'Observations, détails sur la portée…',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ],
+
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: _selectedBuckController,
+
+                readOnly: true,
+
+                showCursor: false,
+
+                decoration: InputDecoration(
+                  labelText: 'Mâle',
+
+                  hintText: 'Sélectionner',
+
+                  helperText: _selectedDoeId == null
+                      ? "Sélectionnez d'abord une femelle"
+                      : selectedBuck != null
+                      ? _buildAnimalHelperText(selectedBuck)
+                      : 'Choisissez un mâle compatible',
+
+                  suffixIcon: const Icon(Icons.expand_more),
                 ),
+
+                validator: (_) =>
+                    _selectedBuckId == null ? 'Sélection obligatoire' : null,
+
+                onTap: () async {
+                  if (_selectedDoeId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          "Sélectionnez d'abord une femelle pour calculer la compatibilité.",
+                        ),
+                      ),
+                    );
+
+                    return;
+                  }
+
+                  final String? newBuckId = await _openBuckPicker();
+
+                  if (!mounted) {
+                    return;
+                  }
+
+                  if (newBuckId != null && newBuckId != _selectedBuckId) {
+                    setState(() {
+                      _selectedBuckId = newBuckId;
+
+                      _syncSelectedAnimalControllers();
+
+                      _refreshPairingCoefficient();
+                    });
+
+                    _stepKeys[0].currentState?.validate();
+                  }
+                },
               ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: _submit,
-                child: const Text('Enregistrer la saillie'),
-              ),
-            ),
-            if (widget.initial != null && (_parseInt(_bornAliveController.text) ?? 0) > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.add_circle_outline),
-                    label: const Text('Créer les fiches des lapereaux'),
-                    onPressed: _createKits,
+
+              const SizedBox(height: 12),
+
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+
+                title: const Text('Date de saillie'),
+
+                subtitle: Text(localizations.formatMediumDate(_matingDate)),
+
+                trailing: IconButton(
+                  icon: const Icon(Icons.calendar_today_outlined),
+
+                  onPressed: () => _pickDate(
+                    initialDate: _matingDate,
+
+                    onSelected: (DateTime value) => _matingDate = value,
                   ),
                 ),
               ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
-class _TimelineStep {
-  const _TimelineStep({
-    required this.label,
-    required this.icon,
-    required this.plannedDate,
-    this.actualDate,
-    this.highlight = false,
-  });
+              if (_pairingCoefficient != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
 
-  final String label;
-  final IconData icon;
-  final DateTime plannedDate;
-  final DateTime? actualDate;
-  final bool highlight;
-}
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: highRisk
+                          ? theme.colorScheme.errorContainer
+                          : theme.colorScheme.secondaryContainer,
 
-class _TimelineStepTile extends StatelessWidget {
-  const _TimelineStepTile({
-    required this.data,
-    required this.isLast,
-    required this.localizations,
-  });
+                      borderRadius: BorderRadius.circular(12),
+                    ),
 
-  final _TimelineStep data;
-  final bool isLast;
-  final MaterialLocalizations localizations;
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
 
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final bool isCompleted = data.actualDate != null;
-    final Color indicatorColor = isCompleted
-        ? theme.colorScheme.primary
-        : theme.colorScheme.outline;
-    final String subtitle = isCompleted
-        ? 'Réalisé le ${localizations.formatMediumDate(data.actualDate!)}'
-        : 'Prévu le ${localizations.formatMediumDate(data.plannedDate)}';
+                      child: Row(
+                        children: <Widget>[
+                          Icon(
+                            highRisk
+                                ? Icons.warning_amber
+                                : Icons.volunteer_activism,
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Column(
-            children: <Widget>[
-              CircleAvatar(
-                radius: 14,
-                backgroundColor: indicatorColor.withAlpha((255 * 0.15).round()),
-                child: Icon(
-                  data.icon,
-                  size: 16,
-                  color: indicatorColor,
-                ),
-              ),
-              if (!isLast)
-                Container(
-                  width: 2,
-                  height: 48,
-                  color: indicatorColor.withAlpha((255 * 0.3).round()),
+                            color: highRisk
+                                ? theme.colorScheme.onErrorContainer
+                                : theme.colorScheme.onSecondaryContainer,
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          Expanded(
+                            child: Text(
+                              highRisk
+                                  ? 'Coefficient de consanguinitÃƒÂ© ÃƒÂ©levÃƒÂ© (${_pairingCoefficient!.toStringAsFixed(3)}). Ãƒâ€°vitez ce croisement ou surveillez la portÃƒÂ©e.'
+                                  : 'Coefficient de consanguinitÃƒÂ© estimÃƒÂ© : ${_pairingCoefficient!.toStringAsFixed(3)}.',
+
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: highRisk
+                                    ? theme.colorScheme.onErrorContainer
+                                    : theme.colorScheme.onSecondaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  data.label,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color:
-                        data.highlight ? theme.colorScheme.primary : null,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
-    );
-  }
-}
 
-class _KindlingSection extends StatelessWidget {
-  const _KindlingSection({
-    required this.enabled,
-    required this.plannedKindling,
-    required this.kindlingDate,
-    required this.bornAliveController,
-    required this.bornDeadController,
-    required this.adoptedController,
-    required this.removedController,
-    required this.onSelectDate,
-    required this.onClearDate,
-    required this.onRequestManual,
-  });
+      Step(
+        title: const Text('Palpation'),
 
-  final bool enabled;
-  final DateTime plannedKindling;
-  final DateTime? kindlingDate;
-  final TextEditingController bornAliveController;
-  final TextEditingController bornDeadController;
-  final TextEditingController adoptedController;
-  final TextEditingController removedController;
-  final VoidCallback onSelectDate;
-  final VoidCallback onClearDate;
-  final Future<void> Function() onRequestManual;
+        isActive: _currentStep >= 1,
 
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
+        state: _currentStep > 1 ? StepState.complete : StepState.indexed,
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        AnimatedOpacity(
-          duration: const Duration(milliseconds: 200),
-          opacity: enabled ? 1 : 0.55,
-          child: AbsorbPointer(
-            absorbing: !enabled,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.nest_cam_wired_stand),
-                  title: const Text('Date de mise-bas'),
-                  subtitle: Text(
-                    kindlingDate != null
-                        ? localizations.formatMediumDate(kindlingDate!)
-                        : 'Prévu le ${localizations.formatMediumDate(plannedKindling)}',
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      if (kindlingDate != null)
-                        IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: onClearDate,
-                        ),
+        content: Form(
+          key: _stepKeys[1],
+
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+
+            children: <Widget>[
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+
+                title: Text(
+                  _palpationDate != null
+                      ? localizations.formatMediumDate(_palpationDate!)
+                      : 'Programmer une date',
+                ),
+
+                leading: const Icon(Icons.monitor_heart),
+
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+
+                  children: <Widget>[
+                    if (_palpationDate != null)
                       IconButton(
-                        icon: const Icon(Icons.calendar_today_outlined),
-                        onPressed: onSelectDate,
+                        icon: const Icon(Icons.clear),
+
+                        onPressed: () => setState(() => _palpationDate = null),
                       ),
-                    ],
+
+                    IconButton(
+                      icon: const Icon(Icons.calendar_today_outlined),
+
+                      onPressed: () => _pickDate(
+                        initialDate: _palpationDate ?? _matingDate,
+
+                        onSelected: (DateTime value) => _palpationDate = value,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              DropdownButtonFormField<String>(
+                value: _palpationResult,
+
+                decoration: const InputDecoration(labelText: 'RÃƒÂ©sultat'),
+
+                items: const <DropdownMenuItem<String>>[
+                  DropdownMenuItem<String>(
+                    value: 'unknown',
+
+                    child: Text('Ãƒâ‚¬ confirmer'),
                   ),
-                  onTap: onSelectDate,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: TextFormField(
-                        controller: bornAliveController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nés vivants',
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: bornDeadController,
-                        decoration: const InputDecoration(
-                          labelText: 'Mort-nés',
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: TextFormField(
-                        controller: adoptedController,
-                        decoration: const InputDecoration(
-                          labelText: 'Lapereaux adoptés',
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: removedController,
-                        decoration: const InputDecoration(
-                          labelText: 'Lapereaux retirés',
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+
+                  DropdownMenuItem<String>(
+                    value: 'positive',
+
+                    child: Text('Gestante'),
+                  ),
+
+                  DropdownMenuItem<String>(
+                    value: 'negative',
+
+                    child: Text('Non gestante'),
+                  ),
+                ],
+
+                onChanged: (String? value) {
+                  if (value != null) {
+                    setState(() => _palpationResult = value);
+                  }
+                },
+              ),
+            ],
           ),
         ),
-        if (!enabled) ...<Widget>[
-          const SizedBox(height: 12),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      ),
+
+      Step(
+        title: const Text('Mise bas & sevrage'),
+
+        isActive: _currentStep >= 2,
+
+        state: _currentStep == 2 ? StepState.editing : StepState.indexed,
+
+        content: Form(
+          key: _stepKeys[2],
+
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+
+            children: <Widget>[
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+
+                title: Text(
+                  _kindlingDate != null
+                      ? localizations.formatMediumDate(_kindlingDate!)
+                      : 'Date prÃƒÂ©vue : $plannedKindling',
+                ),
+
+                leading: const Icon(Icons.nest_cam_wired_stand),
+
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+
+                  children: <Widget>[
+                    if (_kindlingDate != null)
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+
+                        onPressed: () => setState(() => _kindlingDate = null),
+                      ),
+
+                    IconButton(
+                      icon: const Icon(Icons.calendar_today_outlined),
+
+                      onPressed: () => _pickDate(
+                        initialDate: _kindlingDate ?? _matingDate,
+
+                        onSelected: (DateTime value) => _kindlingDate = value,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Row(
                 children: <Widget>[
-                  Text(
-                    'Confirmez la gestation pour renseigner la mise-bas.',
-                    style: theme.textTheme.bodySmall,
+                  Expanded(
+                    child: TextFormField(
+                      controller: _bornAliveController,
+
+                      keyboardType: TextInputType.number,
+
+                      decoration: const InputDecoration(
+                        labelText: 'NÃƒÂ©s vivants',
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: onRequestManual,
-                    icon: const Icon(Icons.edit_calendar),
-                    label: const Text('Déclarer une mise-bas'),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: TextFormField(
+                      controller: _bornDeadController,
+
+                      keyboardType: TextInputType.number,
+
+                      decoration: const InputDecoration(
+                        labelText: 'NÃƒÂ©s morts',
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
 
-class _WeaningCard extends StatelessWidget {
-  const _WeaningCard({
-    required this.enabled,
-    required this.plannedWeaning,
-    required this.weaningDate,
-    required this.onSelectDate,
-    required this.onClearDate,
-    required this.weanedController,
-    required this.weightController,
-    required this.availableAtWeaning,
-    required this.onRequestManualKindling,
-  });
+              const SizedBox(height: 12),
 
-  final bool enabled;
-  final DateTime plannedWeaning;
-  final DateTime? weaningDate;
-  final VoidCallback onSelectDate;
-  final VoidCallback onClearDate;
-  final TextEditingController weanedController;
-  final TextEditingController weightController;
-  final int availableAtWeaning;
-  final Future<void> Function() onRequestManualKindling;
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: TextFormField(
+                      controller: _adoptedController,
 
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
+                      keyboardType: TextInputType.number,
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text('Sevrage de la portée', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
-            AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: enabled ? 1 : 0.55,
-              child: AbsorbPointer(
-                absorbing: !enabled,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                      decoration: const InputDecoration(
+                        labelText: 'Lapereaux adoptÃƒÂ©s',
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: TextFormField(
+                      controller: _removedController,
+
+                      keyboardType: TextInputType.number,
+
+                      decoration: const InputDecoration(
+                        labelText: 'Lapereaux retirÃƒÂ©s',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+
+                title: Text(
+                  _weaningDate != null
+                      ? localizations.formatMediumDate(_weaningDate!)
+                      : 'Date prÃƒÂ©vue : $plannedWeaning',
+                ),
+
+                leading: const Icon(Icons.child_care_outlined),
+
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+
                   children: <Widget>[
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.child_care_outlined),
-                      title: const Text('Date de sevrage'),
-                      subtitle: Text(
-                        weaningDate != null
-                            ? localizations.formatMediumDate(weaningDate!)
-                            : 'Prévu le ${localizations.formatMediumDate(plannedWeaning)}',
+                    if (_weaningDate != null)
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+
+                        onPressed: () => setState(() => _weaningDate = null),
                       ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          if (weaningDate != null)
-                            IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: onClearDate,
-                            ),
-                          IconButton(
-                            icon: const Icon(Icons.calendar_today_outlined),
-                            onPressed: onSelectDate,
-                          ),
-                        ],
+
+                    IconButton(
+                      icon: const Icon(Icons.calendar_today_outlined),
+
+                      onPressed: () => _pickDate(
+                        initialDate:
+                            _weaningDate ??
+                            (_kindlingDate ??
+                                _matingDate.add(const Duration(days: 31))),
+
+                        onSelected: (DateTime value) => _weaningDate = value,
                       ),
-                      onTap: onSelectDate,
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: TextFormField(
-                            controller: weanedController,
-                            decoration: const InputDecoration(
-                              labelText: 'Lapereaux sevrés',
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: <TextInputFormatter>[
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
-                            controller: weightController,
-                            decoration: const InputDecoration(
-                              labelText: 'Poids moyen (kg)',
-                            ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Disponible au sevrage: '
-                      '${availableAtWeaning < 0 ? 0 : availableAtWeaning}',
-                      style: theme.textTheme.bodySmall,
                     ),
                   ],
                 ),
               ),
-            ),
-            if (!enabled) ...<Widget>[
+
               const SizedBox(height: 12),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'Renseignez la mise-bas avant d’ouvrir le suivi du sevrage.',
-                        style: theme.textTheme.bodySmall,
+
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: TextFormField(
+                      controller: _weanedController,
+
+                      keyboardType: TextInputType.number,
+
+                      decoration: const InputDecoration(
+                        labelText: 'Lapereaux sevrÃƒÂ©s',
                       ),
-                      const SizedBox(height: 8),
-                      TextButton.icon(
-                        onPressed: onRequestManualKindling,
-                        icon: const Icon(Icons.nest_cam_wired_stand),
-                        label: const Text('Déclarer une mise-bas'),
-                      ),
-                    ],
+                    ),
                   ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: TextFormField(
+                      controller: _weightController,
+
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+
+                      decoration: const InputDecoration(
+                        labelText: 'Poids moyen (kg)',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _notesController,
+
+                maxLines: 3,
+
+                decoration: const InputDecoration(
+                  labelText: 'Notes',
+
+                  alignLabelWithHint: true,
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    final MaterialLocalizations localizations = MaterialLocalizations.of(
+      context,
+    );
+
+    final BreedingState state = context.watch<BreedingCubit>().state;
+
+    final bool isInitialLoading =
+        state.status == BreedingStatus.loading && _animals.isEmpty;
+
+    final bool hasBlockingError =
+        state.status == BreedingStatus.failure && _animals.isEmpty;
+
+    return BlocListener<BreedingCubit, BreedingState>(
+      listenWhen: (BreedingState previous, BreedingState current) =>
+          previous.animals != current.animals,
+
+      listener: (BuildContext context, BreedingState newState) {
+        setState(() {
+          _animals = List<Animal>.from(newState.animals);
+
+          _analyzer = GenealogyAnalyzer(newState.animalsById);
+
+          _refreshPairingCoefficient();
+
+          _syncSelectedAnimalControllers();
+        });
+      },
+
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            widget.initialRecord == null
+                ? 'Nouvelle saillie'
+                : 'Modifier la saillie',
+          ),
+        ),
+
+        body: SafeArea(
+          child: Stack(
+            children: <Widget>[
+              if (isInitialLoading)
+                const Center(child: CircularProgressIndicator())
+              else if (hasBlockingError)
+                _BreedingErrorMessage(
+                  message:
+                      state.errorMessage ??
+                      'Impossible de charger les animaux.',
+
+                  onRetry: () => context.read<BreedingCubit>().loadData(),
+                )
+              else if (_animals.isEmpty)
+                const _BreedingErrorMessage(
+                  message:
+                      "Ajoutez d'abord des animaux pour enregistrer une saillie.",
+                )
+              else
+                Align(
+                  alignment: Alignment.topCenter,
+
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 600),
+
+                    child: Stepper(
+                      currentStep: _currentStep,
+
+                      type: StepperType.vertical,
+
+                      controlsBuilder:
+                          (BuildContext context, ControlsDetails details) {
+                            final bool isLast = _currentStep == 2;
+
+                            return Row(
+                              children: <Widget>[
+                                FilledButton(
+                                  onPressed: _isSaving
+                                      ? null
+                                      : details.onStepContinue,
+
+                                  child: Text(
+                                    isLast ? 'Enregistrer' : 'Continuer',
+                                  ),
+                                ),
+
+                                const SizedBox(width: 12),
+
+                                TextButton(
+                                  onPressed: _isSaving
+                                      ? null
+                                      : details.onStepCancel,
+
+                                  child: Text(
+                                    _currentStep == 0 ? 'Fermer' : 'Retour',
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+
+                      onStepContinue: () async => _handleContinue(),
+
+                      onStepCancel: _handleCancel,
+
+                      steps: _buildSteps(theme, localizations),
+                    ),
+                  ),
+                ),
+
+              if (_isSaving) const _SavingOverlay(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BreedingErrorMessage extends StatelessWidget {
+  const _BreedingErrorMessage({required this.message, this.onRetry});
+
+  final String message;
+
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+
+          children: <Widget>[
+            Text(message, textAlign: TextAlign.center),
+
+            if (onRetry != null) ...<Widget>[
+              const SizedBox(height: 12),
+
+              FilledButton(onPressed: onRetry, child: const Text('RÃ©essayer')),
             ],
           ],
         ),
@@ -1123,38 +1226,215 @@ class _WeaningCard extends StatelessWidget {
   }
 }
 
-_RiskLevel _riskLevelFromValue(double value) {
-  if (value >= 0.0625) {
-    return _RiskLevel.high;
+class _SavingOverlay extends StatelessWidget {
+  const _SavingOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.black38,
+
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+
+          children: const <Widget>[
+            CircularProgressIndicator(),
+
+            SizedBox(height: 12),
+
+            Text('Enregistrement en cours...'),
+          ],
+        ),
+      ),
+    );
   }
-  if (value >= 0.03125) {
-    return _RiskLevel.medium;
-  }
-  return _RiskLevel.low;
 }
 
-enum _RiskLevel { low, medium, high }
+class _AnimalPickerContent extends StatefulWidget {
+  const _AnimalPickerContent({
+    required this.title,
 
-extension on _RiskLevel {
-  Color color(ThemeData theme) {
-    switch (this) {
-      case _RiskLevel.low:
-        return Colors.green.shade600;
-      case _RiskLevel.medium:
-        return Colors.orange.shade600;
-      case _RiskLevel.high:
-        return theme.colorScheme.error;
-    }
+    required this.animals,
+
+    required this.initialSelectedId,
+
+    required this.searchHint,
+
+    required this.emptyLabel,
+
+    this.subtitleBuilder,
+
+    this.trailingBuilder,
+  });
+
+  final String title;
+
+  final List<Animal> animals;
+
+  final String? initialSelectedId;
+
+  final String searchHint;
+
+  final String emptyLabel;
+
+  final String? Function(Animal)? subtitleBuilder;
+
+  final Widget? Function(BuildContext, Animal)? trailingBuilder;
+
+  @override
+  State<_AnimalPickerContent> createState() => _AnimalPickerContentState();
+}
+
+class _AnimalPickerContentState extends State<_AnimalPickerContent> {
+  late final TextEditingController _searchController;
+
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+
+    _searchController = TextEditingController();
   }
 
-  String message(double value) {
-    switch (this) {
-      case _RiskLevel.low:
-        return 'Risque faible. Coefficient estimé à ${value.toStringAsFixed(3)}.';
-      case _RiskLevel.medium:
-        return 'Surveillez cette portée : coefficient ${value.toStringAsFixed(3)}.';
-      case _RiskLevel.high:
-        return 'Risque élevé de consanguinité (${value.toStringAsFixed(3)}). Envisagez un autre croisement.';
+  @override
+  void dispose() {
+    _searchController.dispose();
+
+    super.dispose();
+  }
+
+  List<Animal> get _filteredAnimals {
+    if (_query.isEmpty) {
+      return widget.animals;
     }
+
+    final String normalized = _query.toLowerCase();
+
+    return widget.animals.where((Animal animal) {
+      final String haystack =
+          '${animal.tagId} ${animal.name ?? ''} ${animal.status}'.toLowerCase();
+
+      return haystack.contains(normalized);
+    }).toList();
+  }
+
+  void _handleSelect(Animal animal) {
+    Navigator.of(context).pop(animal.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    final List<Animal> animals = _filteredAnimals;
+
+    return SafeArea(
+      child: Column(
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(widget.title, style: theme.textTheme.titleLarge),
+                ),
+
+                IconButton(
+                  icon: const Icon(Icons.close),
+
+                  onPressed: () => Navigator.of(context).maybePop(),
+                ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+
+            child: TextField(
+              controller: _searchController,
+
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+
+                hintText: widget.searchHint,
+              ),
+
+              onChanged: (String value) {
+                setState(() {
+                  _query = value.trim().toLowerCase();
+                });
+              },
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Expanded(
+            child: animals.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+
+                      child: Text(
+                        widget.emptyLabel,
+
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: animals.length,
+
+                    separatorBuilder: (_, __) => const Divider(height: 0),
+
+                    itemBuilder: (BuildContext context, int index) {
+                      final Animal animal = animals[index];
+
+                      final bool isSelected =
+                          animal.id == widget.initialSelectedId;
+
+                      final Widget? trailing = widget.trailingBuilder?.call(
+                        context,
+                        animal,
+                      );
+
+                      final String title =
+                          animal.name == null || animal.name!.trim().isEmpty
+                          ? animal.tagId
+                          : '${animal.tagId} · ${animal.name}';
+
+                      final String? subtitle = widget.subtitleBuilder?.call(
+                        animal,
+                      );
+
+                      return ListTile(
+                        leading: Icon(
+                          isSelected
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_off,
+
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+
+                        title: Text(title),
+
+                        subtitle: subtitle != null ? Text(subtitle) : null,
+
+                        trailing: trailing,
+
+                        onTap: () => _handleSelect(animal),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }

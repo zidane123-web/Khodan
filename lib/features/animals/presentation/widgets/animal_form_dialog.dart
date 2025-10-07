@@ -190,7 +190,7 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _selectedSex,
+                initialValue: _selectedSex,
                 decoration: const InputDecoration(labelText: 'Sexe'),
                 items: const <DropdownMenuItem<String>>[
                   DropdownMenuItem<String>(value: 'Femelle', child: Text('Femelle')),
@@ -204,7 +204,7 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _selectedStatus,
+                initialValue: _selectedStatus,
                 decoration: const InputDecoration(labelText: 'Statut'),
                 items: const <DropdownMenuItem<String>>[
                   DropdownMenuItem<String>(value: 'Vivant', child: Text('Vivant')),

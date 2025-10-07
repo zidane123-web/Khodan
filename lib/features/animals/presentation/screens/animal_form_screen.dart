@@ -236,7 +236,7 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
               onTap: _pickImage,
               child: Card(
                 clipBehavior: Clip.antiAlias,
-                child: Container(
+                child: SizedBox(
                   height: 200,
                   width: double.infinity,
                   child: _imageFile != null
@@ -299,7 +299,7 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _selectedStatus,
+                      initialValue: _selectedStatus,
                       decoration: const InputDecoration(labelText: 'Statut'),
                       items: const [
                         DropdownMenuItem(
@@ -330,7 +330,7 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
                 child: Column(
                   children: [
                     DropdownButtonFormField<String>(
-                      value: _sireId,
+                      initialValue: _sireId,
                       decoration: const InputDecoration(labelText: 'Père (Sire)'),
                       items: males
                           .map((animal) => DropdownMenuItem(
@@ -340,7 +340,7 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _damId,
+                      initialValue: _damId,
                       decoration: const InputDecoration(labelText: 'Mère (Dam)'),
                       items: females
                           .map((animal) => DropdownMenuItem(
