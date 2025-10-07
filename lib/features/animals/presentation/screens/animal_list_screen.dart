@@ -120,7 +120,6 @@ class _AnimalListViewState extends State<_AnimalListView> {
     final BreedingRecord? record = await Navigator.of(context).push<BreedingRecord>(
       MaterialPageRoute<BreedingRecord>(
         builder: (_) => AddBreedingRecordScreen(
-          animals: state.allAnimals,
           initialDoeId: animal.id,
         ),
       ),
