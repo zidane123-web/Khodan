@@ -276,7 +276,7 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
               const SizedBox(height: 16),
               if (_savedEventTemplates.isNotEmpty) ...<Widget>[
                 DropdownButtonFormField<String>(
-                  value: _selectedTemplateName,
+                  initialValue: _selectedTemplateName,
                   decoration: const InputDecoration(
                     labelText: 'Appliquer un modèle',
                   ),
@@ -307,7 +307,7 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
                 const SizedBox(height: 12),
               ],
               DropdownButtonFormField<String>(
-                value: _eventType,
+                initialValue: _eventType,
                 decoration: const InputDecoration(
                   labelText: 'Type d’évènement',
                 ),

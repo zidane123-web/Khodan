@@ -308,7 +308,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               DropdownButtonFormField<String>(
-                value: _selectedDoeId,
+                initialValue: _selectedDoeId,
                 decoration: const InputDecoration(labelText: 'Femelle'),
                 hint: const Text('Sélectionner'),
                 validator: (String? value) =>
@@ -332,7 +332,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _selectedBuckId,
+                initialValue: _selectedBuckId,
                 decoration: InputDecoration(
                   labelText: 'Mâle',
                   helperText: _selectedDoeId == null
@@ -444,7 +444,7 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _palpationResult,
+                initialValue: _palpationResult,
                 decoration: const InputDecoration(labelText: 'Résultat'),
                 items: const <DropdownMenuItem<String>>[
                   DropdownMenuItem<String>(

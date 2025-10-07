@@ -602,7 +602,7 @@ class _FiltersRow extends StatelessWidget {
         SizedBox(
           width: 160,
           child: DropdownButtonFormField<ReportPeriod>(
-            value: period,
+            initialValue: period,
             decoration: const InputDecoration(labelText: 'Période'),
             items: periodItems,
             onChanged: (ReportPeriod? value) {
@@ -615,7 +615,7 @@ class _FiltersRow extends StatelessWidget {
         SizedBox(
           width: 160,
           child: DropdownButtonFormField<String>(
-            value: sexFilter,
+            initialValue: sexFilter,
             decoration: const InputDecoration(labelText: 'Sexe'),
             items: const <DropdownMenuItem<String>>[
               DropdownMenuItem<String>(value: 'Tous', child: Text('Tous')),
@@ -632,7 +632,7 @@ class _FiltersRow extends StatelessWidget {
         SizedBox(
           width: 220,
           child: DropdownButtonFormField<String?>(
-            value: breederId,
+            initialValue: breederId,
             decoration: const InputDecoration(labelText: 'Reproducteur'),
             items: breederItems,
             onChanged: onBreederChanged,

@@ -833,7 +833,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
               const SizedBox(height: 8),
 
               DropdownButtonFormField<String>(
-                value: _palpationResult,
+                initialValue: _palpationResult,
 
                 decoration: const InputDecoration(labelText: 'RÃƒÂ©sultat'),
 

@@ -80,7 +80,7 @@ class _ProductivityReportScreenState extends State<ProductivityReportScreen> {
                     SizedBox(
                       width: 200,
                       child: DropdownButtonFormField<String>(
-                        value: _sexFilter,
+                        initialValue: _sexFilter,
                         decoration: const InputDecoration(labelText: 'Sexe'),
                         items: const <DropdownMenuItem<String>>[
                           DropdownMenuItem<String>(value: 'Tous', child: Text('Tous')),
@@ -97,7 +97,7 @@ class _ProductivityReportScreenState extends State<ProductivityReportScreen> {
                     SizedBox(
                       width: 200,
                       child: DropdownButtonFormField<String>(
-                        value: _sortKey,
+                        initialValue: _sortKey,
                         decoration: const InputDecoration(labelText: 'Tri'),
                         items: const <DropdownMenuItem<String>>[
                           DropdownMenuItem<String>(value: 'Succès', child: Text('Par taux de réussite')),
