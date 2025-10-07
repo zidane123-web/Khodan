@@ -32,6 +32,11 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final TextEditingController _doseController = TextEditingController();
   final TextEditingController _doseUnitController = TextEditingController();
   final TextEditingController _lotNumberController = TextEditingController();
+  final TextEditingController _fromCageController = TextEditingController();
+  final TextEditingController _toCageController = TextEditingController();
+  final TextEditingController _inventoryScopeController = TextEditingController();
+  final TextEditingController _inventoryDescriptionController = TextEditingController();
+  final TextEditingController _noteTitleController = TextEditingController();
   
   DateTime _eventDate = DateTime.now();
   String? _eventType;
@@ -61,6 +66,11 @@ class _AddEventScreenState extends State<AddEventScreen> {
     _doseController.dispose();
     _doseUnitController.dispose();
     _lotNumberController.dispose();
+    _fromCageController.dispose();
+    _toCageController.dispose();
+    _inventoryScopeController.dispose();
+    _inventoryDescriptionController.dispose();
+    _noteTitleController.dispose();
     super.dispose();
   }
 
@@ -174,6 +184,32 @@ class _AddEventScreenState extends State<AddEventScreen> {
           details['nextDueDate'] = _nextDueDate!.toIso8601String();
         }
         break;
+      case 'cage_change':
+        final String from = _fromCageController.text.trim();
+        final String to = _toCageController.text.trim();
+        if (from.isNotEmpty) {
+          details['from'] = from;
+        }
+        if (to.isNotEmpty) {
+          details['to'] = to;
+        }
+        break;
+      case 'inventory':
+        final String scope = _inventoryScopeController.text.trim();
+        final String desc = _inventoryDescriptionController.text.trim();
+        if (scope.isNotEmpty) {
+          details['scope'] = scope;
+        }
+        if (desc.isNotEmpty) {
+          details['description'] = desc;
+        }
+        break;
+      case 'note':
+        final String title = _noteTitleController.text.trim();
+        if (title.isNotEmpty) {
+          details['title'] = title;
+        }
+        break;
     }
 
     return details;
@@ -263,7 +299,13 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.category == 'health' ? 'Nouvel événement santé' : 'Ajouter un événement'),
+        title: Text(
+          widget.category == 'health'
+              ? 'Nouvel événement santé'
+              : (widget.category == 'other'
+                  ? 'Nouvel événement (autres)'
+                  : 'Ajouter un événement'),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -308,7 +350,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 12),
                 ],
                 DropdownButtonFormField<String>(
-                  value: _eventType ?? (widget.category == 'health' ? 'vaccination' : null),
+                  value: _eventType ?? (widget.category == 'health' ? 'vaccination' : (widget.category == 'other' ? 'cage_change' : null)),
                   decoration: const InputDecoration(labelText: "Type d'évènement"),
                   items: <DropdownMenuItem<String>>[
                     if (widget.category == 'health' || widget.category == null) ...const <DropdownMenuItem<String>>[
@@ -317,7 +359,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       DropdownMenuItem<String>(value: 'treatment', child: Text('Traitement')),
                       DropdownMenuItem<String>(value: 'health_check', child: Text('Contrôle de santé')),
                     ],
-                    if (widget.category != 'health' || widget.category == null) ...const <DropdownMenuItem<String>>[
+                    if (widget.category == 'other' || widget.category == null) ...const <DropdownMenuItem<String>>[
+                      DropdownMenuItem<String>(value: 'cage_change', child: Text('Changement de cage')),
+                      DropdownMenuItem<String>(value: 'inventory', child: Text('Inventaire')),
+                      DropdownMenuItem<String>(value: 'note', child: Text('Note')),
                       DropdownMenuItem<String>(value: 'sale', child: Text('Vente')),
                     ],
                   ],
@@ -431,6 +476,64 @@ class _AddEventScreenState extends State<AddEventScreen> {
                     trailing: IconButton(
                       icon: const Icon(Icons.event_note_outlined),
                       onPressed: _pickNextDueDate,
+                    ),
+                  ),
+                ],
+                if (_eventType == 'cage_change') ...<Widget>[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _fromCageController,
+                    decoration: const InputDecoration(
+                      labelText: 'De la cage',
+                      hintText: 'Ex: C-102',
+                    ),
+                    validator: (String? v) {
+                      if (_eventType != 'cage_change') return null;
+                      if (v == null || v.trim().isEmpty) {
+                        return 'Champ obligatoire';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _toCageController,
+                    decoration: const InputDecoration(
+                      labelText: 'Vers la cage',
+                      hintText: 'Ex: C-108',
+                    ),
+                    validator: (String? v) {
+                      if (_eventType != 'cage_change') return null;
+                      if (v == null || v.trim().isEmpty) {
+                        return 'Champ obligatoire';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+                if (_eventType == 'inventory') ...<Widget>[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _inventoryScopeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Périmètre (scope)',
+                      hintText: 'Ex: farm, alimentation, matériel…',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _inventoryDescriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                    ),
+                  ),
+                ],
+                if (_eventType == 'note') ...<Widget>[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _noteTitleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Titre de la note',
                     ),
                   ),
                 ],
