@@ -19,8 +19,12 @@ class InMemoryEventRepository implements EventRepository {
 
   InMemoryEventRepository._internal();
 
-  static final InMemoryEventRepository _instance =
+  static InMemoryEventRepository _instance =
       InMemoryEventRepository._internal();
+
+  static void reset() {
+    _instance = InMemoryEventRepository._internal();
+  }
 
   final List<LivestockEvent> _events = <LivestockEvent>[
     LivestockEvent(

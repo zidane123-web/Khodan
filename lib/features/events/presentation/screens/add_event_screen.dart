@@ -36,8 +36,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final TextEditingController _lotNumberController = TextEditingController();
   final TextEditingController _fromCageController = TextEditingController();
   final TextEditingController _toCageController = TextEditingController();
-  final TextEditingController _inventoryScopeController = TextEditingController();
-  final TextEditingController _inventoryDescriptionController = TextEditingController();
+  final TextEditingController _inventoryScopeController =
+      TextEditingController();
+  final TextEditingController _inventoryDescriptionController =
+      TextEditingController();
   final TextEditingController _noteTitleController = TextEditingController();
   // Champs supplémentaires pour "Autres"
   final TextEditingController _fromLocationController = TextEditingController();
@@ -46,12 +48,15 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final TextEditingController _costController = TextEditingController();
   // Nettoyage / Désinfection
   final TextEditingController _zoneController = TextEditingController();
-  final TextEditingController _cleaningProductController = TextEditingController();
-  final TextEditingController _concentrationController = TextEditingController();
+  final TextEditingController _cleaningProductController =
+      TextEditingController();
+  final TextEditingController _concentrationController =
+      TextEditingController();
   final TextEditingController _contactTimeController = TextEditingController();
   // Maintenance
   final TextEditingController _equipmentController = TextEditingController();
-  final TextEditingController _maintenanceActionController = TextEditingController();
+  final TextEditingController _maintenanceActionController =
+      TextEditingController();
   // Achat / Arrivage
   final TextEditingController _supplierController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
@@ -73,7 +78,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final TextEditingController _rationController = TextEditingController();
   final TextEditingController _frequencyController = TextEditingController();
   final TextEditingController _feedReasonController = TextEditingController();
-  
+
   DateTime _eventDate = DateTime.now();
   String? _eventType;
   String? _selectedTemplateName;
@@ -229,21 +234,24 @@ class _AddEventScreenState extends State<AddEventScreen> {
     switch (_eventType) {
       case 'weight':
         final double? effectiveWeight =
-            weight ?? double.tryParse(_weightController.text.replaceAll(',', '.'));
+            weight ??
+            double.tryParse(_weightController.text.replaceAll(',', '.'));
         if (effectiveWeight != null) {
           details['weightKg'] = effectiveWeight;
         }
         break;
       case 'sale':
         final double? effectivePrice =
-            price ?? double.tryParse(_priceController.text.replaceAll(',', '.'));
+            price ??
+            double.tryParse(_priceController.text.replaceAll(',', '.'));
         if (effectivePrice != null) {
           details['salePrice'] = effectivePrice;
         }
         break;
       case 'treatment':
       case 'vaccination':
-        final String effectiveProduct = (product ?? _treatmentController.text).trim();
+        final String effectiveProduct = (product ?? _treatmentController.text)
+            .trim();
         if (effectiveProduct.isNotEmpty) {
           details['product'] = effectiveProduct;
         }
@@ -251,7 +259,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
           details['veterinarian'] = _veterinarianController.text.trim();
         }
         if (_doseController.text.trim().isNotEmpty) {
-          final double? dose = double.tryParse(_doseController.text.replaceAll(',', '.'));
+          final double? dose = double.tryParse(
+            _doseController.text.replaceAll(',', '.'),
+          );
           if (dose != null) {
             details['dose'] = dose;
           }
@@ -317,7 +327,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
           details['product'] = _cleaningProductController.text.trim();
         }
         if (_concentrationController.text.trim().isNotEmpty) {
-          final double? c = double.tryParse(_concentrationController.text.replaceAll(',', '.'));
+          final double? c = double.tryParse(
+            _concentrationController.text.replaceAll(',', '.'),
+          );
           if (c != null) details['concentration'] = c;
         }
         if (_contactTimeController.text.trim().isNotEmpty) {
@@ -344,11 +356,15 @@ class _AddEventScreenState extends State<AddEventScreen> {
           details['supplier'] = _supplierController.text.trim();
         }
         if (_quantityController.text.trim().isNotEmpty) {
-          final double? q = double.tryParse(_quantityController.text.replaceAll(',', '.'));
+          final double? q = double.tryParse(
+            _quantityController.text.replaceAll(',', '.'),
+          );
           if (q != null) details['quantity'] = q;
         }
         if (_unitPriceController.text.trim().isNotEmpty) {
-          final double? p = double.tryParse(_unitPriceController.text.replaceAll(',', '.'));
+          final double? p = double.tryParse(
+            _unitPriceController.text.replaceAll(',', '.'),
+          );
           if (p != null) details['unitPrice'] = p;
         }
         if (_purchaseLotController.text.trim().isNotEmpty) {
@@ -369,7 +385,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
           details['method'] = _deathMethodController.text.trim();
         }
         if (_deathWeightController.text.trim().isNotEmpty) {
-          final double? w = double.tryParse(_deathWeightController.text.replaceAll(',', '.'));
+          final double? w = double.tryParse(
+            _deathWeightController.text.replaceAll(',', '.'),
+          );
           if (w != null) details['weightKg'] = w;
         }
         if (_handledByController.text.trim().isNotEmpty) {
@@ -404,7 +422,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
     }
 
     if (_costController.text.trim().isNotEmpty) {
-      final double? cost = double.tryParse(_costController.text.replaceAll(',', '.'));
+      final double? cost = double.tryParse(
+        _costController.text.replaceAll(',', '.'),
+      );
       if (cost != null) {
         details['cost'] = cost;
       }
@@ -424,21 +444,28 @@ class _AddEventScreenState extends State<AddEventScreen> {
       return;
     }
 
-    final double? parsedWeight =
-        _requiresWeight ? double.tryParse(_weightController.text.replaceAll(',', '.')) : null;
-    final double? parsedPrice =
-        _requiresPrice ? double.tryParse(_priceController.text.replaceAll(',', '.')) : null;
-    final String? parsedProduct = _requiresTreatment
-        ? (_treatmentController.text.trim().isEmpty ? null : _treatmentController.text.trim())
+    final double? parsedWeight = _requiresWeight
+        ? double.tryParse(_weightController.text.replaceAll(',', '.'))
         : null;
-    final String? trimmedNotes =
-        _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+    final double? parsedPrice = _requiresPrice
+        ? double.tryParse(_priceController.text.replaceAll(',', '.'))
+        : null;
+    final String? parsedProduct = _requiresTreatment
+        ? (_treatmentController.text.trim().isEmpty
+              ? null
+              : _treatmentController.text.trim())
+        : null;
+    final String? trimmedNotes = _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim();
 
     if (_saveAsTemplate) {
       final String name = _templateNameController.text.trim();
       if (name.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Indiquez un nom pour enregistrer le modèle.')),
+          const SnackBar(
+            content: Text('Indiquez un nom pour enregistrer le modèle.'),
+          ),
         );
         return;
       }
@@ -450,8 +477,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
         product: parsedProduct,
         notes: trimmedNotes,
       );
-      final int existingIndex =
-          _savedTemplates.indexWhere((_EventTemplate t) => t.name == name);
+      final int existingIndex = _savedTemplates.indexWhere(
+        (_EventTemplate t) => t.name == name,
+      );
       if (existingIndex >= 0) {
         _savedTemplates[existingIndex] = template;
       } else {
@@ -465,8 +493,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
     final List<Animal> targetAnimals = _isGlobalEvent
         ? <Animal>[]
         : widget.animals
-            .where((Animal a) => _selectedAnimalIds.contains(a.id))
-            .toList();
+              .where((Animal a) => _selectedAnimalIds.contains(a.id))
+              .toList();
 
     if (!_isGlobalEvent && targetAnimals.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -476,8 +504,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
     }
 
     if (_isGlobalEvent) {
-      final Animal? representative =
-          widget.animals.isNotEmpty ? widget.animals.first : null;
+      final Animal? representative = widget.animals.isNotEmpty
+          ? widget.animals.first
+          : null;
       final LivestockEvent draft = LivestockEvent(
         id: 'event-${DateTime.now().millisecondsSinceEpoch}-global',
         profileId: representative?.profileId ?? 'demo-profile',
@@ -515,7 +544,11 @@ class _AddEventScreenState extends State<AddEventScreen> {
         final LivestockEvent created = await widget.repository.createEvent(
           draft,
           links: <AnimalEventLink>[
-            AnimalEventLink(eventId: draft.id, animalId: animal.id, role: 'subject'),
+            AnimalEventLink(
+              eventId: draft.id,
+              animalId: animal.id,
+              role: 'subject',
+            ),
           ],
         );
         createdEvents.add(created);
@@ -529,8 +562,12 @@ class _AddEventScreenState extends State<AddEventScreen> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final MaterialLocalizations localizations = MaterialLocalizations.of(context);
-    final String selectedSummary = widget.animals.map((Animal a) => a.tagId).join(', ');
+    final MaterialLocalizations localizations = MaterialLocalizations.of(
+      context,
+    );
+    final String selectedSummary = widget.animals
+        .map((Animal a) => a.tagId)
+        .join(', ');
 
     return Scaffold(
       appBar: AppBar(
@@ -538,8 +575,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
           widget.category == 'health'
               ? 'Nouvel événement santé'
               : (widget.category == 'other'
-                  ? 'Nouvel événement (autres)'
-                  : 'Ajouter un événement'),
+                    ? 'Nouvel événement (autres)'
+                    : 'Ajouter un événement'),
         ),
       ),
       body: SafeArea(
@@ -586,7 +623,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       TextButton(
                         onPressed: () {
                           setState(() {
-                            _selectedAnimalIds = widget.animals.map((Animal a) => a.id).toSet();
+                            _selectedAnimalIds = widget.animals
+                                .map((Animal a) => a.id)
+                                .toSet();
                           });
                         },
                         child: const Text('Tout selectionner'),
@@ -606,7 +645,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Etat global (sans animaux)'),
-                  subtitle: const Text('Cree un seul evenement non lie aux animaux'),
+                  subtitle: const Text(
+                    'Cree un seul evenement non lie aux animaux',
+                  ),
                   value: _isGlobalEvent,
                   onChanged: (bool value) {
                     setState(() {
@@ -621,10 +662,11 @@ class _AddEventScreenState extends State<AddEventScreen> {
                     hintText: 'Choisir un modèle',
                     dropdownMenuEntries: _savedTemplates
                         .map(
-                          (_EventTemplate template) => DropdownMenuEntry<String>(
-                            value: template.name,
-                            label: template.name,
-                          ),
+                          (_EventTemplate template) =>
+                              DropdownMenuEntry<String>(
+                                value: template.name,
+                                label: template.name,
+                              ),
                         )
                         .toList(),
                     onSelected: (String? value) {
@@ -635,8 +677,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
                         });
                         return;
                       }
-                      final _EventTemplate template =
-                          _savedTemplates.firstWhere((_EventTemplate entry) => entry.name == value);
+                      final _EventTemplate template = _savedTemplates
+                          .firstWhere(
+                            (_EventTemplate entry) => entry.name == value,
+                          );
                       _applyTemplate(template);
                     },
                   ),
@@ -644,33 +688,94 @@ class _AddEventScreenState extends State<AddEventScreen> {
                 ],
                 DropdownButtonFormField<String>(
                   key: _eventTypeFieldKey,
-                  initialValue: _eventType ?? (widget.category == 'health' ? 'vaccination' : (widget.category == 'other' ? 'cage_change' : null)),
-                  decoration: const InputDecoration(labelText: "Type d'évènement"),
+                  initialValue:
+                      _eventType ??
+                      (widget.category == 'health'
+                          ? 'vaccination'
+                          : (widget.category == 'other'
+                                ? 'cage_change'
+                                : null)),
+                  decoration: const InputDecoration(
+                    labelText: "Type d'évènement",
+                  ),
                   items: <DropdownMenuItem<String>>[
-                    if (widget.category == 'health' || widget.category == null) ...const <DropdownMenuItem<String>>[
-                      DropdownMenuItem<String>(value: 'weight', child: Text('Pesée')),
-                      DropdownMenuItem<String>(value: 'vaccination', child: Text('Vaccination')),
-                      DropdownMenuItem<String>(value: 'treatment', child: Text('Traitement')),
-                      DropdownMenuItem<String>(value: 'health_check', child: Text('Contrôle de santé')),
+                    if (widget.category == 'health' ||
+                        widget.category ==
+                            null) ...const <DropdownMenuItem<String>>[
+                      DropdownMenuItem<String>(
+                        value: 'weight',
+                        child: Text('Pesée'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'vaccination',
+                        child: Text('Vaccination'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'treatment',
+                        child: Text('Traitement'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'health_check',
+                        child: Text('Contrôle de santé'),
+                      ),
                     ],
-                    if (widget.category == 'other' || widget.category == null) ...const <DropdownMenuItem<String>>[
-                      DropdownMenuItem<String>(value: 'cage_change', child: Text('Changement de cage')),
-                      DropdownMenuItem<String>(value: 'inventory', child: Text('Inventaire')),
-                      DropdownMenuItem<String>(value: 'note', child: Text('Note')),
-                      DropdownMenuItem<String>(value: 'sale', child: Text('Vente')),
+                    if (widget.category == 'other' ||
+                        widget.category ==
+                            null) ...const <DropdownMenuItem<String>>[
+                      DropdownMenuItem<String>(
+                        value: 'cage_change',
+                        child: Text('Changement de cage'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'inventory',
+                        child: Text('Inventaire'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'note',
+                        child: Text('Note'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'sale',
+                        child: Text('Vente'),
+                      ),
                     ],
-                    if (widget.category == 'other' || widget.category == null) ...const <DropdownMenuItem<String>>[
-                      DropdownMenuItem<String>(value: 'transfer', child: Text('Transfert')),
-                      DropdownMenuItem<String>(value: 'cleaning', child: Text('Nettoyage / Désinfection')),
-                      DropdownMenuItem<String>(value: 'maintenance', child: Text('Entretien / Maintenance')),
-                      DropdownMenuItem<String>(value: 'purchase', child: Text('Achat / Arrivage')),
-                      DropdownMenuItem<String>(value: 'death', child: Text('Décès / Réforme')),
-                      DropdownMenuItem<String>(value: 'tag_change', child: Text('Changement de bague / ID')),
-                      DropdownMenuItem<String>(value: 'feed_change', child: Text("Changement d'alimentation")),
+                    if (widget.category == 'other' ||
+                        widget.category ==
+                            null) ...const <DropdownMenuItem<String>>[
+                      DropdownMenuItem<String>(
+                        value: 'transfer',
+                        child: Text('Transfert'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'cleaning',
+                        child: Text('Nettoyage / Désinfection'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'maintenance',
+                        child: Text('Entretien / Maintenance'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'purchase',
+                        child: Text('Achat / Arrivage'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'death',
+                        child: Text('Décès / Réforme'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'tag_change',
+                        child: Text('Changement de bague / ID'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'feed_change',
+                        child: Text("Changement d'alimentation"),
+                      ),
                     ],
                   ],
-                  onChanged: (String? value) => setState(() => _eventType = value),
-                  validator: (String? value) => value == null ? 'Sélection obligatoire' : null,
+                  onChanged: (String? value) =>
+                      setState(() => _eventType = value),
+                  validator: (String? value) =>
+                      value == null ? 'Sélection obligatoire' : null,
                 ),
                 const SizedBox(height: 12),
                 ListTile(
@@ -686,10 +791,13 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _weightController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Poids (kg)',
-                      helperText: 'Valeur appliquée à chaque animal sélectionné',
+                      helperText:
+                          'Valeur appliquée à chaque animal sélectionné',
                     ),
                     validator: (String? value) {
                       if (!_requiresWeight) return null;
@@ -706,7 +814,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _priceController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Montant (EUR)',
                       helperText: 'Prix appliqué à chaque animal vendu',
@@ -727,7 +837,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   TextFormField(
                     controller: _treatmentController,
                     decoration: InputDecoration(
-                      labelText: _eventType == 'vaccination' ? 'Vaccin utilisé' : 'Produit administré',
+                      labelText: _eventType == 'vaccination'
+                          ? 'Vaccin utilisé'
+                          : 'Produit administré',
                     ),
                     validator: (String? value) {
                       if (!_requiresTreatment) return null;
@@ -740,7 +852,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _doseController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Dosage',
                       hintText: 'Ex: 2.0',
@@ -756,16 +870,12 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _lotNumberController,
-                    decoration: const InputDecoration(
-                      labelText: 'N° de lot',
-                    ),
+                    decoration: const InputDecoration(labelText: 'N° de lot'),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _veterinarianController,
-                    decoration: const InputDecoration(
-                      labelText: 'Vétérinaire',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Vétérinaire'),
                   ),
                   const SizedBox(height: 8),
                   ListTile(
@@ -826,9 +936,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _inventoryDescriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Description'),
                   ),
                 ],
                 if (_eventType == 'note') ...<Widget>[
@@ -858,9 +966,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _operatorController,
-                    decoration: const InputDecoration(
-                      labelText: 'Operateur',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Operateur'),
                   ),
                 ],
                 if (_eventType == 'cleaning') ...<Widget>[
@@ -875,14 +981,14 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _cleaningProductController,
-                    decoration: const InputDecoration(
-                      labelText: 'Produit',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Produit'),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _concentrationController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Concentration (%)',
                     ),
@@ -898,18 +1004,14 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _operatorController,
-                    decoration: const InputDecoration(
-                      labelText: 'Operateur',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Operateur'),
                   ),
                 ],
                 if (_eventType == 'maintenance') ...<Widget>[
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _equipmentController,
-                    decoration: const InputDecoration(
-                      labelText: 'Equipement',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Equipement'),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
@@ -937,22 +1039,22 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _supplierController,
-                    decoration: const InputDecoration(
-                      labelText: 'Fournisseur',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Fournisseur'),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _quantityController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Quantite',
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
                     ),
+                    decoration: const InputDecoration(labelText: 'Quantite'),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _unitPriceController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Prix unitaire',
                     ),
@@ -960,9 +1062,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _purchaseLotController,
-                    decoration: const InputDecoration(
-                      labelText: 'N° de lot',
-                    ),
+                    decoration: const InputDecoration(labelText: 'N° de lot'),
                   ),
                   const SizedBox(height: 8),
                   ListTile(
@@ -971,7 +1071,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
                     subtitle: Text(
                       _quarantineStartDate == null
                           ? '—'
-                          : localizations.formatMediumDate(_quarantineStartDate!),
+                          : localizations.formatMediumDate(
+                              _quarantineStartDate!,
+                            ),
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.event_note_outlined),
@@ -996,9 +1098,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _deathCauseController,
-                    decoration: const InputDecoration(
-                      labelText: 'Cause',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Cause'),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
@@ -1010,17 +1110,15 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _deathWeightController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Poids (kg)',
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
                     ),
+                    decoration: const InputDecoration(labelText: 'Poids (kg)'),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _handledByController,
-                    decoration: const InputDecoration(
-                      labelText: 'Gere par',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Gere par'),
                   ),
                 ],
                 if (_eventType == 'tag_change') ...<Widget>[
@@ -1041,18 +1139,14 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _reasonController,
-                    decoration: const InputDecoration(
-                      labelText: 'Raison',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Raison'),
                   ),
                 ],
                 if (_eventType == 'feed_change') ...<Widget>[
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _feedNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Aliment',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Aliment'),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
@@ -1073,18 +1167,14 @@ class _AddEventScreenState extends State<AddEventScreen> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _feedReasonController,
-                    decoration: const InputDecoration(
-                      labelText: 'Raison',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Raison'),
                   ),
                 ],
                 if (_eventType == 'health_check') ...<Widget>[
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _veterinarianController,
-                    decoration: const InputDecoration(
-                      labelText: 'Vétérinaire',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Vétérinaire'),
                   ),
                   const SizedBox(height: 8),
                   ListTile(
@@ -1114,14 +1204,19 @@ class _AddEventScreenState extends State<AddEventScreen> {
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Enregistrer comme modèle'),
-                  subtitle: const Text('Sauvegarder ces paramètres pour les appliquer en un clic.'),
+                  subtitle: const Text(
+                    'Sauvegarder ces paramètres pour les appliquer en un clic.',
+                  ),
                   value: _saveAsTemplate,
                   onChanged: (bool value) {
                     setState(() {
                       _saveAsTemplate = value;
                       if (value && _templateNameController.text.isEmpty) {
-                        final String suggestion = _eventType != null ? 'Modèle ${_eventType!}' : '';
-                        _templateNameController.text = _selectedTemplateName ?? suggestion;
+                        final String suggestion = _eventType != null
+                            ? 'Modèle ${_eventType!}'
+                            : '';
+                        _templateNameController.text =
+                            _selectedTemplateName ?? suggestion;
                       }
                     });
                   },

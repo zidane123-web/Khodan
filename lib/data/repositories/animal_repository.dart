@@ -17,8 +17,12 @@ class InMemoryAnimalRepository implements AnimalRepository {
 
   InMemoryAnimalRepository._internal();
 
-  static final InMemoryAnimalRepository _instance =
+  static InMemoryAnimalRepository _instance =
       InMemoryAnimalRepository._internal();
+
+  static void reset() {
+    _instance = InMemoryAnimalRepository._internal();
+  }
 
   final List<Animal> _animals = <Animal>[
     Animal(

@@ -21,9 +21,9 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<DashboardCubit>(
       create: (BuildContext context) => DashboardCubit(
-        InMemoryAnimalRepository(),
-        InMemoryBreedingRepository(),
-        InMemoryEventRepository(),
+        context.read<AnimalRepository>(),
+        context.read<BreedingRepository>(),
+        context.read<EventRepository>(),
       )..loadDashboard(),
       child: const _DashboardView(),
     );

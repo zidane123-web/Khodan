@@ -8,7 +8,6 @@ import '../../../../data/repositories/breeding_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
 import '../cubit/breeding_cubit.dart';
 import '../cubit/events_cubit.dart';
-import '../widgets/batch_event_form_dialog.dart';
 import '../widgets/event_timeline.dart';
 import '../widgets/reproduction_tab.dart';
 
@@ -17,9 +16,12 @@ class EventsHubScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final BreedingRepository breedingRepository = InMemoryBreedingRepository();
-    final AnimalRepository animalRepository = InMemoryAnimalRepository();
-    final EventRepository eventRepository = InMemoryEventRepository();
+    final BreedingRepository breedingRepository =
+        context.read<BreedingRepository>();
+    final AnimalRepository animalRepository =
+        context.read<AnimalRepository>();
+    final EventRepository eventRepository =
+        context.read<EventRepository>();
 
     return MultiBlocProvider(
       providers: <BlocProvider<dynamic>>[
@@ -81,9 +83,7 @@ class _EventsHubViewState extends State<_EventsHubView>
     if (state.animals.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Ajoutez d’abord vos animaux pour créer une saillie.',
-          ),
+          content: Text('Ajoutez d’abord vos animaux pour créer une saillie.'),
         ),
       );
       return;
@@ -98,8 +98,9 @@ class _EventsHubViewState extends State<_EventsHubView>
 
     if (breedingState.status == BreedingStatus.loading &&
         breedingState.animals.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Chargement des données')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Chargement des données')));
       return;
     }
 
@@ -115,14 +116,15 @@ class _EventsHubViewState extends State<_EventsHubView>
     }
 
     final String category = _tabController.index == 1 ? 'health' : 'other';
-    final List<LivestockEvent>? created = await context.push<List<LivestockEvent>>(
-      '/events/add-event',
-      extra: <String, Object>{
-        'animals': breedingState.animals,
-        'repository': widget.eventRepository,
-        'category': category,
-      },
-    );
+    final List<LivestockEvent>? created = await context
+        .push<List<LivestockEvent>>(
+          '/events/add-event',
+          extra: <String, Object>{
+            'animals': breedingState.animals,
+            'repository': widget.eventRepository,
+            'category': category,
+          },
+        );
 
     if (!mounted || created == null) {
       return;
@@ -136,7 +138,9 @@ class _EventsHubViewState extends State<_EventsHubView>
     final String message = created.length > 1
         ? 'Événements enregistrés.'
         : 'Événement enregistré.';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override

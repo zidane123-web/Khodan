@@ -45,13 +45,13 @@ class ReportsScreen extends StatelessWidget {
       providers: <BlocProvider<dynamic>>[
         BlocProvider<BreedingCubit>(
           create: (BuildContext context) => BreedingCubit(
-            InMemoryBreedingRepository(),
-            InMemoryAnimalRepository(),
+            context.read<BreedingRepository>(),
+            context.read<AnimalRepository>(),
           )..loadData(),
         ),
         BlocProvider<AnimalCubit>(
           create: (BuildContext context) =>
-              AnimalCubit(InMemoryAnimalRepository())..fetchAnimals(),
+              AnimalCubit(context.read<AnimalRepository>())..fetchAnimals(),
         ),
       ],
       child: const _ReportsView(),

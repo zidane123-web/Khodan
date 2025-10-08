@@ -17,8 +17,12 @@ class InMemoryBreedingRepository implements BreedingRepository {
 
   InMemoryBreedingRepository._internal();
 
-  static final InMemoryBreedingRepository _instance =
+  static InMemoryBreedingRepository _instance =
       InMemoryBreedingRepository._internal();
+
+  static void reset() {
+    _instance = InMemoryBreedingRepository._internal();
+  }
 
   final List<BreedingRecord> _records = <BreedingRecord>[
     BreedingRecord(

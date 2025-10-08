@@ -73,8 +73,6 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
 
   DateTime? _weaningDate;
 
-  int _currentStep = 0;
-
   double? _pairingCoefficient;
 
   List<Animal> get _does => _animals
@@ -410,49 +408,24 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
     }
   }
 
-  bool _validateStep(int index) {
-    if (index == 0) {
-      final FormState? form = _stepKeys[0].currentState;
+  bool _validateAllSteps() {
+    bool isValid = true;
 
-      return form == null || form.validate();
+    for (final GlobalKey<FormState> key in _stepKeys) {
+      final FormState? form = key.currentState;
+      if (form != null && !form.validate()) {
+        isValid = false;
+      }
     }
 
-    if (index == 1) {
-      final FormState? form = _stepKeys[1].currentState;
-
-      return form == null || form.validate();
-    }
-
-    final FormState? form = _stepKeys[2].currentState;
-
-    return form == null || form.validate();
-  }
-
-  Future<void> _handleContinue() async {
-    if (!_validateStep(_currentStep)) {
-      return;
-    }
-
-    if (_currentStep == 2) {
-      _submit();
-    } else {
-      setState(() {
-        _currentStep += 1;
-      });
-    }
-  }
-
-  void _handleCancel() {
-    if (_currentStep == 0) {
-      Navigator.of(context).maybePop();
-    } else {
-      setState(() {
-        _currentStep -= 1;
-      });
-    }
+    return isValid;
   }
 
   Future<void> _submit() async {
+    if (!_validateAllSteps()) {
+      return;
+    }
+
     if (_selectedDoeId == null || _selectedBuckId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sélectionnez une femelle et un mâle.')),
@@ -595,8 +568,8 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
     return <Step>[
       Step(
         title: const Text('Saillie'),
-        isActive: _currentStep >= 0,
-        state: _currentStep > 0 ? StepState.complete : StepState.indexed,
+        isActive: true,
+        state: StepState.indexed,
         content: Form(
           key: _stepKeys[0],
           child: Column(
@@ -703,8 +676,8 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
       ),
       Step(
         title: const Text('Palpation'),
-        isActive: _currentStep >= 1,
-        state: _currentStep > 1 ? StepState.complete : StepState.indexed,
+        isActive: true,
+        state: StepState.indexed,
         content: Form(
           key: _stepKeys[1],
           child: _FormSectionCard(
@@ -757,8 +730,8 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
       ),
       Step(
         title: const Text('Mise bas & sevrage'),
-        isActive: _currentStep >= 2,
-        state: _currentStep == 2 ? StepState.editing : StepState.indexed,
+        isActive: true,
+        state: StepState.indexed,
         content: Form(
           key: _stepKeys[2],
           child: Column(
@@ -1068,58 +1041,54 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
                         (BuildContext context, BoxConstraints constraints) {
                           final bool isWideLayout = constraints.maxWidth >= 640;
 
+                          final List<Step> sections = _buildSteps(
+                            theme,
+                            localizations,
+                            isWideLayout: isWideLayout,
+                          );
+
                           return ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 720),
-                            child: Stepper(
-                              currentStep: _currentStep,
-                              type: isWideLayout
-                                  ? StepperType.horizontal
-                                  : StepperType.vertical,
-                              controlsBuilder:
-                                  (
-                                    BuildContext context,
-                                    ControlsDetails details,
-                                  ) {
-                                    final bool isLastStep =
-                                        _currentStep == _stepKeys.length - 1;
-
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 16),
-                                      child: Wrap(
-                                        spacing: 12,
-                                        runSpacing: 8,
-                                        children: <Widget>[
-                                          FilledButton(
-                                            onPressed: _isSaving
-                                                ? null
-                                                : details.onStepContinue,
-                                            child: Text(
-                                              isLastStep
-                                                  ? 'Enregistrer'
-                                                  : 'Continuer',
-                                            ),
-                                          ),
-                                          OutlinedButton(
-                                            onPressed: _isSaving
-                                                ? null
-                                                : details.onStepCancel,
-                                            child: Text(
-                                              _currentStep == 0
-                                                  ? 'Fermer'
-                                                  : 'Retour',
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                              onStepContinue: () async => _handleContinue(),
-                              onStepCancel: _handleCancel,
-                              steps: _buildSteps(
-                                theme,
-                                localizations,
-                                isWideLayout: isWideLayout,
+                            child: ListView(
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                24,
+                                16,
+                                32,
                               ),
+                              children: <Widget>[
+                                for (final Step section
+                                    in sections) ...<Widget>[
+                                  if (section.title is Text)
+                                    Text(
+                                      (section.title as Text).data ?? '',
+                                      style: theme.textTheme.titleLarge,
+                                    )
+                                  else
+                                    section.title,
+                                  const SizedBox(height: 12),
+                                  section.content,
+                                  const SizedBox(height: 24),
+                                ],
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: <Widget>[
+                                    TextButton(
+                                      onPressed: _isSaving
+                                          ? null
+                                          : () => Navigator.of(
+                                              context,
+                                            ).maybePop(),
+                                      child: const Text('Fermer'),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    FilledButton(
+                                      onPressed: _isSaving ? null : _submit,
+                                      child: const Text('Enregistrer'),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           );
                         },
@@ -1243,11 +1212,7 @@ class _FormSectionCard extends StatelessWidget {
 }
 
 class _SummaryEntry extends StatelessWidget {
-  const _SummaryEntry({
-    required this.label,
-    required this.value,
-    this.helper,
-  });
+  const _SummaryEntry({required this.label, required this.value, this.helper});
 
   final String label;
   final String value;

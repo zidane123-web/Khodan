@@ -27,9 +27,9 @@ class AnimalDetailScreen extends StatelessWidget {
     return BlocProvider<AnimalDetailCubit>(
       create: (BuildContext context) => AnimalDetailCubit(
         animal,
-        InMemoryAnimalRepository(),
-        InMemoryBreedingRepository(),
-        InMemoryEventRepository(),
+        context.read<AnimalRepository>(),
+        context.read<BreedingRepository>(),
+        context.read<EventRepository>(),
       )..load(),
       child: const _AnimalDetailView(),
     );

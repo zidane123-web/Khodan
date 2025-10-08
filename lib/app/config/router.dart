@@ -119,7 +119,7 @@ class KhodanRouter {
                             if (cat is String) category = cat;
                           }
 
-                          repository ??= InMemoryEventRepository();
+                          repository ??= context.read<EventRepository>();
 
                           // Try to fallback to breeding cubit animals if not provided
                           animals ??= () {
