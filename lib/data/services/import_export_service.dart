@@ -43,7 +43,7 @@ class ImportExportService {
   String _escapeCsvValue(String value) {
     if (value.contains(',') || value.contains('"') || value.contains('\n')) {
       final escaped = value.replaceAll('"', '""');
-      return '""';
+      return '"$escaped"';
     }
     return value;
   }

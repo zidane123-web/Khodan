@@ -28,6 +28,7 @@ dependencies:
   connectivity_plus: ^6.0.3
 
   # Notifications push
+  firebase_core: ^3.4.0
   firebase_messaging: ^15.0.0
 
   # Pour le scan de QR Code

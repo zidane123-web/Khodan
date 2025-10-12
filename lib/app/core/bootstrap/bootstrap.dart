@@ -1,5 +1,4 @@
 ﻿import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -80,8 +79,8 @@ class AppBootstrap {
       await Firebase.initializeApp();
       await notificationService.initialize();
     } catch (error, stackTrace) {
-      debugPrint('Firebase Messaging initialization skipped: $error');
-      debugPrint('$stackTrace');
+      debugPrint('Firebase Messaging initialization skipped: ');
+      debugPrintStack(stackTrace: stackTrace);
     }
   }
 }

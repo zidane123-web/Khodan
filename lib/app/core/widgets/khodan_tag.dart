@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
 
@@ -30,21 +30,24 @@ class KhodanTag extends StatelessWidget {
           onInfo: Colors.white,
         );
 
+    Color translucent(Color color, double opacity) =>
+        color.withAlpha((opacity * 255).round());
+
     final _TagStyle style = switch (variant) {
       KhodanTagVariant.success => _TagStyle(
-          background: appColors.success.withOpacity(0.12),
+          background: translucent(appColors.success, 0.12),
           foreground: appColors.success,
         ),
       KhodanTagVariant.warning => _TagStyle(
-          background: appColors.warning.withOpacity(0.18),
+          background: translucent(appColors.warning, 0.18),
           foreground: appColors.warning,
         ),
       KhodanTagVariant.danger => _TagStyle(
-          background: theme.colorScheme.error.withOpacity(0.12),
+          background: translucent(theme.colorScheme.error, 0.12),
           foreground: theme.colorScheme.error,
         ),
       KhodanTagVariant.info => _TagStyle(
-          background: appColors.info.withOpacity(0.12),
+          background: translucent(appColors.info, 0.12),
           foreground: appColors.info,
         ),
     };

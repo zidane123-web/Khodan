@@ -2,7 +2,6 @@
 
 import '../../../domain/animals/entities/animal_entity.dart';
 import '../../../domain/animals/repositories/animal_repository_interface.dart';
-import '../../models/animal.dart';
 
 class AnimalRepository implements AnimalRepositoryInterface {
   AnimalRepository(this.client);
@@ -13,7 +12,7 @@ class AnimalRepository implements AnimalRepositoryInterface {
 
   @override
   Future<List<AnimalEntity>> fetchAnimals({String? farmId, String? status}) async {
-    final query = client.from(table).select();
+    final PostgrestFilterBuilder<dynamic> query = client.from(table).select();
     if (farmId != null) {
       query.eq('farm_id', farmId);
     }
@@ -21,60 +20,25 @@ class AnimalRepository implements AnimalRepositoryInterface {
       query.eq('status', status);
     }
 
-    final result = await query.order('created_at', ascending: false);
+    final List<dynamic> result = await query.order('created_at', ascending: false);
     return result
-        .map((row) => Animal.fromJson(row as Map<String, dynamic>))
-        .map((model) => AnimalEntity(
-              id: model.id,
-              farmId: farmId ?? '',
-              speciesId: model.speciesId,
-              tagId: model.tagId,
-              sex: model.sex,
-              status: model.status,
-              birthDate: model.birthDate,
-              profileId: model.profileId,
-              name: model.name,
-              imageUrl: model.imageUrl,
-              sireId: model.sireId,
-              damId: model.damId,
-              cageNumber: model.cageNumber,
-              origin: model.origin,
-              entryDate: model.entryDate,
-              firstBreedingDate: model.firstBreedingDate,
-            ))
+        .map((dynamic row) => Map<String, dynamic>.from(row as Map))
+        .map(_mapRow)
         .toList();
   }
 
   @override
   Future<AnimalEntity> getAnimal(String id) async {
-    final data = await client.from(table).select().eq('id', id).maybeSingle();
+    final dynamic data = await client.from(table).select().eq('id', id).maybeSingle();
     if (data == null) {
       throw Exception('Animal not found');
     }
-    final model = Animal.fromJson(data as Map<String, dynamic>);
-    return AnimalEntity(
-      id: model.id,
-      farmId: data['farm_id'] as String? ?? '',
-      speciesId: model.speciesId,
-      tagId: model.tagId,
-      sex: model.sex,
-      status: model.status,
-      birthDate: model.birthDate,
-      profileId: model.profileId,
-      name: model.name,
-      imageUrl: model.imageUrl,
-      sireId: model.sireId,
-      damId: model.damId,
-      cageNumber: model.cageNumber,
-      origin: model.origin,
-      entryDate: model.entryDate,
-      firstBreedingDate: model.firstBreedingDate,
-    );
+    return _mapRow(Map<String, dynamic>.from(data as Map));
   }
 
   @override
   Future<String> createAnimal(AnimalEntity animal) async {
-    final response = await client.from(table).insert(<String, dynamic>{
+    final dynamic response = await client.from(table).insert(<String, dynamic>{
       'farm_id': animal.farmId,
       'species_id': animal.speciesId,
       'tag_id': animal.tagId,
@@ -95,7 +59,7 @@ class AnimalRepository implements AnimalRepositoryInterface {
     if (response == null) {
       throw Exception('Failed to create animal');
     }
-    return response['id'] as String;
+    return (response as Map<String, dynamic>)['id'] as String;
   }
 
   @override
@@ -121,5 +85,28 @@ class AnimalRepository implements AnimalRepositoryInterface {
   @override
   Future<void> deleteAnimal(String id) async {
     await client.from(table).delete().eq('id', id);
+  }
+
+  AnimalEntity _mapRow(Map<String, dynamic> row) {
+    DateTime? parseDate(dynamic value) => value == null ? null : DateTime.parse(value as String);
+
+    return AnimalEntity(
+      id: row['id'] as String,
+      farmId: row['farm_id'] as String? ?? '',
+      speciesId: row['species_id'] as int,
+      tagId: row['tag_id'] as String,
+      sex: row['sex'] as String,
+      status: row['status'] as String,
+      birthDate: DateTime.parse(row['birth_date'] as String),
+      profileId: row['profile_id'] as String?,
+      name: row['name'] as String?,
+      imageUrl: row['image_url'] as String?,
+      sireId: row['sire_id'] as String?,
+      damId: row['dam_id'] as String?,
+      cageNumber: row['cage_number'] as String?,
+      origin: row['origin'] as String?,
+      entryDate: parseDate(row['entry_date']),
+      firstBreedingDate: parseDate(row['first_breeding_date']),
+    );
   }
 }

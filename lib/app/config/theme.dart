@@ -86,23 +86,21 @@ ThemeData buildKhodanTheme() {
   const Color tertiary = Color(0xFFFFB347);
   const Color danger = Color(0xFFD96B5F);
   const Color surface = Color(0xFFF5F7FA);
-  const Color background = Colors.white;
+  const Color surfaceTint = Colors.white;
 
   final ColorScheme colorScheme = ColorScheme.fromSeed(
     seedColor: primary,
+    brightness: Brightness.light,
+  ).copyWith(
     primary: primary,
     secondary: secondary,
     tertiary: tertiary,
     error: danger,
-    background: background,
     surface: surface,
-    brightness: Brightness.light,
-  ).copyWith(
     onPrimary: Colors.white,
     onSecondary: Colors.white,
     onTertiary: const Color(0xFF3D2A0E),
     onSurface: const Color(0xFF101828),
-    onBackground: const Color(0xFF101828),
     onError: Colors.white,
   );
 
@@ -191,15 +189,15 @@ ThemeData buildKhodanTheme() {
     useMaterial3: true,
     textTheme: textTheme,
     appBarTheme: AppBarTheme(
-      backgroundColor: colorScheme.background,
-      foregroundColor: colorScheme.onBackground,
+      backgroundColor: colorScheme.surface,
+      foregroundColor: colorScheme.onSurface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       centerTitle: false,
       titleTextStyle: textTheme.titleLarge,
     ),
     cardTheme: CardThemeData(
-      color: background,
+      color: surfaceTint,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: KhodanRadius.large),
@@ -211,7 +209,7 @@ ThemeData buildKhodanTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: background,
+      fillColor: surfaceTint,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: KhodanSpacing.md,
         vertical: KhodanSpacing.sm,
