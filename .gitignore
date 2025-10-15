@@ -46,3 +46,5 @@ app.*.map.json
 
 # Fichiers d'environnement locaux
 .env
+.env.*
+!.env.example

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'app/config/app_env.dart';
 import 'app/config/router.dart';
 import 'app/config/theme.dart';
 import 'app/core/constants.dart';
@@ -15,7 +16,11 @@ import 'features/auth/presentation/cubit/auth_cubit.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await _initializeSupabase();
+  final AppEnv env = await AppEnv.load();
+  if (kDebugMode) {
+    debugPrint('App environment: ${env.label}');
+  }
+  await _initializeSupabase(env);
   _resetInMemoryRepositories();
   runApp(const KhodanApp());
 }
@@ -26,18 +31,17 @@ void _resetInMemoryRepositories() {
   InMemoryEventRepository.reset();
 }
 
-Future<void> _initializeSupabase() async {
-  final String supabaseUrl = AppConstants.supabaseUrl;
-  final String supabaseAnonKey = AppConstants.supabaseAnonKey;
-
-  if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-    debugPrint('Supabase credentials are missing. Skipping initialization.');
+Future<void> _initializeSupabase(AppEnv env) async {
+  if (!env.hasSupabaseCredentials) {
+    debugPrint(
+      'Supabase credentials are missing for ${env.label}. Skipping initialization.',
+    );
     return;
   }
 
   await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
+    url: env.supabaseUrl,
+    anonKey: env.supabaseAnonKey,
   );
 }
 
