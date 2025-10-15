@@ -10,3 +10,10 @@ git stash
 git stash pop (pour récupérer les modifications mises de côté)
 
 supabase migrations new Nom_du_fichier
+
+
+
+Mon objectif est de créer une application pour gérer l'élevage de Lapin. Il faut parcourir tout le projet (le frontend,la logique, le backend, les fonctionnalités ) qui ont été déjà faites et tu recences tout ce qui reste à faire pour une application complète, prête à être déployée. Pour cela, tu cré un dossier plan avec à l'intérieur l'ensemble des tâches  à faire (un ficher par tâche). Les taches doivent etre bien détaillé. tu crees au total 15 taches, qui couvrent tout.
+
+
+  Passe à l'exécution de la tache 3. N'oublie pas de faires les tests pour t'assurer de l'abasense de problèmes de compilation, d'avertissement et autres. la tâche une fois terminée dans le sous dossier done.

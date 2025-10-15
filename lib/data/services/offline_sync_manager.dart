@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 class QueuedSyncAction {
@@ -17,41 +19,65 @@ class OfflineSyncManager {
 
   final ValueNotifier<bool> isOffline = ValueNotifier<bool>(false);
   final ValueNotifier<int> pendingActions = ValueNotifier<int>(0);
+  final ValueNotifier<List<QueuedSyncAction>> pendingQueueNotifier =
+      ValueNotifier<List<QueuedSyncAction>>(const <QueuedSyncAction>[]);
+
   final List<QueuedSyncAction> _queue = <QueuedSyncAction>[];
 
-  List<QueuedSyncAction> get pendingQueue => List<QueuedSyncAction>.unmodifiable(_queue);
+  List<QueuedSyncAction> get pendingQueue =>
+      List<QueuedSyncAction>.unmodifiable(_queue);
 
-  void setOffline(bool value) {
+  void setOffline(bool value, {bool flushWhenOnline = true}) {
     if (isOffline.value == value) {
       return;
     }
     isOffline.value = value;
-    if (!value) {
-      flush();
+    if (!value && flushWhenOnline) {
+      unawaited(flush());
     }
   }
 
   void enqueue(QueuedSyncAction action) {
     _queue.add(action);
-    pendingActions.value = _queue.length;
+    _notifyQueueChanged();
   }
 
-  Future<void> flush() async {
+  Future<bool> flush() async {
     if (_queue.isEmpty) {
-      return;
+      _notifyQueueChanged();
+      return true;
     }
+
     final List<QueuedSyncAction> actions = List<QueuedSyncAction>.from(_queue);
     _queue.clear();
-    pendingActions.value = 0;
+    _notifyQueueChanged();
 
-    for (final QueuedSyncAction action in actions) {
+    bool allSucceeded = true;
+    for (int index = 0; index < actions.length; index += 1) {
+      final QueuedSyncAction action = actions[index];
       try {
         await action.execute();
       } catch (_) {
-        _queue.insert(0, action);
-        pendingActions.value = _queue.length;
+        allSucceeded = false;
+        final Iterable<QueuedSyncAction> remaining =
+            actions.skip(index + 1);
+        _queue
+          ..insert(0, action)
+          ..insertAll(1, remaining);
+        _notifyQueueChanged();
         break;
       }
     }
+
+    if (allSucceeded) {
+      _notifyQueueChanged();
+    }
+    return allSucceeded && _queue.isEmpty;
+  }
+
+  void _notifyQueueChanged() {
+    pendingActions.value = _queue.length;
+    pendingQueueNotifier.value =
+        List<QueuedSyncAction>.unmodifiable(_queue);
   }
 }

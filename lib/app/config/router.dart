@@ -15,6 +15,13 @@ import '../../features/events/presentation/screens/add_breeding_record_screen.da
 import '../../features/events/presentation/screens/add_event_screen.dart';
 import '../../features/events/presentation/cubit/breeding_cubit.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
+import '../../features/settings/presentation/screens/settings_about_screen.dart';
+import '../../features/settings/presentation/screens/settings_contact_support_screen.dart';
+import '../../features/settings/presentation/screens/settings_knowledge_base_screen.dart';
+import '../../features/settings/presentation/screens/settings_logs_screen.dart';
+import '../../features/settings/presentation/screens/settings_personalization_screen.dart';
+import '../../features/settings/presentation/screens/settings_profile_screen.dart';
+import '../../features/settings/presentation/screens/settings_referentials_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../data/models/animal.dart';
 import '../../data/repositories/event_repository.dart';
@@ -157,6 +164,43 @@ class KhodanRouter {
                     path: const SettingsRoute().path,
                     builder: (BuildContext context, GoRouterState state) =>
                         const SettingsScreen(),
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'referentials',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const SettingsReferentialsScreen(),
+                      ),
+                      GoRoute(
+                        path: 'personalization',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const SettingsPersonalizationScreen(),
+                      ),
+                      GoRoute(
+                        path: 'profile',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const SettingsProfileScreen(),
+                      ),
+                      GoRoute(
+                        path: 'support/knowledge',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const SettingsKnowledgeBaseScreen(),
+                      ),
+                      GoRoute(
+                        path: 'support/contact',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const SettingsContactSupportScreen(),
+                      ),
+                      GoRoute(
+                        path: 'support/logs',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const SettingsLogsScreen(),
+                      ),
+                      GoRoute(
+                        path: 'support/about',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const SettingsAboutScreen(),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -241,6 +285,34 @@ class ReportsRoute extends KhodanRoute {
 
 class SettingsRoute extends KhodanRoute {
   const SettingsRoute() : super('/settings');
+}
+
+class SettingsReferentialsRoute extends KhodanRoute {
+  const SettingsReferentialsRoute() : super('/settings/referentials');
+}
+
+class SettingsPersonalizationRoute extends KhodanRoute {
+  const SettingsPersonalizationRoute() : super('/settings/personalization');
+}
+
+class SettingsProfileRoute extends KhodanRoute {
+  const SettingsProfileRoute() : super('/settings/profile');
+}
+
+class SettingsKnowledgeBaseRoute extends KhodanRoute {
+  const SettingsKnowledgeBaseRoute() : super('/settings/support/knowledge');
+}
+
+class SettingsContactSupportRoute extends KhodanRoute {
+  const SettingsContactSupportRoute() : super('/settings/support/contact');
+}
+
+class SettingsLogsRoute extends KhodanRoute {
+  const SettingsLogsRoute() : super('/settings/support/logs');
+}
+
+class SettingsAboutRoute extends KhodanRoute {
+  const SettingsAboutRoute() : super('/settings/support/about');
 }
 
 class KhodanNavigationShell extends StatelessWidget {
