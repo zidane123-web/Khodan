@@ -16,6 +16,7 @@ class AppEnv {
     required this.environment,
     required this.supabaseUrl,
     required this.supabaseAnonKey,
+    required this.useInMemoryRepositories,
   });
 
   /// In-memory singleton that stores the resolved configuration.
@@ -35,6 +36,10 @@ class AppEnv {
         const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
     final String injectedSupabaseAnonKey =
         const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
+    final String inMemoryFlag = const String.fromEnvironment(
+      'USE_IN_MEMORY_REPOSITORIES',
+      defaultValue: 'auto',
+    );
 
     final _EnvDefaults defaults = _defaults[environment]!;
     final String resolvedUrl = injectedSupabaseUrl.isNotEmpty
@@ -43,11 +48,19 @@ class AppEnv {
     final String resolvedAnonKey = injectedSupabaseAnonKey.isNotEmpty
         ? injectedSupabaseAnonKey
         : defaults.anonKey;
+    final bool hasCredentials =
+        resolvedUrl.isNotEmpty && resolvedAnonKey.isNotEmpty;
+
+    final bool useInMemoryRepositories = _shouldUseInMemory(
+      inMemoryFlag,
+      hasCredentials: hasCredentials,
+    );
 
     _instance = AppEnv._(
       environment: environment,
       supabaseUrl: resolvedUrl,
       supabaseAnonKey: resolvedAnonKey,
+      useInMemoryRepositories: useInMemoryRepositories,
     );
     return _instance!;
   }
@@ -66,6 +79,7 @@ class AppEnv {
   final AppEnvironment environment;
   final String supabaseUrl;
   final String supabaseAnonKey;
+  final bool useInMemoryRepositories;
 
   String get label => environment.name;
 
@@ -88,6 +102,27 @@ class AppEnv {
       case 'development':
       default:
         return AppEnvironment.dev;
+    }
+  }
+
+  static bool _shouldUseInMemory(
+    String flag, {
+    required bool hasCredentials,
+  }) {
+    final String normalized = flag.toLowerCase().trim();
+    switch (normalized) {
+      case 'true':
+      case '1':
+      case 'yes':
+      case 'demo':
+        return true;
+      case 'false':
+      case '0':
+      case 'no':
+      case 'supabase':
+        return false;
+      default:
+        return !hasCredentials;
     }
   }
 

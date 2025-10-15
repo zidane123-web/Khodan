@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/animal.dart';
+import '../services/api_client.dart';
 
 abstract class AnimalRepository {
   Future<List<Animal>> fetchAnimals({int? speciesId});
@@ -130,20 +131,23 @@ class InMemoryAnimalRepository implements AnimalRepository {
 }
 
 class SupabaseAnimalRepository implements AnimalRepository {
-  SupabaseAnimalRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+  SupabaseAnimalRepository({ApiExecutor? apiClient})
+      : _api = apiClient ?? ApiClient();
 
-  final SupabaseClient _client;
+  final ApiExecutor _api;
 
   @override
   Future<List<Animal>> fetchAnimals({int? speciesId}) async {
-    PostgrestFilterBuilder<dynamic> query = _client.from('animals').select();
-
-    if (speciesId != null) {
-      query = query.eq('species_id', speciesId);
-    }
-
-    final List<dynamic> data = await query.order('birth_date');
+    final List<dynamic> data = await _api.run(
+      (SupabaseClient client) {
+        dynamic query = client.from('animals').select();
+        if (speciesId != null) {
+          query = query.eq('species_id', speciesId);
+        }
+        return query.order('birth_date');
+      },
+      label: 'animals.fetch',
+    );
     return data
         .map((dynamic row) => Animal.fromJson(row as Map<String, dynamic>))
         .toList();
@@ -151,25 +155,37 @@ class SupabaseAnimalRepository implements AnimalRepository {
 
   @override
   Future<Animal> createAnimal(Animal animal) async {
-    final List<dynamic> response = await _client
-        .from('animals')
-        .insert(animal.toJson())
-        .select();
+    final List<dynamic> response = await _api.run(
+      (SupabaseClient client) {
+        return client.from('animals').insert(animal.toJson()).select();
+      },
+      label: 'animals.create',
+    );
     return Animal.fromJson(response.first as Map<String, dynamic>);
   }
 
   @override
   Future<Animal> updateAnimal(Animal animal) async {
-    final List<dynamic> response = await _client
-        .from('animals')
-        .update(animal.toJson())
-        .eq('id', animal.id)
-        .select();
+    final List<dynamic> response = await _api.run(
+      (SupabaseClient client) {
+        return client
+            .from('animals')
+            .update(animal.toJson())
+            .eq('id', animal.id)
+            .select();
+      },
+      label: 'animals.update',
+    );
     return Animal.fromJson(response.first as Map<String, dynamic>);
   }
 
   @override
   Future<void> deleteAnimal(String id) {
-    return _client.from('animals').delete().eq('id', id);
+    return _api.run(
+      (SupabaseClient client) {
+        return client.from('animals').delete().eq('id', id);
+      },
+      label: 'animals.delete',
+    );
   }
 }

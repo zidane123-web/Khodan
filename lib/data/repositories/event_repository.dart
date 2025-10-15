@@ -2,7 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/animal_event.dart';
 import '../models/event.dart';
-
+import '../services/api_client.dart';
 abstract class EventRepository {
   Future<List<LivestockEvent>> fetchEvents({DateTime? start, DateTime? end});
 
@@ -133,23 +133,26 @@ class InMemoryEventRepository implements EventRepository {
 }
 
 class SupabaseEventRepository implements EventRepository {
-  SupabaseEventRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+  SupabaseEventRepository({ApiExecutor? apiClient})
+      : _api = apiClient ?? ApiClient();
 
-  final SupabaseClient _client;
+  final ApiExecutor _api;
 
   @override
   Future<List<LivestockEvent>> fetchEvents({DateTime? start, DateTime? end}) async {
-    PostgrestFilterBuilder<dynamic> query = _client.from('events').select();
-
-    if (start != null) {
-      query = query.gte('event_date', start.toIso8601String());
-    }
-    if (end != null) {
-      query = query.lte('event_date', end.toIso8601String());
-    }
-
-    final List<dynamic> data = await query.order('event_date');
+    final List<dynamic> data = await _api.run(
+      (SupabaseClient client) {
+        dynamic query = client.from('events').select();
+        if (start != null) {
+          query = query.gte('event_date', start.toIso8601String());
+        }
+        if (end != null) {
+          query = query.lte('event_date', end.toIso8601String());
+        }
+        return query.order('event_date');
+      },
+      label: 'events.fetch',
+    );
     return data
         .map((dynamic row) => LivestockEvent.fromJson(row as Map<String, dynamic>))
         .toList();
@@ -157,7 +160,12 @@ class SupabaseEventRepository implements EventRepository {
 
   @override
   Future<List<AnimalEventLink>> fetchEventLinks() async {
-    final List<dynamic> data = await _client.from('animal_events').select();
+    final List<dynamic> data = await _api.run(
+      (SupabaseClient client) {
+        return client.from('animal_events').select();
+      },
+      label: 'events.fetchLinks',
+    );
     return data
         .map((dynamic row) =>
             AnimalEventLink.fromJson(row as Map<String, dynamic>))
@@ -169,23 +177,26 @@ class SupabaseEventRepository implements EventRepository {
     LivestockEvent event, {
     List<AnimalEventLink> links = const <AnimalEventLink>[],
   }) async {
-    final List<dynamic> response = await _client
-        .from('events')
-        .insert(event.toJson())
-        .select();
-    final LivestockEvent createdEvent =
-        LivestockEvent.fromJson(response.first as Map<String, dynamic>);
+    return _api.run<LivestockEvent>(
+      (SupabaseClient client) async {
+        final List<dynamic> response =
+            await client.from('events').insert(event.toJson()).select();
+        final LivestockEvent createdEvent =
+            LivestockEvent.fromJson(response.first as Map<String, dynamic>);
 
-    if (links.isNotEmpty) {
-      await _client.from('animal_events').insert(<Map<String, dynamic>>[
-        for (final AnimalEventLink link in links)
-          <String, dynamic>{
-            ...link.toJson(),
-            'event_id': createdEvent.id,
-          },
-      ]);
-    }
+        if (links.isNotEmpty) {
+          await client.from('animal_events').insert(<Map<String, dynamic>>[
+            for (final AnimalEventLink link in links)
+              <String, dynamic>{
+                ...link.toJson(),
+                'event_id': createdEvent.id,
+              },
+          ]);
+        }
 
-    return createdEvent;
+        return createdEvent;
+      },
+      label: 'events.create',
+    );
   }
 }

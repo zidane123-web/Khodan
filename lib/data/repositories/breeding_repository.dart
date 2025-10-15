@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/breeding_record.dart';
-
+import '../services/api_client.dart';
 abstract class BreedingRepository {
   Future<List<BreedingRecord>> fetchBreedingRecords();
 
@@ -106,14 +106,19 @@ class InMemoryBreedingRepository implements BreedingRepository {
 }
 
 class SupabaseBreedingRepository implements BreedingRepository {
-  SupabaseBreedingRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+  SupabaseBreedingRepository({ApiExecutor? apiClient})
+      : _api = apiClient ?? ApiClient();
 
-  final SupabaseClient _client;
+  final ApiExecutor _api;
 
   @override
   Future<List<BreedingRecord>> fetchBreedingRecords() async {
-    final List<dynamic> data = await _client.from('breeding_records').select();
+    final List<dynamic> data = await _api.run(
+      (SupabaseClient client) {
+        return client.from('breeding_records').select();
+      },
+      label: 'breeding.fetch',
+    );
     return data
         .map((dynamic row) =>
             BreedingRecord.fromJson(row as Map<String, dynamic>))
@@ -122,25 +127,37 @@ class SupabaseBreedingRepository implements BreedingRepository {
 
   @override
   Future<BreedingRecord> createBreedingRecord(BreedingRecord record) async {
-    final List<dynamic> response = await _client
-        .from('breeding_records')
-        .insert(record.toJson())
-        .select();
+    final List<dynamic> response = await _api.run(
+      (SupabaseClient client) {
+        return client.from('breeding_records').insert(record.toJson()).select();
+      },
+      label: 'breeding.create',
+    );
     return BreedingRecord.fromJson(response.first as Map<String, dynamic>);
   }
 
   @override
   Future<BreedingRecord> updateBreedingRecord(BreedingRecord record) async {
-    final List<dynamic> response = await _client
-        .from('breeding_records')
-        .update(record.toJson())
-        .eq('id', record.id)
-        .select();
+    final List<dynamic> response = await _api.run(
+      (SupabaseClient client) {
+        return client
+            .from('breeding_records')
+            .update(record.toJson())
+            .eq('id', record.id)
+            .select();
+      },
+      label: 'breeding.update',
+    );
     return BreedingRecord.fromJson(response.first as Map<String, dynamic>);
   }
 
   @override
   Future<void> deleteBreedingRecord(String id) {
-    return _client.from('breeding_records').delete().eq('id', id);
+    return _api.run(
+      (SupabaseClient client) {
+        return client.from('breeding_records').delete().eq('id', id);
+      },
+      label: 'breeding.delete',
+    );
   }
 }

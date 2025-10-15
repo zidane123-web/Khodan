@@ -20,15 +20,10 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Synchroniser maintenant'), findsOneWidget);
-    expect(find.text('Espèces, gestation & sevrage'), findsOneWidget);
-    expect(find.text('Tableau de bord & rapports'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Profil'), 300);
-    expect(find.text('Profil'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Base de connaissances'),
-      300,
-    );
-    expect(find.text('Base de connaissances'), findsOneWidget);
+    expect(find.text('Mode hors-ligne'), findsOneWidget);
+    expect(find.text('Gestion des espèces'), findsOneWidget);
+    expect(find.text('Assistance'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Déconnexion'), 300);
+    expect(find.text('Déconnexion'), findsOneWidget);
   });
 }

@@ -31,13 +31,15 @@ final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
 );
 
 class KhodanRouter {
-  KhodanRouter()
+  KhodanRouter({required bool enableAuth})
     : router = GoRouter(
         navigatorKey: _rootNavigatorKey,
         initialLocation: const SplashRoute().location,
-        refreshListenable: GoRouterRefreshStream(
-          Supabase.instance.client.auth.onAuthStateChange,
-        ),
+        refreshListenable: enableAuth
+            ? GoRouterRefreshStream(
+                Supabase.instance.client.auth.onAuthStateChange,
+              )
+            : null,
         routes: <RouteBase>[
           GoRoute(
             path: const SplashRoute().path,
@@ -207,33 +209,38 @@ class KhodanRouter {
             ],
           ),
         ],
-        redirect: (BuildContext context, GoRouterState state) {
-          final Session? session = Supabase.instance.client.auth.currentSession;
-          final bool hasSession = session != null;
-          final String location = state.uri.toString();
-
-          final bool isAuthRoute = location == const LoginRoute().location;
-          final bool isSplashRoute = location == const SplashRoute().location;
-
-          if (isSplashRoute) {
-            return hasSession
-                ? const DashboardRoute().location
-                : const LoginRoute().location;
-          }
-
-          if (!hasSession) {
-            return isAuthRoute ? null : const LoginRoute().location;
-          }
-
-          if (isAuthRoute) {
-            return const DashboardRoute().location;
-          }
-
-          return null;
-        },
+        redirect: enableAuth ? _redirectWithAuth : null,
       );
 
   final GoRouter router;
+
+  static String? _redirectWithAuth(
+    BuildContext context,
+    GoRouterState state,
+  ) {
+    final Session? session = Supabase.instance.client.auth.currentSession;
+    final bool hasSession = session != null;
+    final String location = state.uri.toString();
+
+    final bool isAuthRoute = location == const LoginRoute().location;
+    final bool isSplashRoute = location == const SplashRoute().location;
+
+    if (isSplashRoute) {
+      return hasSession
+          ? const DashboardRoute().location
+          : const LoginRoute().location;
+    }
+
+    if (!hasSession) {
+      return isAuthRoute ? null : const LoginRoute().location;
+    }
+
+    if (isAuthRoute) {
+      return const DashboardRoute().location;
+    }
+
+    return null;
+  }
 }
 
 class GoRouterRefreshStream extends ChangeNotifier {
