@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/animals/presentation/screens/animal_list_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/email_confirmation_screen.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/events/presentation/screens/events_hub_screen.dart';
@@ -50,6 +51,19 @@ class KhodanRouter {
             path: const LoginRoute().path,
             builder: (BuildContext context, GoRouterState state) =>
                 const LoginScreen(),
+          ),
+          GoRoute(
+            path: const EmailConfirmationRoute().path,
+            builder: (BuildContext context, GoRouterState state) {
+              final Object? extra = state.extra;
+              final String emailFromExtra =
+                  extra is String ? extra : '';
+              final String emailFromQuery =
+                  state.uri.queryParameters['email'] ?? '';
+              final String email =
+                  emailFromExtra.isNotEmpty ? emailFromExtra : emailFromQuery;
+              return EmailConfirmationScreen(email: email);
+            },
           ),
           StatefulShellRoute.indexedStack(
             builder:
@@ -220,10 +234,11 @@ class KhodanRouter {
   ) {
     final Session? session = Supabase.instance.client.auth.currentSession;
     final bool hasSession = session != null;
-    final String location = state.uri.toString();
+    final String path = state.uri.path;
 
-    final bool isAuthRoute = location == const LoginRoute().location;
-    final bool isSplashRoute = location == const SplashRoute().location;
+    final bool isAuthRoute = path == const LoginRoute().path ||
+        path == const EmailConfirmationRoute().path;
+    final bool isSplashRoute = path == const SplashRoute().path;
 
     if (isSplashRoute) {
       return hasSession
@@ -272,6 +287,10 @@ class SplashRoute extends KhodanRoute {
 
 class LoginRoute extends KhodanRoute {
   const LoginRoute() : super('/auth/login');
+}
+
+class EmailConfirmationRoute extends KhodanRoute {
+  const EmailConfirmationRoute() : super('/auth/confirm');
 }
 
 class DashboardRoute extends KhodanRoute {

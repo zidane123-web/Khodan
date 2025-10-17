@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/core/widgets/khodan_primary_button.dart';
 import '../cubit/auth_cubit.dart';
+import 'reset_password_dialog.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -64,11 +65,15 @@ class _LoginFormState extends State<LoginForm> {
             ),
             const SizedBox(height: 24),
             BlocBuilder<AuthCubit, AuthState>(
+              buildWhen: (AuthState previous, AuthState current) =>
+                  previous.status != current.status,
               builder: (BuildContext context, AuthState state) {
+                final bool isLoading = state.status == AuthStatus.loading;
                 return KhodanPrimaryButton(
                   label: 'Se connecter',
                   icon: Icons.login,
-                  onPressed: state.status == AuthStatus.loading
+                  loading: isLoading,
+                  onPressed: isLoading
                       ? null
                       : () {
                           if (_formKey.currentState?.validate() ?? false) {
@@ -84,9 +89,28 @@ class _LoginFormState extends State<LoginForm> {
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {},
-                child: const Text('Mot de passe oublié ?'),
+              child: BlocBuilder<AuthCubit, AuthState>(
+                buildWhen: (AuthState previous, AuthState current) =>
+                    previous.status != current.status,
+                builder: (BuildContext context, AuthState state) {
+                  final bool isLoading = state.status == AuthStatus.loading;
+                  return TextButton(
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            final AuthCubit authCubit =
+                                context.read<AuthCubit>();
+                            showDialog<void>(
+                              context: context,
+                              builder: (_) => BlocProvider.value(
+                                value: authCubit,
+                                child: const ResetPasswordDialog(),
+                              ),
+                            );
+                          },
+                    child: const Text('Mot de passe oublie ?'),
+                  );
+                },
               ),
             ),
           ],

@@ -14,17 +14,37 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthCubit, AuthState>(
+      listenWhen: (AuthState previous, AuthState current) =>
+          previous.status != current.status ||
+          previous.errorMessage != current.errorMessage ||
+          previous.infoMessage != current.infoMessage,
       listener: (BuildContext context, AuthState state) {
-        if (state.status == AuthStatus.failure && state.errorMessage != null) {
+        final AuthCubit cubit = context.read<AuthCubit>();
+        if (state.errorMessage != null) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
               SnackBar(content: Text(state.errorMessage!)),
             );
+          cubit.acknowledgeError();
+        } else if (state.infoMessage != null) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(content: Text(state.infoMessage!)),
+            );
+          cubit.acknowledgeInfo();
         }
 
-        if (state.status == AuthStatus.success) {
+        if (state.status == AuthStatus.authenticated) {
           context.go(const DashboardRoute().location);
+        } else if (state.status == AuthStatus.emailConfirmationRequired) {
+          final String email =
+              state.emailPendingVerification ?? state.session?.user.email ?? '';
+          context.go(
+            const EmailConfirmationRoute().location,
+            extra: email,
+          );
         }
       },
       child: Scaffold(
@@ -40,7 +60,7 @@ class LoginScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Votre assistant d’élevage intelligent',
+                  "Votre assistant d'elevage intelligent",
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 32),
@@ -50,7 +70,7 @@ class LoginScreen extends StatelessWidget {
                   child: Column(
                     children: <Widget>[
                       Text(
-                        'Besoin d’aide ?',
+                        "Besoin d'aide ?",
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       Text(
@@ -69,17 +89,26 @@ class LoginScreen extends StatelessWidget {
         ),
         bottomNavigationBar: Padding(
           padding: const EdgeInsets.all(16),
-          child: FilledButton.icon(
-            label: const Text('Créer un compte'),
-            icon: const Icon(Icons.person_add_alt),
-            onPressed: () {
-              final AuthCubit authCubit = context.read<AuthCubit>();
-              showDialog<void>(
-                context: context,
-                builder: (_) => BlocProvider.value(
-                  value: authCubit,
-                  child: const _SignupDialog(),
-                ),
+          child: BlocBuilder<AuthCubit, AuthState>(
+            buildWhen: (AuthState previous, AuthState current) =>
+                previous.status != current.status,
+            builder: (BuildContext context, AuthState state) {
+              final bool isLoading = state.status == AuthStatus.loading;
+              return FilledButton.icon(
+                label: const Text('Creer un compte'),
+                icon: const Icon(Icons.person_add_alt),
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        final AuthCubit authCubit = context.read<AuthCubit>();
+                        showDialog<void>(
+                          context: context,
+                          builder: (_) => BlocProvider.value(
+                            value: authCubit,
+                            child: const _SignupDialog(),
+                          ),
+                        );
+                      },
               );
             },
           ),
@@ -116,12 +145,13 @@ class _SignupDialogState extends State<_SignupDialog> {
       listenWhen: (AuthState previous, AuthState current) =>
           previous.status != current.status,
       listener: (BuildContext context, AuthState state) {
-        if (state.status == AuthStatus.success) {
+        if (state.status == AuthStatus.authenticated ||
+            state.status == AuthStatus.emailConfirmationRequired) {
           Navigator.of(context, rootNavigator: true).maybePop();
         }
       },
       child: AlertDialog(
-        title: const Text('Créer un élevage'),
+        title: const Text('Creer un elevage'),
         content: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -131,7 +161,7 @@ class _SignupDialogState extends State<_SignupDialog> {
                 TextFormField(
                   controller: _farmNameController,
                   decoration: const InputDecoration(
-                    labelText: 'Nom de l’élevage',
+                    labelText: 'Nom de la ferme',
                   ),
                   validator: (String? value) {
                     if (value == null || value.isEmpty) {
@@ -149,6 +179,9 @@ class _SignupDialogState extends State<_SignupDialog> {
                     if (value == null || value.isEmpty) {
                       return 'Email requis';
                     }
+                    if (!value.contains('@')) {
+                      return 'Adresse invalide';
+                    }
                     return null;
                   },
                 ),
@@ -159,7 +192,7 @@ class _SignupDialogState extends State<_SignupDialog> {
                   obscureText: true,
                   validator: (String? value) {
                     if (value == null || value.length < 6) {
-                      return '6 caractères minimum';
+                      return '6 caracteres minimum';
                     }
                     return null;
                   },
@@ -170,13 +203,16 @@ class _SignupDialogState extends State<_SignupDialog> {
         ),
         actions: <Widget>[
           TextButton(
-            onPressed: () => Navigator.of(context).maybePop(),
+            onPressed: () => Navigator.of(context, rootNavigator: true).maybePop(),
             child: const Text('Annuler'),
           ),
           BlocBuilder<AuthCubit, AuthState>(
+            buildWhen: (AuthState previous, AuthState current) =>
+                previous.status != current.status,
             builder: (BuildContext context, AuthState state) {
+              final bool isLoading = state.status == AuthStatus.loading;
               return FilledButton(
-                onPressed: state.status == AuthStatus.loading
+                onPressed: isLoading
                     ? null
                     : () async {
                         if (!_formKey.currentState!.validate()) {
@@ -188,13 +224,13 @@ class _SignupDialogState extends State<_SignupDialog> {
                               farmName: _farmNameController.text.trim(),
                             );
                       },
-                child: state.status == AuthStatus.loading
+                child: isLoading
                     ? const SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Créer'),
+                    : const Text('Creer'),
               );
             },
           ),

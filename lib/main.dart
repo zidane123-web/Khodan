@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,6 +18,7 @@ import 'data/repositories/breeding_repository.dart';
 import 'data/repositories/event_repository.dart';
 import 'data/repositories/species_repository.dart';
 import 'data/services/api_client.dart';
+import 'data/services/connectivity_watcher.dart';
 import 'data/services/offline_sync_manager.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 
@@ -69,7 +72,9 @@ class _KhodanAppState extends State<KhodanApp> {
   late final LocalBreedingDataSource _localBreedingDataSource;
   late final LocalEventDataSource _localEventDataSource;
   late final LocalSpeciesDataSource _localSpeciesDataSource;
+  late final LocalProfileDataSource _localProfileDataSource;
   late final KhodanRouter _router;
+  ConnectivityWatcher? _connectivityWatcher;
 
   @override
   void initState() {
@@ -79,14 +84,18 @@ class _KhodanAppState extends State<KhodanApp> {
     _localBreedingDataSource = LocalBreedingDataSource(_localDb);
     _localEventDataSource = LocalEventDataSource(_localDb);
     _localSpeciesDataSource = LocalSpeciesDataSource(_localDb);
+    _localProfileDataSource = LocalProfileDataSource(_localDb);
     _router = KhodanRouter(
       enableAuth: widget.env.hasSupabaseCredentials &&
           !widget.env.useInMemoryRepositories,
     );
+    _connectivityWatcher = ConnectivityWatcher();
+    unawaited(_connectivityWatcher!.initialize());
   }
 
   @override
   void dispose() {
+    unawaited(_connectivityWatcher?.dispose());
     _localDb.close();
     super.dispose();
   }
@@ -113,7 +122,10 @@ class _KhodanAppState extends State<KhodanApp> {
       key: _appKey,
       providers: repositoryProviders,
       child: BlocProvider<AuthCubit>(
-        create: (BuildContext context) => AuthCubit(AuthRepository()),
+        create: (BuildContext context) => AuthCubit(
+          AuthRepository(),
+          localProfile: context.read<LocalProfileDataSource>(),
+        )..listenAuthChanges(),
         child: MaterialApp.router(
           title: AppConstants.appName,
           theme: buildKhodanTheme(),
@@ -146,6 +158,12 @@ class _KhodanAppState extends State<KhodanApp> {
       ),
       RepositoryProvider<LocalSpeciesDataSource>.value(
         value: _localSpeciesDataSource,
+      ),
+      RepositoryProvider<LocalProfileDataSource>.value(
+        value: _localProfileDataSource,
+      ),
+      RepositoryProvider<LocalProfileDataSource>.value(
+        value: _localProfileDataSource,
       ),
       RepositoryProvider<AnimalRepository>(
         create: (_) => InMemoryAnimalRepository(),
