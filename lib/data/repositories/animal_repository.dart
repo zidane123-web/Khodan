@@ -1,7 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../local/local_data_sources.dart';
 import '../models/animal.dart';
 import '../services/api_client.dart';
+import '../services/offline_sync_manager.dart';
 
 abstract class AnimalRepository {
   Future<List<Animal>> fetchAnimals({int? speciesId});
@@ -187,5 +189,101 @@ class SupabaseAnimalRepository implements AnimalRepository {
       },
       label: 'animals.delete',
     );
+  }
+}
+
+class SyncedAnimalRepository implements AnimalRepository {
+  SyncedAnimalRepository({
+    required AnimalRepository remote,
+    required LocalAnimalDataSource local,
+    OfflineSyncManager? offlineManager,
+  })  : _remote = remote,
+        _local = local,
+        _offlineManager = offlineManager ?? OfflineSyncManager.instance;
+
+  final AnimalRepository _remote;
+  final LocalAnimalDataSource _local;
+  final OfflineSyncManager _offlineManager;
+
+  String? get _currentProfileId {
+    try {
+      return Supabase.instance.client.auth.currentUser?.id;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<Animal>> fetchAnimals({int? speciesId}) async {
+    final String? profileId = _currentProfileId;
+    if (_offlineManager.isOffline.value) {
+      return _local.fetchAnimals(
+        profileId: profileId,
+        speciesId: speciesId,
+      );
+    }
+
+    try {
+      final List<Animal> animals =
+          await _remote.fetchAnimals(speciesId: speciesId);
+      if (animals.isNotEmpty) {
+        await _local.replaceAnimals(
+          animals,
+          profileId: profileId,
+        );
+      } else if (profileId != null) {
+        await _local.replaceAnimals(const <Animal>[], profileId: profileId);
+      }
+      return animals;
+    } catch (error) {
+      final List<Animal> cached = await _local.fetchAnimals(
+        profileId: profileId,
+        speciesId: speciesId,
+      );
+      if (cached.isNotEmpty) {
+        return cached;
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Animal> createAnimal(Animal animal) async {
+    if (_offlineManager.isOffline.value) {
+      await _local.upsertAnimal(
+        animal,
+        syncState: kSyncStatePending,
+      );
+      return animal;
+    }
+
+    final Animal created = await _remote.createAnimal(animal);
+    await _local.upsertAnimal(created);
+    return created;
+  }
+
+  @override
+  Future<Animal> updateAnimal(Animal animal) async {
+    if (_offlineManager.isOffline.value) {
+      await _local.upsertAnimal(
+        animal,
+        syncState: kSyncStatePending,
+      );
+      return animal;
+    }
+
+    final Animal updated = await _remote.updateAnimal(animal);
+    await _local.upsertAnimal(updated);
+    return updated;
+  }
+
+  @override
+  Future<void> deleteAnimal(String id) async {
+    if (_offlineManager.isOffline.value) {
+      await _local.deleteAnimal(id);
+      return;
+    }
+    await _remote.deleteAnimal(id);
+    await _local.deleteAnimal(id);
   }
 }

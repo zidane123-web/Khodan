@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../data/local/local_data_sources.dart';
 import '../../../../data/models/animal.dart';
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/services/offline_sync_manager.dart';
@@ -112,28 +114,66 @@ class AnimalState extends Equatable {
 }
 
 class AnimalCubit extends Cubit<AnimalState> {
-  AnimalCubit(this._repository, {OfflineSyncManager? offlineManager})
-      : _offlineManager = offlineManager ?? OfflineSyncManager.instance,
+  AnimalCubit(
+    this._repository, {
+    OfflineSyncManager? offlineManager,
+    LocalAnimalDataSource? localDataSource,
+  })  : _offlineManager = offlineManager ?? OfflineSyncManager.instance,
+        _localDataSource = localDataSource,
         super(const AnimalState());
 
   final AnimalRepository _repository;
   final OfflineSyncManager _offlineManager;
+  final LocalAnimalDataSource? _localDataSource;
+
+  String? get _currentProfileId =>
+      Supabase.instance.client.auth.currentUser?.id;
 
   Future<void> fetchAnimals({int? speciesId}) async {
-    if (_offlineManager.isOffline.value && state.allAnimals.isNotEmpty) {
-      emit(
-        state.copyWith(
-          status: AnimalStatus.success,
-          animals: _applyFilters(state.allAnimals, state.filters),
-          errorMessage: null,
-        ),
-      );
+    final bool isOffline = _offlineManager.isOffline.value;
+    if (isOffline) {
+      final LocalAnimalDataSource? local = _localDataSource;
+      final List<Animal> cached = local == null
+          ? state.allAnimals
+          : await local.fetchAnimals(
+              profileId: _currentProfileId,
+              speciesId: speciesId,
+            );
+      if (cached.isNotEmpty) {
+        emit(
+          state.copyWith(
+            status: AnimalStatus.success,
+            animals: _applyFilters(cached, state.filters),
+            allAnimals: cached,
+            errorMessage: null,
+          ),
+        );
+      } else if (state.allAnimals.isNotEmpty) {
+        emit(
+          state.copyWith(
+            status: AnimalStatus.success,
+            animals: _applyFilters(state.allAnimals, state.filters),
+            errorMessage: null,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            status: AnimalStatus.failure,
+            errorMessage: 'Aucune donnée locale disponible hors-ligne.',
+          ),
+        );
+      }
       return;
     }
     emit(state.copyWith(status: AnimalStatus.loading));
     try {
       final List<Animal> animals =
           await _repository.fetchAnimals(speciesId: speciesId);
+      await _localDataSource?.replaceAnimals(
+        animals,
+        profileId: _currentProfileId,
+      );
       final List<Animal> filtered = _applyFilters(animals, state.filters);
       emit(
         state.copyWith(
@@ -144,12 +184,30 @@ class AnimalCubit extends Cubit<AnimalState> {
         ),
       );
     } catch (error) {
-      emit(
-        state.copyWith(
-          status: AnimalStatus.failure,
-          errorMessage: error.toString(),
-        ),
-      );
+      final LocalAnimalDataSource? local = _localDataSource;
+      final List<Animal> cached = local == null
+          ? const <Animal>[]
+          : await local.fetchAnimals(
+              profileId: _currentProfileId,
+              speciesId: speciesId,
+            );
+      if (cached.isNotEmpty) {
+        emit(
+          state.copyWith(
+            status: AnimalStatus.success,
+            animals: _applyFilters(cached, state.filters),
+            allAnimals: cached,
+            errorMessage: null,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            status: AnimalStatus.failure,
+            errorMessage: error.toString(),
+          ),
+        );
+      }
     }
   }
 
@@ -158,6 +216,14 @@ class AnimalCubit extends Cubit<AnimalState> {
       final List<Animal> allAnimals = List<Animal>.from(state.allAnimals)
         ..add(animal);
       allAnimals.sort((Animal a, Animal b) => a.tagId.compareTo(b.tagId));
+      await _localDataSource?.upsertAnimal(
+        animal,
+        syncState: kSyncStatePending,
+      );
+      await _localDataSource?.upsertAnimal(
+        animal,
+        syncState: kSyncStatePending,
+      );
       _offlineManager.enqueue(
         QueuedSyncAction(
           description: 'Créer ${animal.tagId}',
@@ -182,6 +248,7 @@ class AnimalCubit extends Cubit<AnimalState> {
       final List<Animal> allAnimals = List<Animal>.from(state.allAnimals)
         ..add(created);
       allAnimals.sort((Animal a, Animal b) => a.tagId.compareTo(b.tagId));
+      await _localDataSource?.upsertAnimal(created);
       emit(
         state.copyWith(
           status: AnimalStatus.success,
@@ -206,6 +273,10 @@ class AnimalCubit extends Cubit<AnimalState> {
         allAnimals[index] = animal;
       }
       allAnimals.sort((Animal a, Animal b) => a.tagId.compareTo(b.tagId));
+      await _localDataSource?.upsertAnimal(
+        animal,
+        syncState: kSyncStatePending,
+      );
       _offlineManager.enqueue(
         QueuedSyncAction(
           description: 'Mettre à jour ${animal.tagId}',
@@ -236,6 +307,7 @@ class AnimalCubit extends Cubit<AnimalState> {
         allAnimals[index] = updated;
       }
       allAnimals.sort((Animal a, Animal b) => a.tagId.compareTo(b.tagId));
+      await _localDataSource?.upsertAnimal(updated);
       emit(
         state.copyWith(
           status: AnimalStatus.success,
@@ -253,6 +325,7 @@ class AnimalCubit extends Cubit<AnimalState> {
     if (_offlineManager.isOffline.value) {
       final List<Animal> allAnimals =
           state.allAnimals.where((Animal animal) => animal.id != id).toList();
+      await _localDataSource?.deleteAnimal(id);
       _offlineManager.enqueue(
         QueuedSyncAction(
           description: 'Supprimer $id',
@@ -274,6 +347,7 @@ class AnimalCubit extends Cubit<AnimalState> {
     emit(state.copyWith(status: AnimalStatus.loading));
     try {
       await _repository.deleteAnimal(id);
+      await _localDataSource?.deleteAnimal(id);
       final List<Animal> allAnimals =
           state.allAnimals.where((Animal animal) => animal.id != id).toList();
       emit(

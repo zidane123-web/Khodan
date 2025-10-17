@@ -8,11 +8,15 @@ import 'app/config/app_env.dart';
 import 'app/config/router.dart';
 import 'app/config/theme.dart';
 import 'app/core/constants.dart';
+import 'data/local/local_data_sources.dart';
+import 'data/local/local_database.dart';
 import 'data/repositories/animal_repository.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/breeding_repository.dart';
 import 'data/repositories/event_repository.dart';
+import 'data/repositories/species_repository.dart';
 import 'data/services/api_client.dart';
+import 'data/services/offline_sync_manager.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 
 Future<void> main() async {
@@ -60,15 +64,31 @@ class KhodanApp extends StatefulWidget {
 class _KhodanAppState extends State<KhodanApp> {
   Key _appKey = UniqueKey();
   ApiExecutor? _apiClient;
+  late final LocalDatabase _localDb;
+  late final LocalAnimalDataSource _localAnimalDataSource;
+  late final LocalBreedingDataSource _localBreedingDataSource;
+  late final LocalEventDataSource _localEventDataSource;
+  late final LocalSpeciesDataSource _localSpeciesDataSource;
   late final KhodanRouter _router;
 
   @override
   void initState() {
     super.initState();
+    _localDb = LocalDatabase();
+    _localAnimalDataSource = LocalAnimalDataSource(_localDb);
+    _localBreedingDataSource = LocalBreedingDataSource(_localDb);
+    _localEventDataSource = LocalEventDataSource(_localDb);
+    _localSpeciesDataSource = LocalSpeciesDataSource(_localDb);
     _router = KhodanRouter(
       enableAuth: widget.env.hasSupabaseCredentials &&
           !widget.env.useInMemoryRepositories,
     );
+  }
+
+  @override
+  void dispose() {
+    _localDb.close();
+    super.dispose();
   }
 
   @override
@@ -115,6 +135,18 @@ class _KhodanAppState extends State<KhodanApp> {
 
   List<RepositoryProvider<dynamic>> _buildInMemoryProviders() {
     return <RepositoryProvider<dynamic>>[
+      RepositoryProvider<LocalAnimalDataSource>.value(
+        value: _localAnimalDataSource,
+      ),
+      RepositoryProvider<LocalBreedingDataSource>.value(
+        value: _localBreedingDataSource,
+      ),
+      RepositoryProvider<LocalEventDataSource>.value(
+        value: _localEventDataSource,
+      ),
+      RepositoryProvider<LocalSpeciesDataSource>.value(
+        value: _localSpeciesDataSource,
+      ),
       RepositoryProvider<AnimalRepository>(
         create: (_) => InMemoryAnimalRepository(),
       ),
@@ -124,21 +156,76 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<EventRepository>(
         create: (_) => InMemoryEventRepository(),
       ),
+      RepositoryProvider<SpeciesRepository>(
+        create: (_) => SyncedSpeciesRepository(
+          remote:
+              SupabaseSpeciesRepository(apiClient: _apiClient ??= ApiClient()),
+          local: _localSpeciesDataSource,
+          offlineManager: OfflineSyncManager.instance,
+        ),
+      ),
     ];
   }
 
   List<RepositoryProvider<dynamic>> _buildSupabaseProviders() {
     final ApiExecutor apiClient = _apiClient ??= ApiClient();
+    final OfflineSyncManager offlineManager = OfflineSyncManager.instance;
+
+    final AnimalRepository remoteAnimal =
+        SupabaseAnimalRepository(apiClient: apiClient);
+    final BreedingRepository remoteBreeding =
+        SupabaseBreedingRepository(apiClient: apiClient);
+    final EventRepository remoteEvent =
+        SupabaseEventRepository(apiClient: apiClient);
+    final SpeciesRepository remoteSpecies =
+        SupabaseSpeciesRepository(apiClient: apiClient);
+
+    final AnimalRepository syncedAnimal = SyncedAnimalRepository(
+      remote: remoteAnimal,
+      local: _localAnimalDataSource,
+      offlineManager: offlineManager,
+    );
+    final BreedingRepository syncedBreeding = SyncedBreedingRepository(
+      remote: remoteBreeding,
+      local: _localBreedingDataSource,
+      offlineManager: offlineManager,
+    );
+    final EventRepository syncedEvent = SyncedEventRepository(
+      remote: remoteEvent,
+      local: _localEventDataSource,
+      offlineManager: offlineManager,
+    );
+    final SpeciesRepository syncedSpecies = SyncedSpeciesRepository(
+      remote: remoteSpecies,
+      local: _localSpeciesDataSource,
+      offlineManager: offlineManager,
+    );
+
     return <RepositoryProvider<dynamic>>[
       RepositoryProvider<ApiExecutor>.value(value: apiClient),
+      RepositoryProvider<LocalAnimalDataSource>.value(
+        value: _localAnimalDataSource,
+      ),
+      RepositoryProvider<LocalBreedingDataSource>.value(
+        value: _localBreedingDataSource,
+      ),
+      RepositoryProvider<LocalEventDataSource>.value(
+        value: _localEventDataSource,
+      ),
+      RepositoryProvider<LocalSpeciesDataSource>.value(
+        value: _localSpeciesDataSource,
+      ),
       RepositoryProvider<AnimalRepository>(
-        create: (_) => SupabaseAnimalRepository(apiClient: apiClient),
+        create: (_) => syncedAnimal,
       ),
       RepositoryProvider<BreedingRepository>(
-        create: (_) => SupabaseBreedingRepository(apiClient: apiClient),
+        create: (_) => syncedBreeding,
       ),
       RepositoryProvider<EventRepository>(
-        create: (_) => SupabaseEventRepository(apiClient: apiClient),
+        create: (_) => syncedEvent,
+      ),
+      RepositoryProvider<SpeciesRepository>(
+        create: (_) => syncedSpecies,
       ),
     ];
   }

@@ -2,6 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/breeding_record.dart';
 import '../services/api_client.dart';
+import '../local/local_data_sources.dart';
+import '../services/offline_sync_manager.dart';
 abstract class BreedingRepository {
   Future<List<BreedingRecord>> fetchBreedingRecords();
 
@@ -159,5 +161,90 @@ class SupabaseBreedingRepository implements BreedingRepository {
       },
       label: 'breeding.delete',
     );
+  }
+}
+
+class SyncedBreedingRepository implements BreedingRepository {
+  SyncedBreedingRepository({
+    required BreedingRepository remote,
+    required LocalBreedingDataSource local,
+    OfflineSyncManager? offlineManager,
+  })  : _remote = remote,
+        _local = local,
+        _offlineManager = offlineManager ?? OfflineSyncManager.instance;
+
+  final BreedingRepository _remote;
+  final LocalBreedingDataSource _local;
+  final OfflineSyncManager _offlineManager;
+  String? get _currentProfileId {
+    try {
+      return Supabase.instance.client.auth.currentUser?.id;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<List<BreedingRecord>> fetchBreedingRecords() async {
+      if (_offlineManager.isOffline.value) {
+        return _local.fetchBreedingRecords();
+      }
+
+      try {
+        final List<BreedingRecord> records =
+            await _remote.fetchBreedingRecords();
+        if (records.isNotEmpty) {
+          await _local.replaceBreedingRecords(
+            records,
+            profileId: _currentProfileId,
+          );
+        } else if (_currentProfileId != null) {
+          await _local.replaceBreedingRecords(
+            const <BreedingRecord>[],
+            profileId: _currentProfileId,
+          );
+        }
+        return records;
+      } catch (error) {
+        final List<BreedingRecord> cached = await _local.fetchBreedingRecords();
+        if (cached.isNotEmpty) {
+          return cached;
+        }
+        rethrow;
+      }
+  }
+
+  @override
+  Future<BreedingRecord> createBreedingRecord(BreedingRecord record) async {
+    if (_offlineManager.isOffline.value) {
+      await _local.upsertBreedingRecord(record, syncState: kSyncStatePending);
+      return record;
+    }
+
+    final BreedingRecord created = await _remote.createBreedingRecord(record);
+    await _local.upsertBreedingRecord(created);
+    return created;
+  }
+
+  @override
+  Future<BreedingRecord> updateBreedingRecord(BreedingRecord record) async {
+    if (_offlineManager.isOffline.value) {
+      await _local.upsertBreedingRecord(record, syncState: kSyncStatePending);
+      return record;
+    }
+
+    final BreedingRecord updated = await _remote.updateBreedingRecord(record);
+    await _local.upsertBreedingRecord(updated);
+    return updated;
+  }
+
+  @override
+  Future<void> deleteBreedingRecord(String id) async {
+    if (_offlineManager.isOffline.value) {
+      await _local.deleteBreedingRecord(id);
+      return;
+    }
+    await _remote.deleteBreedingRecord(id);
+    await _local.deleteBreedingRecord(id);
   }
 }

@@ -2,6 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/animal_event.dart';
 import '../models/event.dart';
+import '../local/local_data_sources.dart';
+import '../services/offline_sync_manager.dart';
 import '../services/api_client.dart';
 abstract class EventRepository {
   Future<List<LivestockEvent>> fetchEvents({DateTime? start, DateTime? end});
@@ -198,5 +200,92 @@ class SupabaseEventRepository implements EventRepository {
       },
       label: 'events.create',
     );
+  }
+}
+
+class SyncedEventRepository implements EventRepository {
+  SyncedEventRepository({
+    required EventRepository remote,
+    required LocalEventDataSource local,
+    OfflineSyncManager? offlineManager,
+  })  : _remote = remote,
+        _local = local,
+        _offlineManager = offlineManager ?? OfflineSyncManager.instance;
+
+  final EventRepository _remote;
+  final LocalEventDataSource _local;
+  final OfflineSyncManager _offlineManager;
+
+  List<AnimalEventLink>? _cachedLinks;
+
+  @override
+  Future<List<LivestockEvent>> fetchEvents({DateTime? start, DateTime? end}) async {
+    if (_offlineManager.isOffline.value) {
+      return _local.fetchEvents(start: start, end: end);
+    }
+
+    try {
+      final List<LivestockEvent> events =
+          await _remote.fetchEvents(start: start, end: end);
+      List<AnimalEventLink>? links;
+      try {
+        links = await _remote.fetchEventLinks();
+        _cachedLinks = links;
+      } catch (_) {
+        links = null;
+      }
+      if (links != null) {
+        await _local.replaceEvents(events, links: links);
+      } else {
+        final List<AnimalEventLink> cachedLinks = await _local.fetchLinks();
+        await _local.replaceEvents(events, links: cachedLinks);
+      }
+      return events;
+    } catch (error) {
+      final List<LivestockEvent> cached =
+          await _local.fetchEvents(start: start, end: end);
+      if (cached.isNotEmpty) {
+        return cached;
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<AnimalEventLink>> fetchEventLinks() async {
+    if (_offlineManager.isOffline.value) {
+      return _local.fetchLinks();
+    }
+    if (_cachedLinks != null) {
+      final List<AnimalEventLink> snapshot = _cachedLinks!;
+      _cachedLinks = null;
+      await _local.replaceLinks(snapshot);
+      return snapshot;
+    }
+    final List<AnimalEventLink> links = await _remote.fetchEventLinks();
+    await _local.replaceLinks(links);
+    return links;
+  }
+
+  @override
+  Future<LivestockEvent> createEvent(
+    LivestockEvent event, {
+    List<AnimalEventLink> links = const <AnimalEventLink>[],
+  }) async {
+    if (_offlineManager.isOffline.value) {
+      await _local.upsertEvent(
+        event,
+        links: links,
+        syncState: kSyncStatePending,
+      );
+      return event;
+    }
+
+    final LivestockEvent created = await _remote.createEvent(
+      event,
+      links: links,
+    );
+    await _local.upsertEvent(created, links: links);
+    return created;
   }
 }

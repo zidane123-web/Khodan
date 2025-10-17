@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../data/models/animal.dart';
 import '../../../../data/models/breeding_record.dart';
+import '../../../../data/local/local_data_sources.dart';
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
 import '../../../animals/presentation/cubit/animal_cubit.dart';
@@ -50,8 +51,10 @@ class ReportsScreen extends StatelessWidget {
           )..loadData(),
         ),
         BlocProvider<AnimalCubit>(
-          create: (BuildContext context) =>
-              AnimalCubit(context.read<AnimalRepository>())..fetchAnimals(),
+          create: (BuildContext context) => AnimalCubit(
+            context.read<AnimalRepository>(),
+            localDataSource: context.read<LocalAnimalDataSource>(),
+          )..fetchAnimals(),
         ),
       ],
       child: const _ReportsView(),
