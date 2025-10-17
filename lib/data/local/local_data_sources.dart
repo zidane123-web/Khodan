@@ -8,6 +8,7 @@ import '../models/breeding_record.dart';
 import '../models/event.dart';
 import '../models/profile.dart';
 import '../models/species_config.dart';
+import '../models/sync_action.dart';
 import 'local_database.dart';
 
 const String kSyncStateSynced = 'synced';
@@ -101,6 +102,16 @@ class LocalAnimalDataSource {
     return animals;
   }
 
+  Future<Animal?> fetchAnimalById(String id) async {
+    final AnimalsTableData? row = await (_db.select(_db.animalsTable)
+          ..where((AnimalsTable tbl) => tbl.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null) {
+      return null;
+    }
+    return _mapAnimal(row);
+  }
+
   Animal _mapAnimal(AnimalsTableData row) {
     final Map<String, dynamic> json =
         jsonDecode(row.payload) as Map<String, dynamic>;
@@ -188,6 +199,17 @@ class LocalBreedingDataSource {
           b.matingDate.compareTo(a.matingDate),
     );
     return records;
+  }
+
+  Future<BreedingRecord?> fetchBreedingRecordById(String id) async {
+    final BreedingRecordsTableData? row = await (_db
+            .select(_db.breedingRecordsTable)
+          ..where((BreedingRecordsTable tbl) => tbl.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null) {
+      return null;
+    }
+    return _mapBreedingRecord(row);
   }
 
   BreedingRecord _mapBreedingRecord(BreedingRecordsTableData row) {
@@ -316,6 +338,32 @@ class LocalEventDataSource {
   Future<List<AnimalEventLink>> fetchLinks() async {
     final List<AnimalEventsTableData> rows =
         await _db.select(_db.animalEventsTable).get();
+    return rows
+        .map(
+          (AnimalEventsTableData row) => AnimalEventLink(
+            eventId: row.eventId,
+            animalId: row.animalId,
+            role: row.role,
+          ),
+        )
+        .toList();
+  }
+
+  Future<LivestockEvent?> fetchEventById(String id) async {
+    final EventsTableData? row = await (_db.select(_db.eventsTable)
+          ..where((EventsTable tbl) => tbl.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null) {
+      return null;
+    }
+    return _mapEvent(row);
+  }
+
+  Future<List<AnimalEventLink>> fetchLinksForEvent(String eventId) async {
+    final List<AnimalEventsTableData> rows = await (_db
+            .select(_db.animalEventsTable)
+          ..where((AnimalEventsTable tbl) => tbl.eventId.equals(eventId)))
+        .get();
     return rows
         .map(
           (AnimalEventsTableData row) => AnimalEventLink(
@@ -477,5 +525,205 @@ class LocalProfileDataSource {
     final Map<String, dynamic> json =
         jsonDecode(row.payload) as Map<String, dynamic>;
     return Profile.fromJson(json);
+  }
+}
+
+class LocalSyncQueueDataSource {
+  LocalSyncQueueDataSource(this._db);
+
+  final LocalDatabase _db;
+
+  Future<void> insertAction(QueuedSyncAction action) async {
+    await _db.into(_db.queuedActionsTable).insert(
+          QueuedActionsTableCompanion.insert(
+            id: action.id,
+            type: action.type.key,
+            rollbackType: Value(action.rollbackType?.key),
+            description: action.description,
+            payload: jsonEncode(action.payload),
+            rollbackPayload: Value(
+              action.rollbackPayload == null
+                  ? null
+                  : jsonEncode(action.rollbackPayload),
+            ),
+            priority: Value(action.priority),
+            status: Value(action.status.key),
+            attempts: Value(action.attempts),
+            createdAt: action.createdAt,
+            updatedAt: action.updatedAt,
+            scheduledAt: Value(action.scheduledAt),
+            lastError: Value(action.lastError),
+          ),
+        );
+  }
+
+  Future<QueuedSyncAction?> findById(String id) async {
+    final QueuedActionsTableData? row = await (_db.select(_db.queuedActionsTable)
+          ..where((QueuedActionsTable tbl) => tbl.id.equals(id)))
+        .getSingleOrNull();
+    return row == null ? null : _mapQueuedAction(row);
+  }
+
+  Future<List<QueuedSyncAction>> fetchAll() async {
+    final List<QueuedActionsTableData> rows =
+        await (_db.select(_db.queuedActionsTable)
+              ..orderBy(
+                <OrderingTerm Function(QueuedActionsTable)>[
+                  (QueuedActionsTable tbl) => OrderingTerm(
+                        expression: tbl.priority,
+                        mode: OrderingMode.desc,
+                      ),
+                  (QueuedActionsTable tbl) => OrderingTerm(
+                        expression: tbl.createdAt,
+                        mode: OrderingMode.asc,
+                      ),
+                ],
+              ))
+            .get();
+    return rows.map(_mapQueuedAction).toList();
+  }
+
+  Future<List<QueuedSyncAction>> fetchExecutable({int limit = 10}) async {
+    final DateTime now = DateTime.now();
+    final List<QueuedActionsTableData> rows = await (_db
+            .select(_db.queuedActionsTable)
+          ..where(
+            (QueuedActionsTable tbl) =>
+                tbl.status.equals(SyncActionStatus.pending.key) &
+                (tbl.scheduledAt.isNull() |
+                    tbl.scheduledAt.isSmallerOrEqualValue(now)),
+          )
+          ..orderBy(
+            <OrderingTerm Function(QueuedActionsTable)>[
+              (QueuedActionsTable tbl) => OrderingTerm(
+                    expression: tbl.priority,
+                    mode: OrderingMode.desc,
+                  ),
+              (QueuedActionsTable tbl) => OrderingTerm(
+                    expression: tbl.createdAt,
+                    mode: OrderingMode.asc,
+                  ),
+            ],
+          )
+          ..limit(limit))
+        .get();
+    return rows.map(_mapQueuedAction).toList();
+  }
+
+  Future<void> updateStatus(
+    String id, {
+    required SyncActionStatus status,
+    int? attempts,
+    DateTime? scheduledAt,
+    String? lastError,
+  }) async {
+    final DateTime now = DateTime.now();
+    await (_db.update(_db.queuedActionsTable)
+          ..where((QueuedActionsTable tbl) => tbl.id.equals(id)))
+        .write(
+          QueuedActionsTableCompanion(
+            status: Value(status.key),
+            attempts: attempts == null
+                ? const Value.absent()
+                : Value<int>(attempts),
+            updatedAt: Value(now),
+            scheduledAt: scheduledAt == null
+                ? const Value(null)
+                : Value<DateTime?>(scheduledAt),
+            lastError: lastError == null
+                ? const Value.absent()
+                : Value<String?>(lastError),
+          ),
+        );
+  }
+
+  Future<void> updateAttempts(String id, int attempts) async {
+    final DateTime now = DateTime.now();
+    await (_db.update(_db.queuedActionsTable)
+          ..where((QueuedActionsTable tbl) => tbl.id.equals(id)))
+        .write(
+          QueuedActionsTableCompanion(
+            attempts: Value(attempts),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
+  Future<void> updateSchedule(String id, DateTime? scheduledAt) async {
+    final DateTime now = DateTime.now();
+    await (_db.update(_db.queuedActionsTable)
+          ..where((QueuedActionsTable tbl) => tbl.id.equals(id)))
+        .write(
+          QueuedActionsTableCompanion(
+            scheduledAt: scheduledAt == null
+                ? const Value(null)
+                : Value<DateTime?>(scheduledAt),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
+  Future<void> updateError(String id, String? error) async {
+    final DateTime now = DateTime.now();
+    await (_db.update(_db.queuedActionsTable)
+          ..where((QueuedActionsTable tbl) => tbl.id.equals(id)))
+        .write(
+          QueuedActionsTableCompanion(
+            lastError:
+                error == null ? const Value(null) : Value<String?>(error),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
+  Future<int> countActive() async {
+    final Expression<int> countExp =
+        _db.queuedActionsTable.id.count(distinct: false);
+    final List<TypedResult> result = await (_db.selectOnly(
+      _db.queuedActionsTable,
+    )
+          ..addColumns(<Expression<int>>[countExp])
+          ..where(
+            _db.queuedActionsTable.status.isNotIn(
+              <String>[SyncActionStatus.completed.key],
+            ),
+          ))
+        .get();
+    if (result.isEmpty) {
+      return 0;
+    }
+    return result.first.read(countExp) ?? 0;
+  }
+
+  Future<void> deleteAction(String id) async {
+    await (_db.delete(_db.queuedActionsTable)
+          ..where((QueuedActionsTable tbl) => tbl.id.equals(id)))
+        .go();
+  }
+
+  QueuedSyncAction _mapQueuedAction(QueuedActionsTableData row) {
+    final SyncActionType? type = SyncActionType.fromKey(row.type);
+    if (type == null) {
+      throw StateError('Unknown sync action type: ${row.type}');
+    }
+    final SyncActionType? rollbackType =
+        row.rollbackType == null ? null : SyncActionType.fromKey(row.rollbackType!);
+    return QueuedSyncAction(
+      id: row.id,
+      type: type,
+      rollbackType: rollbackType,
+      description: row.description,
+      payload: jsonDecode(row.payload) as Map<String, dynamic>,
+      rollbackPayload: row.rollbackPayload == null
+          ? null
+          : jsonDecode(row.rollbackPayload!) as Map<String, dynamic>,
+      priority: row.priority,
+      status: SyncActionStatus.fromKey(row.status),
+      attempts: row.attempts,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      scheduledAt: row.scheduledAt,
+      lastError: row.lastError,
+    );
   }
 }
