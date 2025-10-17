@@ -3,9 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:khodan/data/local/local_data_sources.dart';
 import 'package:khodan/data/local/local_database.dart';
-import 'package:khodan/data/models/animal_event.dart';
-import 'package:khodan/data/models/event.dart';
-import 'package:khodan/data/repositories/event_repository.dart';
+import 'package:khodan/data/models/breeding_record.dart';
+import 'package:khodan/data/repositories/breeding_repository.dart';
 import 'package:khodan/data/services/offline_sync_manager.dart';
 
 import '../../helpers/offline_remote_stubs.dart';
@@ -26,26 +25,24 @@ void main() {
     offlineManager.setOffline(false, flushWhenOnline: false);
   });
 
-  test('SyncedEventRepository reads cached events when offline', () async {
+  test('SyncedBreedingRepository serves cached records when offline', () async {
     final LocalDatabase db = LocalDatabase.forTesting(NativeDatabase.memory());
     addTearDown(() => db.close());
 
-    final LocalEventDataSource localEvent = LocalEventDataSource(db);
-    await seedEventData(localEvent);
+    final LocalBreedingDataSource localBreeding = LocalBreedingDataSource(db);
+    await seedBreedingData(localBreeding);
 
-    final RecordingEventRepository remoteEvent = RecordingEventRepository();
-    final EventRepository repository = SyncedEventRepository(
-      remote: remoteEvent,
-      local: localEvent,
+    final RecordingBreedingRepository remoteBreeding =
+        RecordingBreedingRepository();
+    final BreedingRepository repository = SyncedBreedingRepository(
+      remote: remoteBreeding,
+      local: localBreeding,
       offlineManager: offlineManager,
     );
 
-    final List<LivestockEvent> events = await repository.fetchEvents();
-    final List<AnimalEventLink> links = await repository.fetchEventLinks();
+    final List<BreedingRecord> records = await repository.fetchBreedingRecords();
 
-    expect(events, isNotEmpty);
-    expect(links, isNotEmpty);
-    expect(remoteEvent.fetchEventsCount, equals(0));
-    expect(remoteEvent.fetchLinksCount, equals(0));
+    expect(records, isNotEmpty);
+    expect(remoteBreeding.fetchCount, equals(0));
   });
 }

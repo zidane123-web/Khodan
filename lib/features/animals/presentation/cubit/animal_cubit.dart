@@ -126,8 +126,13 @@ class AnimalCubit extends Cubit<AnimalState> {
   final OfflineSyncManager _offlineManager;
   final LocalAnimalDataSource? _localDataSource;
 
-  String? get _currentProfileId =>
-      Supabase.instance.client.auth.currentUser?.id;
+  String? get _currentProfileId {
+    try {
+      return Supabase.instance.client.auth.currentUser?.id;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> fetchAnimals({int? speciesId}) async {
     final bool isOffline = _offlineManager.isOffline.value;
@@ -216,10 +221,6 @@ class AnimalCubit extends Cubit<AnimalState> {
       final List<Animal> allAnimals = List<Animal>.from(state.allAnimals)
         ..add(animal);
       allAnimals.sort((Animal a, Animal b) => a.tagId.compareTo(b.tagId));
-      await _localDataSource?.upsertAnimal(
-        animal,
-        syncState: kSyncStatePending,
-      );
       await _localDataSource?.upsertAnimal(
         animal,
         syncState: kSyncStatePending,

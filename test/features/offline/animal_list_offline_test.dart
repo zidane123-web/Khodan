@@ -3,10 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:khodan/data/local/local_data_sources.dart';
 import 'package:khodan/data/local/local_database.dart';
-import 'package:khodan/data/models/animal_event.dart';
-import 'package:khodan/data/models/event.dart';
-import 'package:khodan/data/repositories/event_repository.dart';
+import 'package:khodan/data/repositories/animal_repository.dart';
 import 'package:khodan/data/services/offline_sync_manager.dart';
+import 'package:khodan/features/animals/presentation/cubit/animal_cubit.dart';
 
 import '../../helpers/offline_remote_stubs.dart';
 import '../../helpers/offline_samples.dart';
@@ -26,26 +25,31 @@ void main() {
     offlineManager.setOffline(false, flushWhenOnline: false);
   });
 
-  test('SyncedEventRepository reads cached events when offline', () async {
+  test('AnimalCubit loads cached animals when offline', () async {
     final LocalDatabase db = LocalDatabase.forTesting(NativeDatabase.memory());
     addTearDown(() => db.close());
 
-    final LocalEventDataSource localEvent = LocalEventDataSource(db);
-    await seedEventData(localEvent);
+    final LocalAnimalDataSource localAnimal = LocalAnimalDataSource(db);
+    await seedAnimalData(localAnimal);
 
-    final RecordingEventRepository remoteEvent = RecordingEventRepository();
-    final EventRepository repository = SyncedEventRepository(
-      remote: remoteEvent,
-      local: localEvent,
+    final RecordingAnimalRepository remoteAnimal = RecordingAnimalRepository();
+    final AnimalRepository syncedRepository = SyncedAnimalRepository(
+      remote: remoteAnimal,
+      local: localAnimal,
       offlineManager: offlineManager,
     );
 
-    final List<LivestockEvent> events = await repository.fetchEvents();
-    final List<AnimalEventLink> links = await repository.fetchEventLinks();
+    final AnimalCubit cubit = AnimalCubit(
+      syncedRepository,
+      offlineManager: offlineManager,
+      localDataSource: localAnimal,
+    );
+    addTearDown(cubit.close);
 
-    expect(events, isNotEmpty);
-    expect(links, isNotEmpty);
-    expect(remoteEvent.fetchEventsCount, equals(0));
-    expect(remoteEvent.fetchLinksCount, equals(0));
+    await cubit.fetchAnimals();
+
+    expect(cubit.state.status, AnimalStatus.success);
+    expect(cubit.state.animals, isNotEmpty);
+    expect(remoteAnimal.fetchCount, equals(0));
   });
 }
