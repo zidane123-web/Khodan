@@ -4,22 +4,34 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../data/models/animal.dart';
 import '../../../../data/models/breeding_record.dart';
 import '../../presentation/cubit/breeding_cubit.dart';
+import '../screens/add_breeding_record_screen.dart';
 import 'breeding_record_card.dart';
-import 'breeding_record_form.dart';
 import 'breeding_reminders_section.dart';
+import '../screens/breeding_record_screen.dart';
 
 class ReproductionTabView extends StatelessWidget {
   const ReproductionTabView({super.key});
+
+  void _viewRecord(BuildContext context, BreedingRecord record) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => BreedingRecordScreen(record: record),
+      ),
+    );
+  }
 
   Future<void> _editRecord(
     BuildContext context,
     BreedingRecord record,
   ) async {
     final BreedingCubit cubit = context.read<BreedingCubit>();
-    final BreedingRecord? updated = await BreedingRecordFormDialog.show(
-      context,
-      animals: cubit.state.animals,
-      initial: record,
+    final BreedingRecord? updated = await Navigator.of(context).push<BreedingRecord>(
+      MaterialPageRoute<BreedingRecord>(
+        builder: (_) => AddBreedingRecordScreen(
+          animals: cubit.state.animals,
+          initial: record,
+        ),
+      ),
     );
     if (updated != null && context.mounted) {
       await cubit.updateRecord(updated);
@@ -29,6 +41,25 @@ class ReproductionTabView extends StatelessWidget {
         );
       }
     }
+  }
+
+  void _promptCreateKits(
+    BuildContext context,
+    BreedingRecord record,
+  ) {
+    final int kitsCount = record.kitsBornAlive ?? 0;
+    if (kitsCount <= 0) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          kitsCount > 1
+              ? 'Créez $kitsCount fiches lapereaux dans l’onglet Animaux.'
+              : 'Créez la fiche du lapereau dans l’onglet Animaux.',
+        ),
+      ),
+    );
   }
 
   Future<void> _deleteRecord(
@@ -121,8 +152,10 @@ class ReproductionTabView extends StatelessWidget {
                       record: record,
                       doe: animalsById[record.doeId],
                       buck: animalsById[record.buckId],
+                      onTap: () => _viewRecord(context, record),
                       onEdit: () => _editRecord(context, record),
                       onDelete: () => _deleteRecord(context, record),
+                      onCreateKits: () => _promptCreateKits(context, record),
                     ),
                   ),
                 ),
