@@ -26,6 +26,7 @@ void main() {
         email: 'fallback@example.com',
         farmName: 'Fallback',
         createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
       ),
     );
   });
@@ -42,7 +43,7 @@ void main() {
     await authStateController.close();
   });
 
-  supa.Session _buildSession({bool confirmed = true}) {
+  supa.Session buildSession({bool confirmed = true}) {
     final DateTime now = DateTime.now();
     final Map<String, dynamic> userJson = <String, dynamic>{
       'id': 'user-123',
@@ -78,7 +79,7 @@ void main() {
 
   test('listenAuthChanges loads profile and emits authenticated state',
       () async {
-    final supa.Session session = _buildSession();
+    final supa.Session session = buildSession();
     when(() => repository.fetchProfile('user-123')).thenAnswer(
       (_) async => <String, dynamic>{
         'id': 'user-123',

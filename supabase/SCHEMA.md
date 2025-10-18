@@ -6,6 +6,8 @@ This document summarises the relational structure delivered by the initial migra
 - **Primary key:** `id` (`uuid`) mirrors `auth.users.id`.
 - **Required:** `email`, `created_at`, `updated_at`.
 - **Optional:** `farm_name`, `phone`, `locale`, `time_zone`, `deleted_at`.
+- **Optional (Task 08):** `farm_location`, `billing_status`.
+- **JSON metadata:** `legal_preferences` stores opt-ins (`termsAccepted`, `privacyAccepted`, `marketingOptIn`).
 - **Relations:** Referenced by every domain table via `profile_id`. Cascade delete ensures agent-owned data is removed when an account is closed.
 
 ## species_config
@@ -59,6 +61,11 @@ This document summarises the relational structure delivered by the initial migra
 - `event_templates`: templates owned per user (`auth.uid()` RLS ready).
 - `food_types` and `food_stock`: inventory management tables, each with row-level policies and cascade deletes back to Supabase Auth.
 - Existing migration also augments `animals` with `health_status` (nullable text).
+
+## support_requests
+- **Purpose:** file the conversations entre utilisateurs et support.
+- **Columns:** `subject`, `message`, `contact_email`, `channel`, `priority`, `status`, timestamps.
+- **Indexes:** composite on (`profile_id`, `created_at DESC`) to faciliter le suivi chronologique.
 
 ## Soft delete strategy
 Tables carrying `deleted_at` support logical deletion and offline sync. Future triggers (task 02) should update `updated_at` automatically and filter on `deleted_at IS NULL` in RLS policies.

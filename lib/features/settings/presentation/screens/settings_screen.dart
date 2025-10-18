@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/config/router.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/offline_cubit.dart';
 
@@ -95,6 +97,16 @@ class _SettingsView extends StatelessWidget {
                     ),
                     const Divider(height: 1),
                     ListTile(
+                      leading: const Icon(Icons.badge_outlined),
+                      title: const Text('Profil de l\'élevage'),
+                      subtitle: const Text('Mettre à jour les coordonnées et préférences légales.'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        context.push(const SettingsProfileRoute().location);
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
                       title: const Text('Gestion des espèces'),
                       subtitle: const Text('Configurer les durées de gestation et sevrage.'),
                       trailing: const Icon(Icons.chevron_right),
@@ -105,7 +117,19 @@ class _SettingsView extends StatelessWidget {
                       title: const Text('Assistance'),
                       subtitle: const Text('Consulter la base de connaissances et contacter le support.'),
                       trailing: const Icon(Icons.help_outline),
-                      onTap: () {},
+                      onTap: () {
+                        context.push(const SettingsContactSupportRoute().location);
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.info_outline),
+                      title: const Text('À propos'),
+                      subtitle: const Text('Version, licences et mentions légales.'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        context.push(const SettingsAboutRoute().location);
+                      },
                     ),
                     const Divider(height: 1),
                     ListTile(

@@ -504,13 +504,16 @@ class LocalProfileDataSource {
 
   final LocalDatabase _db;
 
-  Future<void> upsertProfile(Profile profile) async {
+  Future<void> upsertProfile(
+    Profile profile, {
+    String syncState = kSyncStateSynced,
+  }) async {
     await _db.into(_db.profilesTable).insertOnConflictUpdate(
           ProfilesTableCompanion.insert(
             id: profile.id,
             payload: jsonEncode(profile.toJson()),
             updatedAt: DateTime.now(),
-            syncState: const Value(kSyncStateSynced),
+            syncState: Value(syncState),
           ),
         );
   }

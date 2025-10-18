@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 
 enum SyncActionType {
+  updateProfile('profile.update'),
+  createSupportRequest('support.create'),
   createAnimal('animal.create'),
   updateAnimal('animal.update'),
   deleteAnimal('animal.delete'),

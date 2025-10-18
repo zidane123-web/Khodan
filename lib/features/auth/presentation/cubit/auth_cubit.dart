@@ -105,6 +105,7 @@ class AuthCubit extends Cubit<AuthState> {
             }
             break;
           case supa.AuthChangeEvent.signedOut:
+          // ignore: deprecated_member_use
           case supa.AuthChangeEvent.userDeleted:
             emit(
               state.copyWith(
