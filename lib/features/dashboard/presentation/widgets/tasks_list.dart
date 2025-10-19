@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../cubit/dashboard_cubit.dart';
+import 'package:khodan/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 
 class TasksList extends StatelessWidget {
   const TasksList({
@@ -67,6 +67,10 @@ class TasksList extends StatelessWidget {
         return Icons.restaurant_menu;
       case DashboardTaskKind.mating:
         return Icons.favorite_border;
+      case DashboardTaskKind.healthFollowUp:
+        return Icons.medical_services_outlined;
+      case DashboardTaskKind.inventoryCheck:
+        return Icons.inventory_2_outlined;
     }
   }
 
@@ -80,6 +84,10 @@ class TasksList extends StatelessWidget {
         return theme.colorScheme.tertiary;
       case DashboardTaskKind.mating:
         return theme.colorScheme.primary;
+      case DashboardTaskKind.healthFollowUp:
+        return theme.colorScheme.secondary;
+      case DashboardTaskKind.inventoryCheck:
+        return theme.colorScheme.primaryContainer;
     }
   }
 }

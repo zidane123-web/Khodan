@@ -58,12 +58,12 @@ class SupabaseDashboardRepository implements DashboardRepository {
       final dynamic first = response.first;
       if (first is Map) {
         return DashboardSnapshot.fromJson(
-          Map<String, dynamic>.from(first as Map<dynamic, dynamic>),
+          Map<String, dynamic>.from(first),
         );
       }
     } else if (response is Map) {
       return DashboardSnapshot.fromJson(
-        Map<String, dynamic>.from(response as Map<dynamic, dynamic>),
+        Map<String, dynamic>.from(response),
       );
     }
 

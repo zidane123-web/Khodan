@@ -18,12 +18,14 @@ import 'data/repositories/breeding_repository.dart';
 import 'data/repositories/event_repository.dart';
 import 'data/repositories/event_template_repository.dart';
 import 'data/repositories/food_inventory_repository.dart';
+import 'data/repositories/dashboard_repository.dart';
 import 'data/repositories/profile_repository.dart';
 import 'data/repositories/support_repository.dart';
 import 'data/repositories/species_repository.dart';
 import 'data/services/api_client.dart';
 import 'data/services/connectivity_watcher.dart';
 import 'data/services/offline_sync_manager.dart';
+import 'data/services/reporting_service.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 
 Future<void> main() async {
@@ -77,6 +79,8 @@ class _KhodanAppState extends State<KhodanApp> {
   late final LocalFoodTypeDataSource _localFoodTypeDataSource;
   late final LocalFoodStockDataSource _localFoodStockDataSource;
   late final LocalProfileDataSource _localProfileDataSource;
+  late final LocalDashboardPreferencesDataSource
+      _localDashboardPreferencesDataSource;
   late final LocalSyncQueueDataSource _localQueueDataSource;
   late final KhodanRouter _router;
   ConnectivityWatcher? _connectivityWatcher;
@@ -93,6 +97,8 @@ class _KhodanAppState extends State<KhodanApp> {
     _localFoodTypeDataSource = LocalFoodTypeDataSource(_localDb);
     _localFoodStockDataSource = LocalFoodStockDataSource(_localDb);
     _localProfileDataSource = LocalProfileDataSource(_localDb);
+    _localDashboardPreferencesDataSource =
+        LocalDashboardPreferencesDataSource(_localDb);
     _localQueueDataSource = LocalSyncQueueDataSource(_localDb);
     OfflineSyncManager.instance.attachQueue(_localQueueDataSource);
     _router = KhodanRouter(
@@ -182,6 +188,9 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<LocalProfileDataSource>.value(
         value: _localProfileDataSource,
       ),
+      RepositoryProvider<LocalDashboardPreferencesDataSource>.value(
+        value: _localDashboardPreferencesDataSource,
+      ),
       RepositoryProvider<ProfileRepository>(
         create: (_) => InMemoryProfileRepository(),
       ),
@@ -225,8 +234,19 @@ class _KhodanAppState extends State<KhodanApp> {
         RepositoryProvider<SupportRepository>(
           create: (_) => InMemorySupportRepository(),
         ),
-      ];
-    }
+      RepositoryProvider<DashboardRepository>(
+        create: (_) => InMemoryDashboardRepository(),
+      ),
+      RepositoryProvider<ReportingService>(
+        create: (BuildContext context) => ReportingService(
+          breedingRepository: context.read<BreedingRepository>(),
+          animalRepository: context.read<AnimalRepository>(),
+          eventRepository: context.read<EventRepository>(),
+          inventoryRepository: context.read<FoodInventoryRepository>(),
+        ),
+      ),
+    ];
+  }
 
   List<RepositoryProvider<dynamic>> _buildSupabaseProviders() {
     final ApiExecutor apiClient = _apiClient ??= ApiClient();
@@ -297,6 +317,11 @@ class _KhodanAppState extends State<KhodanApp> {
       localStock: _localFoodStockDataSource,
       offlineManager: offlineManager,
     );
+    final DashboardRepository dashboardRepository =
+        SupabaseDashboardRepository(
+      localPreferences: _localDashboardPreferencesDataSource,
+      apiClient: apiClient,
+    );
 
     return <RepositoryProvider<dynamic>>[
       RepositoryProvider<ApiExecutor>.value(value: apiClient),
@@ -324,6 +349,9 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<LocalProfileDataSource>.value(
         value: _localProfileDataSource,
       ),
+      RepositoryProvider<LocalDashboardPreferencesDataSource>.value(
+        value: _localDashboardPreferencesDataSource,
+      ),
       RepositoryProvider<AnimalRepository>(create: (_) => syncedAnimal),
       RepositoryProvider<BreedingRepository>(create: (_) => syncedBreeding),
       RepositoryProvider<EventRepository>(create: (_) => syncedEvent),
@@ -336,6 +364,17 @@ class _KhodanAppState extends State<KhodanApp> {
         create: (_) => syncedInventory,
       ),
       RepositoryProvider<SupportRepository>(create: (_) => syncedSupport),
+      RepositoryProvider<DashboardRepository>(
+        create: (_) => dashboardRepository,
+      ),
+      RepositoryProvider<ReportingService>(
+        create: (BuildContext context) => ReportingService(
+          breedingRepository: context.read<BreedingRepository>(),
+          animalRepository: context.read<AnimalRepository>(),
+          eventRepository: context.read<EventRepository>(),
+          inventoryRepository: context.read<FoodInventoryRepository>(),
+        ),
+      ),
     ];
   }
 }

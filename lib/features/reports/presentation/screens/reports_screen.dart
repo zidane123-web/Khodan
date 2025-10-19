@@ -1,62 +1,29 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../data/models/animal.dart';
-import '../../../../data/models/breeding_record.dart';
-import '../../../../data/local/local_data_sources.dart';
-import '../../../../data/repositories/animal_repository.dart';
-import '../../../../data/repositories/breeding_repository.dart';
-import '../../../animals/presentation/cubit/animal_cubit.dart';
-import '../../../events/presentation/cubit/breeding_cubit.dart';
+import '../../../../data/services/reporting_service.dart';
+import '../../../../data/repositories/food_inventory_repository.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../widgets/productivity_report_screen.dart';
-
-enum ReportPeriod { threeMonths, sixMonths, twelveMonths }
-
-extension on ReportPeriod {
-  String get label {
-    switch (this) {
-      case ReportPeriod.threeMonths:
-        return '3 mois';
-      case ReportPeriod.sixMonths:
-        return '6 mois';
-      case ReportPeriod.twelveMonths:
-        return '12 mois';
-    }
-  }
-
-  Duration get duration {
-    switch (this) {
-      case ReportPeriod.threeMonths:
-        return const Duration(days: 90);
-      case ReportPeriod.sixMonths:
-        return const Duration(days: 182);
-      case ReportPeriod.twelveMonths:
-        return const Duration(days: 365);
-    }
-  }
-}
+import '../cubit/report_cubit.dart';
+import '../../services/report_export_service.dart';
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: <BlocProvider<dynamic>>[
-        BlocProvider<BreedingCubit>(
-          create: (BuildContext context) => BreedingCubit(
-            context.read<BreedingRepository>(),
-            context.read<AnimalRepository>(),
-          )..loadData(),
-        ),
-        BlocProvider<AnimalCubit>(
-          create: (BuildContext context) => AnimalCubit(
-            context.read<AnimalRepository>(),
-            localDataSource: context.read<LocalAnimalDataSource>(),
-          )..fetchAnimals(),
-        ),
-      ],
+    return BlocProvider<ReportCubit>(
+      create: (BuildContext context) => ReportCubit(
+        context.read<ReportingService>(),
+      ),
       child: const _ReportsView(),
     );
   }
@@ -70,216 +37,421 @@ class _ReportsView extends StatefulWidget {
 }
 
 class _ReportsViewState extends State<_ReportsView> {
-  ReportPeriod _period = ReportPeriod.sixMonths;
-  String _sexFilter = 'Tous';
-  String? _breederId;
+  final GlobalKey _fertilityKey = GlobalKey();
+  final GlobalKey _litterKey = GlobalKey();
+  final ReportExportService _exportService = ReportExportService();
+  bool _exportInProgress = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _load();
+    });
+  }
+
+  Future<void> _load({bool forceRefresh = false}) async {
+    final ReportCubit cubit = context.read<ReportCubit>();
+    final AuthState authState = context.read<AuthCubit>().state;
+    final String? profileId =
+        authState.profile?.id ?? authState.session?.user.id;
+    await cubit.load(profileId: profileId, forceRefresh: forceRefresh);
+  }
+
+  Future<void> _onRefresh() async {
+    final AuthState authState = context.read<AuthCubit>().state;
+    final String? profileId =
+        authState.profile?.id ?? authState.session?.user.id;
+    await context
+        .read<ReportCubit>()
+        .load(profileId: profileId, forceRefresh: true);
+  }
+
+  Future<void> _showExportSheet(ReportState state) async {
+    if (!state.canExport || _exportInProgress) {
+      return;
+    }
+    final String? choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf_outlined),
+                title: const Text('Exporter en PDF'),
+                onTap: () => Navigator.of(context).pop('pdf'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.table_chart_outlined),
+                title: const Text('Exporter en CSV'),
+                onTap: () => Navigator.of(context).pop('csv'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (!mounted || choice == null) {
+      return;
+    }
+    if (choice == 'pdf') {
+      await _exportPdf(state);
+    } else if (choice == 'csv') {
+      await _exportCsv(state);
+    }
+  }
+
+  Future<void> _exportPdf(ReportState state) async {
+    setState(() => _exportInProgress = true);
+    try {
+      final Uint8List? fertility = await _captureChart(_fertilityKey);
+      final Uint8List? litter = await _captureChart(_litterKey);
+      await _exportService.sharePdf(
+        state: state,
+        fertilityChart: fertility,
+        litterChart: litter,
+      );
+      if (mounted) {
+        _showSnack('PDF genere avec succes.');
+      }
+    } catch (error) {
+      if (mounted) {
+        _showSnack('Echec export PDF: $error');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _exportInProgress = false);
+      }
+    }
+  }
+
+  Future<void> _exportCsv(ReportState state) async {
+    setState(() => _exportInProgress = true);
+    try {
+      await _exportService.shareCsv(state: state);
+      if (mounted) {
+        _showSnack('CSV genere avec succes.');
+      }
+    } catch (error) {
+      if (mounted) {
+        _showSnack('Echec export CSV: $error');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _exportInProgress = false);
+      }
+    }
+  }
+
+  Future<Uint8List?> _captureChart(GlobalKey key) async {
+    try {
+      final RenderRepaintBoundary? boundary =
+          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        return null;
+      }
+      final ui.Image image = await boundary.toImage(pixelRatio: 3);
+      final ByteData? data =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      return data?.buffer.asUint8List();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Rapports'),
-      ),
-      body: BlocBuilder<BreedingCubit, BreedingState>(
-        builder: (BuildContext context, BreedingState breedingState) {
-          return BlocBuilder<AnimalCubit, AnimalState>(
-            builder: (BuildContext context, AnimalState animalState) {
-              if (breedingState.status == BreedingStatus.loading ||
-                  animalState.status == AnimalStatus.loading) {
-                return const Center(child: CircularProgressIndicator());
-              }
+    return BlocBuilder<ReportCubit, ReportState>(
+      builder: (BuildContext context, ReportState state) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Rapports'),
+            actions: <Widget>[
+              IconButton(
+                tooltip: 'Exporter',
+                icon: _exportInProgress
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.ios_share_outlined),
+                onPressed: state.canExport && !_exportInProgress
+                    ? () => _showExportSheet(state)
+                    : null,
+              ),
+            ],
+          ),
+          body: _buildBody(context, state),
+        );
+      },
+    );
+  }
 
-              if (breedingState.status == BreedingStatus.failure) {
-                return ErrorPlaceholder(message: breedingState.errorMessage);
-              }
-              if (animalState.status == AnimalStatus.failure) {
-                return ErrorPlaceholder(message: animalState.errorMessage);
-              }
-
-              final Map<String, Animal> animalsById =
-                  <String, Animal>{for (final Animal animal in animalState.allAnimals) animal.id: animal};
-              final List<BreedingRecord> filteredRecords =
-                  _filterRecords(breedingState.records, animalsById);
-              final List<MonthlyMetric> metrics =
-                  _buildMonthlyMetrics(filteredRecords);
-              final List<BreederPerformance> performances =
-                  _buildBreederPerformances(filteredRecords, animalsById);
-
-              return RefreshIndicator(
-                onRefresh: () async {
-                  final breedingCubit = context.read<BreedingCubit>();
-                  final animalCubit = context.read<AnimalCubit>();
-                  await breedingCubit.loadData();
-                  await animalCubit.fetchAnimals();
+  Widget _buildBody(BuildContext context, ReportState state) {
+    switch (state.status) {
+      case ReportStatus.initial:
+      case ReportStatus.loading:
+        return const Center(child: CircularProgressIndicator());
+      case ReportStatus.failure:
+        return ErrorPlaceholder(message: state.errorMessage);
+      case ReportStatus.success:
+        return RefreshIndicator(
+          onRefresh: _onRefresh,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            children: <Widget>[
+              _FiltersPanel(state: state),
+              const SizedBox(height: 16),
+              RepaintBoundary(
+                key: _fertilityKey,
+                child: FertilityChartCard(metrics: state.viewData.monthlyMetrics),
+              ),
+              const SizedBox(height: 16),
+              RepaintBoundary(
+                key: _litterKey,
+                child: LitterSizeChartCard(metrics: state.viewData.monthlyMetrics),
+              ),
+              const SizedBox(height: 16),
+              BreederPerformanceCard(
+                performances: state.viewData.topPerformances,
+                animalsById: state.viewData.animalsById,
+              ),
+              const SizedBox(height: 16),
+              EventSummaryCard(
+                counts: state.viewData.eventCountsByType,
+                range: state.viewData.range,
+              ),
+              const SizedBox(height: 16),
+              InventorySummaryCard(summary: state.viewData.inventorySummary),
+              const SizedBox(height: 16),
+              ListTile(
+                tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                leading: const Icon(Icons.trending_up),
+                title: const Text('Rapport de productivite detaille'),
+                subtitle: const Text(
+                  'Comparer les performances des reproducteurs sur la periode selectionnee.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (BuildContext context) => BlocProvider.value(
+                        value: BlocProvider.of<ReportCubit>(context),
+                        child: const ProductivityReportScreen(),
+                      ),
+                    ),
+                  );
                 },
-                child: ListView(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                  children: <Widget>[
-                    _FiltersRow(
-                      period: _period,
-                      sexFilter: _sexFilter,
-                      breederId: _breederId,
-                      animals: animalState.animals,
-                      onPeriodChanged: (ReportPeriod value) =>
-                          setState(() => _period = value),
-                      onSexChanged: (String value) =>
-                          setState(() => _sexFilter = value),
-                      onBreederChanged: (String? value) =>
-                          setState(() => _breederId = value),
-                    ),
-                    const SizedBox(height: 16),
-                    FertilityChartCard(metrics: metrics),
-                    const SizedBox(height: 16),
-                    LitterSizeChartCard(metrics: metrics),
-                    const SizedBox(height: 16),
-                    BreederPerformanceCard(
-                      performances: performances,
-                      animalsById: animalsById,
-                    ),
-                    const SizedBox(height: 16),
-                    ListTile(
-                      tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      leading: const Icon(Icons.trending_up),
-                      title: const Text('Rapport de productivité détaillé'),
-                      subtitle: const Text(
-                        'Comparer les performances des reproducteurs et identifier les sujets à surveiller.',
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<Widget>(
-                            builder: (BuildContext context) =>
-                                ProductivityReportScreen(
-                              animals: animalState.allAnimals,
-                              records: breedingState.records,
-                            ),
+              ),
+            ],
+          ),
+        );
+    }
+  }
+}
+
+class _FiltersPanel extends StatelessWidget {
+  const _FiltersPanel({required this.state});
+
+  final ReportState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final ReportCubit cubit = context.read<ReportCubit>();
+    final DateFormat dateLabel = DateFormat.yMMMd('fr');
+    final ThemeData theme = Theme.of(context);
+
+    final List<DropdownMenuEntry<ReportPeriod>> periodEntries =
+        ReportPeriod.values
+            .map(
+              (ReportPeriod value) => DropdownMenuEntry<ReportPeriod>(
+                value: value,
+                label: value.label,
+              ),
+            )
+            .toList();
+
+    final List<DropdownMenuEntry<SexFilterOption>> sexEntries =
+        <SexFilterOption>[
+      SexFilterOption.all,
+      SexFilterOption.female,
+      SexFilterOption.male,
+    ]
+            .map(
+              (SexFilterOption option) => DropdownMenuEntry<SexFilterOption>(
+                value: option,
+                label: _sexLabel(option),
+              ),
+            )
+            .toList();
+
+    final List<DropdownMenuEntry<String?>> breederEntries =
+        <DropdownMenuEntry<String?>>[
+      const DropdownMenuEntry<String?>(
+        value: null,
+        label: 'Tous les reproducteurs',
+      ),
+      for (final Animal animal in state.viewData.availableBreeders)
+        DropdownMenuEntry<String?>(
+          value: animal.id,
+          label: _animalLabel(animal),
+        ),
+    ];
+
+    final List<DropdownMenuEntry<String?>> lotEntries =
+        <DropdownMenuEntry<String?>>[
+      const DropdownMenuEntry<String?>(
+        value: null,
+        label: 'Tous les lots',
+      ),
+      for (final String lot in state.viewData.availableLots)
+        DropdownMenuEntry<String?>(value: lot, label: lot),
+    ];
+
+    final List<DropdownMenuEntry<String?>> locationEntries =
+        <DropdownMenuEntry<String?>>[
+      const DropdownMenuEntry<String?>(
+        value: null,
+        label: 'Toutes les localisations',
+      ),
+      for (final String location in state.viewData.availableLocations)
+        DropdownMenuEntry<String?>(value: location, label: location),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Filtres',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: <Widget>[
+                SizedBox(
+                  width: 220,
+                  child: DropdownMenu<ReportPeriod>(
+                    initialSelection: state.period,
+                    label: const Text('Periode'),
+                    dropdownMenuEntries: periodEntries,
+                    onSelected: (ReportPeriod? value) {
+                      if (value != null) {
+                        cubit.updatePeriod(value);
+                      }
+                    },
+                  ),
+                ),
+                if (state.period == ReportPeriod.custom)
+                  SizedBox(
+                    width: 220,
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final DateTimeRange? picked = await showDateRangePicker(
+                          context: context,
+                          locale: const Locale('fr'),
+                          initialDateRange:
+                              state.customRange ?? state.viewData.range,
+                          firstDate: DateTime.now().subtract(
+                            const Duration(days: 365 * 3),
+                          ),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365),
                           ),
                         );
+                        if (picked != null) {
+                          cubit.updateCustomRange(picked);
+                        }
                       },
+                      child: Text(
+                        '${dateLabel.format(state.viewData.range.start)} - '
+                        '${dateLabel.format(state.viewData.range.end)}',
+                      ),
                     ),
-                  ],
+                  ),
+                SizedBox(
+                  width: 200,
+                  child: DropdownMenu<SexFilterOption>(
+                    initialSelection: state.sexFilter,
+                    label: const Text('Sexe'),
+                    dropdownMenuEntries: sexEntries,
+                    onSelected: (SexFilterOption? value) {
+                      if (value != null) {
+                        cubit.updateSexFilter(value);
+                      }
+                    },
+                  ),
                 ),
-              );
-            },
-          );
-        },
+                SizedBox(
+                  width: 240,
+                  child: DropdownMenu<String?>(
+                    initialSelection: state.selectedBreederId,
+                    label: const Text('Reproducteur'),
+                    dropdownMenuEntries: breederEntries,
+                    onSelected: cubit.updateBreeder,
+                  ),
+                ),
+                SizedBox(
+                  width: 200,
+                  child: DropdownMenu<String?>(
+                    initialSelection: state.selectedLot,
+                    label: const Text('Lot'),
+                    dropdownMenuEntries: lotEntries,
+                    onSelected: cubit.updateLot,
+                  ),
+                ),
+                SizedBox(
+                  width: 240,
+                  child: DropdownMenu<String?>(
+                    initialSelection: state.selectedLocation,
+                    label: const Text('Localisation'),
+                    dropdownMenuEntries: locationEntries,
+                    onSelected: cubit.updateLocation,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Astuce: utilisez le bouton partager dans la barre d\'application pour generer un PDF ou un CSV.',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  DateTime get _startDate {
-    final DateTime now = DateTime.now();
-    return now.subtract(_period.duration);
+  String _sexLabel(SexFilterOption option) {
+    switch (option) {
+      case SexFilterOption.all:
+        return 'Tous';
+      case SexFilterOption.female:
+        return 'Femelles';
+      case SexFilterOption.male:
+        return 'Males';
+    }
   }
 
-  List<BreedingRecord> _filterRecords(
-    List<BreedingRecord> records,
-    Map<String, Animal> animalsById,
-  ) {
-    final DateTime start = _startDate;
-    return records.where((BreedingRecord record) {
-      if (record.matingDate.isBefore(start)) {
-        return false;
-      }
-      final bool matchesBreeder = _breederId == null
-          ? true
-          : record.doeId == _breederId || record.buckId == _breederId;
-      if (!matchesBreeder) {
-        return false;
-      }
-      switch (_sexFilter) {
-        case 'Femelle':
-          final Animal? doe = animalsById[record.doeId];
-          return doe?.sex.toLowerCase().contains('fem') ?? false;
-        case 'Mâle':
-          final Animal? buck = animalsById[record.buckId];
-          final String? sex = buck?.sex.toLowerCase();
-          return sex != null && (sex.contains('mâ') || sex.contains('mal'));
-        default:
-          return true;
-      }
-    }).toList();
-  }
-
-  List<MonthlyMetric> _buildMonthlyMetrics(List<BreedingRecord> records) {
-    final Map<DateTime, _MonthlyAccumulator> buckets =
-        <DateTime, _MonthlyAccumulator>{};
-    for (final BreedingRecord record in records) {
-      final DateTime key = DateTime(record.matingDate.year, record.matingDate.month);
-      final _MonthlyAccumulator acc =
-          buckets.putIfAbsent(key, _MonthlyAccumulator.new);
-      acc.totalMatings += 1;
-      if (record.palpationPositive == true) {
-        acc.successfulMatings += 1;
-      }
-      if (record.kitsBornAlive != null) {
-        acc.totalBorn += record.kitsBornAlive!;
-        acc.bornCount += 1;
-      }
-      if (record.kitsWeaned != null) {
-        acc.totalWeaned += record.kitsWeaned!;
-        acc.weanedCount += 1;
-      }
-    }
-
-    final List<DateTime> months = buckets.keys.toList()
-      ..sort((DateTime a, DateTime b) => a.compareTo(b));
-    return <MonthlyMetric>[
-      for (final DateTime month in months)
-        MonthlyMetric(
-          month: month,
-          successRate: buckets[month]!.successRate,
-          averageBorn: buckets[month]!.averageBorn,
-          averageWeaned: buckets[month]!.averageWeaned,
-        ),
-    ];
-  }
-
-  List<BreederPerformance> _buildBreederPerformances(
-    List<BreedingRecord> records,
-    Map<String, Animal> animalsById,
-  ) {
-    final Map<String, _BreederAccumulator> map =
-        <String, _BreederAccumulator>{};
-    void track(String? id, bool success, int? weaned) {
-      if (id == null) {
-        return;
-      }
-      final _BreederAccumulator acc =
-          map.putIfAbsent(id, _BreederAccumulator.new);
-      acc.totalMatings += 1;
-      if (success) {
-        acc.successfulMatings += 1;
-      }
-      if (weaned != null) {
-        acc.totalWeaned += weaned;
-      }
-    }
-
-    for (final BreedingRecord record in records) {
-      final bool success = record.palpationPositive == true;
-      track(record.doeId, success, record.kitsWeaned);
-      track(record.buckId, success, record.kitsWeaned);
-    }
-
-    final List<BreederPerformance> performances = <BreederPerformance>[
-      for (final MapEntry<String, _BreederAccumulator> entry in map.entries)
-        BreederPerformance(
-          animal: animalsById[entry.key],
-          animalId: entry.key,
-          totalMatings: entry.value.totalMatings,
-          successRate: entry.value.successRate,
-          totalWeaned: entry.value.totalWeaned,
-        ),
-    ]
-      ..sort((BreederPerformance a, BreederPerformance b) =>
-          b.successRate.compareTo(a.successRate));
-
-    return performances.take(6).toList();
+  static String _animalLabel(Animal animal) {
+    return animal.name == null || animal.name!.isEmpty
+        ? animal.tagId
+        : '${animal.tagId} - ${animal.name}';
   }
 }
 
@@ -291,32 +463,31 @@ class FertilityChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final DateFormat monthFormat = DateFormat.MMM('fr');
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: metrics.isEmpty
             ? const EmptyReportPlaceholder(
-                title: 'Taux de fertilité',
-                description:
-                    'Aucune donnée de saillie sur la période sélectionnée.',
+                title: 'Taux de fertilite',
+                description: 'Aucune donnee pour la periode selectionnee.',
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('Taux de fertilité', style: theme.textTheme.titleLarge),
+                  Text('Taux de fertilite', style: theme.textTheme.titleLarge),
                   const SizedBox(height: 8),
                   SizedBox(
                     height: 220,
                     child: LineChart(
                       LineChartData(
-                        backgroundColor:
-                            theme.colorScheme.surfaceContainerHighest.withAlpha((255 * 0.3).round()),
                         gridData: FlGridData(show: false),
+                        borderData: FlBorderData(show: false),
                         titlesData: FlTitlesData(
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
-                              interval: 1,
                               getTitlesWidget: (double value, TitleMeta meta) {
                                 final int index = value.toInt();
                                 if (index < 0 || index >= metrics.length) {
@@ -325,7 +496,9 @@ class FertilityChartCard extends StatelessWidget {
                                 final DateTime month = metrics[index].month;
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 8),
-                                  child: Text('${month.month}/${month.year % 100}'),
+                                  child: Text(
+                                    monthFormat.format(month),
+                                  ),
                                 );
                               },
                             ),
@@ -335,7 +508,7 @@ class FertilityChartCard extends StatelessWidget {
                               showTitles: true,
                               reservedSize: 36,
                               getTitlesWidget: (double value, TitleMeta meta) {
-                                return Text('${(value * 100).round()}%');
+                                return Text('${(value * 100).round()} %');
                               },
                             ),
                           ),
@@ -346,30 +519,19 @@ class FertilityChartCard extends StatelessWidget {
                         ),
                         minY: 0,
                         maxY: 1,
-                        lineTouchData: LineTouchData(
-                          touchTooltipData: LineTouchTooltipData(
-                            getTooltipItems: (List<LineBarSpot> touchedSpots) {
-                              return touchedSpots
-                                  .map(
-                                    (LineBarSpot spot) => LineTooltipItem(
-                                      '${metrics[spot.x.toInt()].month.month}/${metrics[spot.x.toInt()].month.year} : ${(spot.y * 100).toStringAsFixed(1)}%\n',
-                                      theme.textTheme.bodyMedium!,
-                                    ),
-                                  )
-                                  .toList();
-                            },
-                          ),
-                        ),
                         lineBarsData: <LineChartBarData>[
                           LineChartBarData(
-                            color: theme.colorScheme.primary,
                             isCurved: true,
+                            color: theme.colorScheme.primary,
                             barWidth: 3,
+                            dotData: const FlDotData(show: false),
                             spots: <FlSpot>[
                               for (int i = 0; i < metrics.length; i++)
-                                FlSpot(i.toDouble(), metrics[i].successRate ?? 0),
+                                FlSpot(
+                                  i.toDouble(),
+                                  metrics[i].successRate,
+                                ),
                             ],
-                            dotData: const FlDotData(show: false),
                           ),
                         ],
                       ),
@@ -390,29 +552,51 @@ class LitterSizeChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final DateFormat monthFormat = DateFormat.MMM('fr');
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: metrics.isEmpty
             ? const EmptyReportPlaceholder(
-                title: 'Taille moyenne des portées',
-                description: 'Aucune mise bas enregistrée sur la période.',
+                title: 'Taille moyenne des portees',
+                description: 'Aucune mise bas pour la periode selectionnee.',
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    'Taille moyenne des portées',
+                    'Taille moyenne des portees',
                     style: theme.textTheme.titleLarge,
                   ),
                   const SizedBox(height: 8),
                   SizedBox(
-                    height: 220,
+                    height: 240,
                     child: BarChart(
                       BarChartData(
                         alignment: BarChartAlignment.spaceAround,
                         gridData: FlGridData(show: false),
-                        borderData: FlBorderData(show: false),
+                        barGroups: <BarChartGroupData>[
+                          for (int i = 0; i < metrics.length; i++)
+                            BarChartGroupData(
+                              x: i,
+                              barRods: <BarChartRodData>[
+                                BarChartRodData(
+                                  toY: (metrics[i].averageBorn ?? 0).toDouble(),
+                                  color: theme.colorScheme.secondary,
+                                  width: 12,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                if (metrics[i].averageWeaned != null)
+                                  BarChartRodData(
+                                    toY: metrics[i].averageWeaned!.toDouble(),
+                                    color: theme.colorScheme.tertiary,
+                                    width: 12,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                              ],
+                            ),
+                        ],
                         titlesData: FlTitlesData(
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
@@ -422,10 +606,11 @@ class LitterSizeChartCard extends StatelessWidget {
                                 if (index < 0 || index >= metrics.length) {
                                   return const SizedBox.shrink();
                                 }
-                                final DateTime month = metrics[index].month;
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 8),
-                                  child: Text('${month.month}/${month.year % 100}'),
+                                  child: Text(
+                                    monthFormat.format(metrics[index].month),
+                                  ),
                                 );
                               },
                             ),
@@ -444,21 +629,13 @@ class LitterSizeChartCard extends StatelessWidget {
                           topTitles:
                               const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         ),
-                        barGroups: <BarChartGroupData>[
-                          for (int i = 0; i < metrics.length; i++)
-                            BarChartGroupData(
-                              x: i,
-                              barRods: <BarChartRodData>[
-                                BarChartRodData(
-                                  toY: metrics[i].averageBorn ?? 0,
-                                  color: theme.colorScheme.secondary,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ],
-                            ),
-                        ],
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Naissances en secondaire, sevrages en tertiaire.',
+                    style: theme.textTheme.bodySmall,
                   ),
                 ],
               ),
@@ -480,19 +657,22 @@ class BreederPerformanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: performances.isEmpty
             ? const EmptyReportPlaceholder(
                 title: 'Performances par reproducteur',
-                description: 'Aucune statistique disponible pour cette période.',
+                description: 'Aucune statistique disponible pour cette periode.',
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('Performances par reproducteur',
-                      style: theme.textTheme.titleLarge),
+                  Text(
+                    'Performances par reproducteur',
+                    style: theme.textTheme.titleLarge,
+                  ),
                   const SizedBox(height: 12),
                   for (final BreederPerformance performance in performances)
                     Padding(
@@ -509,6 +689,158 @@ class BreederPerformanceCard extends StatelessWidget {
   }
 }
 
+class EventSummaryCard extends StatelessWidget {
+  const EventSummaryCard({
+    required this.counts,
+    required this.range,
+    super.key,
+  });
+
+  final Map<String, int> counts;
+  final DateTimeRange range;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final DateFormat dateFormat = DateFormat.MMMd('fr');
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: counts.isEmpty
+            ? const EmptyReportPlaceholder(
+                title: 'Activite evenementielle',
+                description: 'Aucun evenement correspondant aux filtres.',
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text('Activite evenementielle', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${dateFormat.format(range.start)} - ${dateFormat.format(range.end)}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: <Widget>[
+                      for (final MapEntry<String, int> entry
+                          in counts.entries.toList()
+                            ..sort(
+                              (MapEntry<String, int> a, MapEntry<String, int> b) =>
+                                  b.value.compareTo(a.value),
+                            ))
+                        Chip(
+                          avatar: const Icon(Icons.event),
+                          label: Text('${_formatEventType(entry.key)} (${entry.value})'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  static String _formatEventType(String raw) {
+    if (raw.isEmpty) {
+      return 'Autre';
+    }
+    final String spaced = raw.replaceAll('_', ' ');
+    return '${spaced[0].toUpperCase()}${spaced.substring(1)}';
+  }
+}
+
+class InventorySummaryCard extends StatelessWidget {
+  const InventorySummaryCard({required this.summary, super.key});
+
+  final InventorySummary? summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final NumberFormat numberFormat = NumberFormat.decimalPattern('fr');
+    final NumberFormat currencyFormat =
+        NumberFormat.currency(locale: 'fr', symbol: '€');
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: summary == null
+            ? const EmptyReportPlaceholder(
+                title: 'Inventaire aliments',
+                description:
+                    'Aucune donnee de stock. Ajoutez vos achats pour suivre les volumes.',
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text('Inventaire aliments', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: <Widget>[
+                      _SummaryBadge(
+                        icon: Icons.scale,
+                        label: 'Quantite totale',
+                        value: '${numberFormat.format(summary!.totalQuantityKg)} kg',
+                      ),
+                      _SummaryBadge(
+                        icon: Icons.inventory_2_outlined,
+                        label: 'Entrees',
+                        value: numberFormat.format(summary!.entriesCount),
+                      ),
+                      _SummaryBadge(
+                        icon: Icons.local_atm_outlined,
+                        label: 'Valeur estimee',
+                        value: currencyFormat.format(summary!.totalCost),
+                      ),
+                      _SummaryBadge(
+                        icon: Icons.bolt_outlined,
+                        label: 'Conso mensuelle',
+                        value:
+                            '${numberFormat.format(summary!.estimatedMonthlyConsumptionKg)} kg',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _SummaryBadge extends StatelessWidget {
+  const _SummaryBadge({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Chip(
+      avatar: Icon(icon, size: 20),
+      label: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(label, style: theme.textTheme.labelSmall),
+          Text(value, style: theme.textTheme.titleMedium),
+        ],
+      ),
+    );
+  }
+}
+
 class _BreederTile extends StatelessWidget {
   const _BreederTile({required this.performance, this.animal});
 
@@ -518,9 +850,8 @@ class _BreederTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final String title = animal == null
-        ? performance.animalId
-        : '${animal!.tagId}${animal!.name != null ? ' · ${animal!.name}' : ''}';
+    final String title =
+        animal == null ? performance.animalId : _FiltersPanel._animalLabel(animal!);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -540,163 +871,20 @@ class _BreederTile extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        LinearProgressIndicator(
-          value: performance.successRate,
-          minHeight: 6,
-          backgroundColor: theme.colorScheme.surfaceContainerHighest,
-          color: theme.colorScheme.primary,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '${performance.totalMatings} saillies · ${performance.totalWeaned} sevrés',
-          style: theme.textTheme.bodySmall,
-        ),
-      ],
-    );
-  }
-}
-
-class _FiltersRow extends StatelessWidget {
-  const _FiltersRow({
-    required this.period,
-    required this.sexFilter,
-    required this.breederId,
-    required this.animals,
-    required this.onPeriodChanged,
-    required this.onSexChanged,
-    required this.onBreederChanged,
-  });
-
-  final ReportPeriod period;
-  final String sexFilter;
-  final String? breederId;
-  final List<Animal> animals;
-  final ValueChanged<ReportPeriod> onPeriodChanged;
-  final ValueChanged<String> onSexChanged;
-  final ValueChanged<String?> onBreederChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final List<DropdownMenuItem<ReportPeriod>> periodItems = ReportPeriod.values
-        .map(
-          (ReportPeriod value) => DropdownMenuItem<ReportPeriod>(
-            value: value,
-            child: Text(value.label),
-          ),
-        )
-        .toList();
-
-    final List<DropdownMenuItem<String?>> breederItems = <DropdownMenuItem<String?>>[
-      const DropdownMenuItem<String?>(value: null, child: Text('Tous les reproducteurs')),
-      ...animals.map(
-        (Animal animal) => DropdownMenuItem<String?>(
-          value: animal.id,
-          child: Text(
-            '${animal.tagId}${animal.name != null ? ' · ${animal.name}' : ''}',
-          ),
-        ),
-      ),
-    ];
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: <Widget>[
-        SizedBox(
-          width: 160,
-          child: DropdownButtonFormField<ReportPeriod>(
-            initialValue: period,
-            decoration: const InputDecoration(labelText: 'Période'),
-            items: periodItems,
-            onChanged: (ReportPeriod? value) {
-              if (value != null) {
-                onPeriodChanged(value);
-              }
-            },
-          ),
-        ),
-        SizedBox(
-          width: 160,
-          child: DropdownButtonFormField<String>(
-            initialValue: sexFilter,
-            decoration: const InputDecoration(labelText: 'Sexe'),
-            items: const <DropdownMenuItem<String>>[
-              DropdownMenuItem<String>(value: 'Tous', child: Text('Tous')),
-              DropdownMenuItem<String>(value: 'Femelle', child: Text('Femelles')),
-              DropdownMenuItem<String>(value: 'Mâle', child: Text('Mâles')),
-            ],
-            onChanged: (String? value) {
-              if (value != null) {
-                onSexChanged(value);
-              }
-            },
-          ),
-        ),
-        SizedBox(
-          width: 220,
-          child: DropdownButtonFormField<String?>(
-            initialValue: breederId,
-            decoration: const InputDecoration(labelText: 'Reproducteur'),
-            items: breederItems,
-            onChanged: onBreederChanged,
-          ),
+        Wrap(
+          spacing: 12,
+          children: <Widget>[
+            Chip(
+              label: Text('Saillies: ${performance.totalMatings}'),
+            ),
+            Chip(
+              label: Text('Sevres: ${performance.totalWeaned}'),
+            ),
+          ],
         ),
       ],
     );
   }
-}
-
-class _MonthlyAccumulator {
-  int totalMatings = 0;
-  int successfulMatings = 0;
-  int totalBorn = 0;
-  int bornCount = 0;
-  int totalWeaned = 0;
-  int weanedCount = 0;
-
-  double? get successRate =>
-      totalMatings == 0 ? null : successfulMatings / totalMatings;
-  double? get averageBorn => bornCount == 0 ? null : totalBorn / bornCount;
-  double? get averageWeaned => weanedCount == 0 ? null : totalWeaned / weanedCount;
-}
-
-class MonthlyMetric {
-  const MonthlyMetric({
-    required this.month,
-    this.successRate,
-    this.averageBorn,
-    this.averageWeaned,
-  });
-
-  final DateTime month;
-  final double? successRate;
-  final double? averageBorn;
-  final double? averageWeaned;
-}
-
-class _BreederAccumulator {
-  int totalMatings = 0;
-  int successfulMatings = 0;
-  int totalWeaned = 0;
-
-  double get successRate =>
-      totalMatings == 0 ? 0 : successfulMatings / totalMatings;
-}
-
-class BreederPerformance {
-  const BreederPerformance({
-    required this.animalId,
-    required this.totalMatings,
-    required this.successRate,
-    required this.totalWeaned,
-    this.animal,
-  });
-
-  final String animalId;
-  final int totalMatings;
-  final double successRate;
-  final int totalWeaned;
-  final Animal? animal;
 }
 
 class EmptyReportPlaceholder extends StatelessWidget {
