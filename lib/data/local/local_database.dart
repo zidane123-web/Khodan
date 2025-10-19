@@ -30,6 +30,49 @@ class SpeciesConfigsTable extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
+class EventTemplatesTable extends Table {
+  IntColumn get id => integer()();
+  TextColumn get profileId => text()();
+  TextColumn get templateName => text()();
+  TextColumn get eventType => text()();
+  TextColumn get payload => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get syncState =>
+      text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+class FoodTypesTable extends Table {
+  IntColumn get id => integer()();
+  TextColumn get profileId => text()();
+  TextColumn get name => text()();
+  TextColumn get payload => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get syncState =>
+      text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+class FoodStockTable extends Table {
+  IntColumn get id => integer()();
+  TextColumn get profileId => text()();
+  IntColumn get foodTypeId => integer().nullable()();
+  TextColumn get payload => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get syncState =>
+      text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
 class AnimalsTable extends Table {
   TextColumn get id => text()();
   TextColumn get profileId => text()();
@@ -79,14 +122,37 @@ class AnimalEventsTable extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{eventId, animalId, role};
 }
 
+class QueuedActionsTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get type => text()();
+  TextColumn get rollbackType => text().nullable()();
+  TextColumn get description => text()();
+  TextColumn get payload => text()();
+  TextColumn get rollbackPayload => text().nullable()();
+  IntColumn get priority => integer().withDefault(const Constant(0))();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get scheduledAt => dateTime().nullable()();
+  TextColumn get lastError => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
 @DriftDatabase(
   tables: <Type>[
     ProfilesTable,
     SpeciesConfigsTable,
+    EventTemplatesTable,
+    FoodTypesTable,
+    FoodStockTable,
     AnimalsTable,
     BreedingRecordsTable,
     EventsTable,
     AnimalEventsTable,
+    QueuedActionsTable,
   ],
 )
 class LocalDatabase extends _$LocalDatabase {
@@ -105,7 +171,26 @@ class LocalDatabase extends _$LocalDatabase {
   }
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 4;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (Migrator migrator) async {
+          await migrator.createAll();
+        },
+        onUpgrade: (Migrator migrator, int from, int to) async {
+          if (from < 2) {
+            await migrator.createTable(queuedActionsTable);
+          }
+          if (from < 3) {
+            await migrator.createTable(eventTemplatesTable);
+          }
+          if (from < 4) {
+            await migrator.createTable(foodTypesTable);
+            await migrator.createTable(foodStockTable);
+          }
+        },
+      );
 
   Future<void> clearAll() async {
     await transaction(() async {
@@ -114,7 +199,11 @@ class LocalDatabase extends _$LocalDatabase {
       await delete(breedingRecordsTable).go();
       await delete(animalsTable).go();
       await delete(speciesConfigsTable).go();
+      await delete(eventTemplatesTable).go();
+      await delete(foodStockTable).go();
+      await delete(foodTypesTable).go();
       await delete(profilesTable).go();
+      await delete(queuedActionsTable).go();
     });
   }
 }

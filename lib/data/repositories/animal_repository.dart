@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../local/local_data_sources.dart';
 import '../models/animal.dart';
+import '../models/sync_action.dart';
 import '../services/api_client.dart';
 import '../services/offline_sync_manager.dart';
 
@@ -101,8 +102,8 @@ class InMemoryAnimalRepository implements AnimalRepository {
     final List<Animal> animals = speciesId == null
         ? List<Animal>.from(_animals)
         : _animals
-            .where((Animal animal) => animal.speciesId == speciesId)
-            .toList();
+              .where((Animal animal) => animal.speciesId == speciesId)
+              .toList();
     animals.sort((Animal a, Animal b) => a.tagId.compareTo(b.tagId));
     return animals;
   }
@@ -118,7 +119,9 @@ class InMemoryAnimalRepository implements AnimalRepository {
 
   @override
   Future<Animal> updateAnimal(Animal animal) async {
-    final int index = _animals.indexWhere((Animal element) => element.id == animal.id);
+    final int index = _animals.indexWhere(
+      (Animal element) => element.id == animal.id,
+    );
     if (index == -1) {
       throw StateError('Animal ${animal.id} introuvable');
     }
@@ -134,22 +137,19 @@ class InMemoryAnimalRepository implements AnimalRepository {
 
 class SupabaseAnimalRepository implements AnimalRepository {
   SupabaseAnimalRepository({ApiExecutor? apiClient})
-      : _api = apiClient ?? ApiClient();
+    : _api = apiClient ?? ApiClient();
 
   final ApiExecutor _api;
 
   @override
   Future<List<Animal>> fetchAnimals({int? speciesId}) async {
-    final List<dynamic> data = await _api.run(
-      (SupabaseClient client) {
-        dynamic query = client.from('animals').select();
-        if (speciesId != null) {
-          query = query.eq('species_id', speciesId);
-        }
-        return query.order('birth_date');
-      },
-      label: 'animals.fetch',
-    );
+    final List<dynamic> data = await _api.run((SupabaseClient client) {
+      dynamic query = client.from('animals').select();
+      if (speciesId != null) {
+        query = query.eq('species_id', speciesId);
+      }
+      return query.order('birth_date');
+    }, label: 'animals.fetch');
     return data
         .map((dynamic row) => Animal.fromJson(row as Map<String, dynamic>))
         .toList();
@@ -157,38 +157,29 @@ class SupabaseAnimalRepository implements AnimalRepository {
 
   @override
   Future<Animal> createAnimal(Animal animal) async {
-    final List<dynamic> response = await _api.run(
-      (SupabaseClient client) {
-        return client.from('animals').insert(animal.toJson()).select();
-      },
-      label: 'animals.create',
-    );
+    final List<dynamic> response = await _api.run((SupabaseClient client) {
+      return client.from('animals').insert(animal.toJson()).select();
+    }, label: 'animals.create');
     return Animal.fromJson(response.first as Map<String, dynamic>);
   }
 
   @override
   Future<Animal> updateAnimal(Animal animal) async {
-    final List<dynamic> response = await _api.run(
-      (SupabaseClient client) {
-        return client
-            .from('animals')
-            .update(animal.toJson())
-            .eq('id', animal.id)
-            .select();
-      },
-      label: 'animals.update',
-    );
+    final List<dynamic> response = await _api.run((SupabaseClient client) {
+      return client
+          .from('animals')
+          .update(animal.toJson())
+          .eq('id', animal.id)
+          .select();
+    }, label: 'animals.update');
     return Animal.fromJson(response.first as Map<String, dynamic>);
   }
 
   @override
   Future<void> deleteAnimal(String id) {
-    return _api.run(
-      (SupabaseClient client) {
-        return client.from('animals').delete().eq('id', id);
-      },
-      label: 'animals.delete',
-    );
+    return _api.run((SupabaseClient client) {
+      return client.from('animals').delete().eq('id', id);
+    }, label: 'animals.delete');
   }
 }
 
@@ -197,13 +188,16 @@ class SyncedAnimalRepository implements AnimalRepository {
     required AnimalRepository remote,
     required LocalAnimalDataSource local,
     OfflineSyncManager? offlineManager,
-  })  : _remote = remote,
-        _local = local,
-        _offlineManager = offlineManager ?? OfflineSyncManager.instance;
+  }) : _remote = remote,
+       _local = local,
+       _offlineManager = offlineManager ?? OfflineSyncManager.instance {
+    _registerHandlers();
+  }
 
   final AnimalRepository _remote;
   final LocalAnimalDataSource _local;
   final OfflineSyncManager _offlineManager;
+  static bool _handlersRegistered = false;
 
   String? get _currentProfileId {
     try {
@@ -217,20 +211,15 @@ class SyncedAnimalRepository implements AnimalRepository {
   Future<List<Animal>> fetchAnimals({int? speciesId}) async {
     final String? profileId = _currentProfileId;
     if (_offlineManager.isOffline.value) {
-      return _local.fetchAnimals(
-        profileId: profileId,
-        speciesId: speciesId,
-      );
+      return _local.fetchAnimals(profileId: profileId, speciesId: speciesId);
     }
 
     try {
-      final List<Animal> animals =
-          await _remote.fetchAnimals(speciesId: speciesId);
+      final List<Animal> animals = await _remote.fetchAnimals(
+        speciesId: speciesId,
+      );
       if (animals.isNotEmpty) {
-        await _local.replaceAnimals(
-          animals,
-          profileId: profileId,
-        );
+        await _local.replaceAnimals(animals, profileId: profileId);
       } else if (profileId != null) {
         await _local.replaceAnimals(const <Animal>[], profileId: profileId);
       }
@@ -250,9 +239,21 @@ class SyncedAnimalRepository implements AnimalRepository {
   @override
   Future<Animal> createAnimal(Animal animal) async {
     if (_offlineManager.isOffline.value) {
-      await _local.upsertAnimal(
-        animal,
-        syncState: kSyncStatePending,
+      await _local.upsertAnimal(animal, syncState: kSyncStatePending);
+      await _offlineManager.enqueueAction(
+        SyncActionRequest(
+          type: SyncActionType.createAnimal,
+          rollbackType: SyncActionType.deleteAnimal,
+          description:
+              'Créer ${animal.tagId.isEmpty ? animal.id : animal.tagId}',
+          payload: <String, dynamic>{'animal': animal.toJson()},
+          rollbackPayload: <String, dynamic>{'animal': animal.toJson()},
+          priority: 100,
+          execute: () async {
+            final Animal created = await _remote.createAnimal(animal);
+            await _local.upsertAnimal(created);
+          },
+        ),
       );
       return animal;
     }
@@ -265,9 +266,26 @@ class SyncedAnimalRepository implements AnimalRepository {
   @override
   Future<Animal> updateAnimal(Animal animal) async {
     if (_offlineManager.isOffline.value) {
-      await _local.upsertAnimal(
-        animal,
-        syncState: kSyncStatePending,
+      final Animal? previous = await _local.fetchAnimalById(animal.id);
+      await _local.upsertAnimal(animal, syncState: kSyncStatePending);
+      await _offlineManager.enqueueAction(
+        SyncActionRequest(
+          type: SyncActionType.updateAnimal,
+          rollbackType: previous == null
+              ? SyncActionType.deleteAnimal
+              : SyncActionType.updateAnimal,
+          description:
+              'Mettre à jour ${animal.tagId.isEmpty ? animal.id : animal.tagId}',
+          payload: <String, dynamic>{'animal': animal.toJson()},
+          rollbackPayload: previous == null
+              ? <String, dynamic>{'animal_id': animal.id}
+              : <String, dynamic>{'animal': previous.toJson()},
+          priority: 80,
+          execute: () async {
+            final Animal updated = await _remote.updateAnimal(animal);
+            await _local.upsertAnimal(updated);
+          },
+        ),
       );
       return animal;
     }
@@ -280,10 +298,89 @@ class SyncedAnimalRepository implements AnimalRepository {
   @override
   Future<void> deleteAnimal(String id) async {
     if (_offlineManager.isOffline.value) {
+      final Animal? snapshot = await _local.fetchAnimalById(id);
       await _local.deleteAnimal(id);
+      await _offlineManager.enqueueAction(
+        SyncActionRequest(
+          type: SyncActionType.deleteAnimal,
+          rollbackType: snapshot == null ? null : SyncActionType.createAnimal,
+          description: 'Supprimer $id',
+          payload: <String, dynamic>{'animal_id': id},
+          rollbackPayload: snapshot == null
+              ? null
+              : <String, dynamic>{'animal': snapshot.toJson()},
+          priority: 60,
+          execute: () async {
+            await _remote.deleteAnimal(id);
+            await _local.deleteAnimal(id);
+          },
+        ),
+      );
       return;
     }
     await _remote.deleteAnimal(id);
     await _local.deleteAnimal(id);
+  }
+
+  void _registerHandlers() {
+    if (_handlersRegistered) {
+      return;
+    }
+    _handlersRegistered = true;
+
+    _offlineManager.registerHandler(
+      SyncActionType.createAnimal,
+      (QueuedSyncAction action) async {
+        final Map<String, dynamic> raw =
+            action.payload['animal'] as Map<String, dynamic>;
+        final Animal animal = Animal.fromJson(raw);
+        final Animal created = await _remote.createAnimal(animal);
+        await _local.upsertAnimal(created);
+      },
+      rollback: (QueuedSyncAction action, Object _) async {
+        final Map<String, dynamic>? raw =
+            action.rollbackPayload?['animal'] as Map<String, dynamic>?;
+        if (raw != null) {
+          await _local.deleteAnimal(raw['id'] as String);
+        }
+      },
+    );
+
+    _offlineManager.registerHandler(
+      SyncActionType.updateAnimal,
+      (QueuedSyncAction action) async {
+        final Map<String, dynamic> raw =
+            action.payload['animal'] as Map<String, dynamic>;
+        final Animal animal = Animal.fromJson(raw);
+        final Animal updated = await _remote.updateAnimal(animal);
+        await _local.upsertAnimal(updated);
+      },
+      rollback: (QueuedSyncAction action, Object _) async {
+        final Map<String, dynamic>? raw =
+            action.rollbackPayload?['animal'] as Map<String, dynamic>?;
+        if (raw != null) {
+          await _local.upsertAnimal(
+            Animal.fromJson(raw),
+            syncState: kSyncStateSynced,
+          );
+        }
+      },
+    );
+
+    _offlineManager.registerHandler(
+      SyncActionType.deleteAnimal,
+      (QueuedSyncAction action) async {
+        final String id = action.payload['animal_id'] as String;
+        await _remote.deleteAnimal(id);
+        await _local.deleteAnimal(id);
+      },
+      rollback: (QueuedSyncAction action, Object _) async {
+        final Map<String, dynamic>? raw =
+            action.rollbackPayload?['animal'] as Map<String, dynamic>?;
+        if (raw != null) {
+          await _local.upsertAnimal(Animal.fromJson(raw));
+        }
+      },
+    );
   }
 }

@@ -16,6 +16,8 @@ import 'data/repositories/animal_repository.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/breeding_repository.dart';
 import 'data/repositories/event_repository.dart';
+import 'data/repositories/event_template_repository.dart';
+import 'data/repositories/food_inventory_repository.dart';
 import 'data/repositories/profile_repository.dart';
 import 'data/repositories/support_repository.dart';
 import 'data/repositories/species_repository.dart';
@@ -71,6 +73,9 @@ class _KhodanAppState extends State<KhodanApp> {
   late final LocalBreedingDataSource _localBreedingDataSource;
   late final LocalEventDataSource _localEventDataSource;
   late final LocalSpeciesDataSource _localSpeciesDataSource;
+  late final LocalEventTemplateDataSource _localEventTemplateDataSource;
+  late final LocalFoodTypeDataSource _localFoodTypeDataSource;
+  late final LocalFoodStockDataSource _localFoodStockDataSource;
   late final LocalProfileDataSource _localProfileDataSource;
   late final LocalSyncQueueDataSource _localQueueDataSource;
   late final KhodanRouter _router;
@@ -84,6 +89,9 @@ class _KhodanAppState extends State<KhodanApp> {
     _localBreedingDataSource = LocalBreedingDataSource(_localDb);
     _localEventDataSource = LocalEventDataSource(_localDb);
     _localSpeciesDataSource = LocalSpeciesDataSource(_localDb);
+    _localEventTemplateDataSource = LocalEventTemplateDataSource(_localDb);
+    _localFoodTypeDataSource = LocalFoodTypeDataSource(_localDb);
+    _localFoodStockDataSource = LocalFoodStockDataSource(_localDb);
     _localProfileDataSource = LocalProfileDataSource(_localDb);
     _localQueueDataSource = LocalSyncQueueDataSource(_localDb);
     OfflineSyncManager.instance.attachQueue(_localQueueDataSource);
@@ -162,6 +170,15 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<LocalSpeciesDataSource>.value(
         value: _localSpeciesDataSource,
       ),
+      RepositoryProvider<LocalEventTemplateDataSource>.value(
+        value: _localEventTemplateDataSource,
+      ),
+      RepositoryProvider<LocalFoodTypeDataSource>.value(
+        value: _localFoodTypeDataSource,
+      ),
+      RepositoryProvider<LocalFoodStockDataSource>.value(
+        value: _localFoodStockDataSource,
+      ),
       RepositoryProvider<LocalProfileDataSource>.value(
         value: _localProfileDataSource,
       ),
@@ -174,23 +191,42 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<BreedingRepository>(
         create: (_) => InMemoryBreedingRepository(),
       ),
-      RepositoryProvider<EventRepository>(
-        create: (_) => InMemoryEventRepository(),
-      ),
-      RepositoryProvider<SpeciesRepository>(
-        create: (_) => SyncedSpeciesRepository(
+        RepositoryProvider<EventRepository>(
+          create: (_) => InMemoryEventRepository(),
+        ),
+        RepositoryProvider<SpeciesRepository>(
+          create: (_) => SyncedSpeciesRepository(
           remote: SupabaseSpeciesRepository(
             apiClient: _apiClient ??= ApiClient(),
           ),
           local: _localSpeciesDataSource,
-          offlineManager: OfflineSyncManager.instance,
+            offlineManager: OfflineSyncManager.instance,
+          ),
         ),
-      ),
-      RepositoryProvider<SupportRepository>(
-        create: (_) => InMemorySupportRepository(),
-      ),
-    ];
-  }
+        RepositoryProvider<EventTemplateRepository>(
+          create: (_) => SyncedEventTemplateRepository(
+            remote: SupabaseEventTemplateRepository(
+              apiClient: _apiClient ??= ApiClient(),
+            ),
+            local: _localEventTemplateDataSource,
+            offlineManager: OfflineSyncManager.instance,
+          ),
+        ),
+        RepositoryProvider<FoodInventoryRepository>(
+          create: (_) => SyncedFoodInventoryRepository(
+            remote: SupabaseFoodInventoryRepository(
+              apiClient: _apiClient ??= ApiClient(),
+            ),
+            localTypes: _localFoodTypeDataSource,
+            localStock: _localFoodStockDataSource,
+            offlineManager: OfflineSyncManager.instance,
+          ),
+        ),
+        RepositoryProvider<SupportRepository>(
+          create: (_) => InMemorySupportRepository(),
+        ),
+      ];
+    }
 
   List<RepositoryProvider<dynamic>> _buildSupabaseProviders() {
     final ApiExecutor apiClient = _apiClient ??= ApiClient();
@@ -205,15 +241,19 @@ class _KhodanAppState extends State<KhodanApp> {
     final EventRepository remoteEvent = SupabaseEventRepository(
       apiClient: apiClient,
     );
-    final SpeciesRepository remoteSpecies = SupabaseSpeciesRepository(
-      apiClient: apiClient,
-    );
-    final ProfileRepository remoteProfile = SupabaseProfileRepository(
-      apiClient: apiClient,
-    );
-    final SupportRepository remoteSupport = SupabaseSupportRepository(
-      apiClient: apiClient,
-    );
+      final SpeciesRepository remoteSpecies = SupabaseSpeciesRepository(
+        apiClient: apiClient,
+      );
+      final ProfileRepository remoteProfile = SupabaseProfileRepository(
+        apiClient: apiClient,
+      );
+      final SupportRepository remoteSupport = SupabaseSupportRepository(
+        apiClient: apiClient,
+      );
+    final EventTemplateRepository remoteTemplate =
+        SupabaseEventTemplateRepository(apiClient: apiClient);
+    final FoodInventoryRepository remoteInventory =
+        SupabaseFoodInventoryRepository(apiClient: apiClient);
 
     final AnimalRepository syncedAnimal = SyncedAnimalRepository(
       remote: remoteAnimal,
@@ -230,18 +270,31 @@ class _KhodanAppState extends State<KhodanApp> {
       local: _localEventDataSource,
       offlineManager: offlineManager,
     );
-    final SpeciesRepository syncedSpecies = SyncedSpeciesRepository(
-      remote: remoteSpecies,
-      local: _localSpeciesDataSource,
+      final SpeciesRepository syncedSpecies = SyncedSpeciesRepository(
+        remote: remoteSpecies,
+        local: _localSpeciesDataSource,
+        offlineManager: offlineManager,
+      );
+      final ProfileRepository syncedProfile = SyncedProfileRepository(
+        remote: remoteProfile,
+        local: _localProfileDataSource,
+        offlineManager: offlineManager,
+      );
+      final SupportRepository syncedSupport = SyncedSupportRepository(
+        remote: remoteSupport,
+        offlineManager: offlineManager,
+      );
+    final EventTemplateRepository syncedTemplate =
+        SyncedEventTemplateRepository(
+      remote: remoteTemplate,
+      local: _localEventTemplateDataSource,
       offlineManager: offlineManager,
     );
-    final ProfileRepository syncedProfile = SyncedProfileRepository(
-      remote: remoteProfile,
-      local: _localProfileDataSource,
-      offlineManager: offlineManager,
-    );
-    final SupportRepository syncedSupport = SyncedSupportRepository(
-      remote: remoteSupport,
+    final FoodInventoryRepository syncedInventory =
+        SyncedFoodInventoryRepository(
+      remote: remoteInventory,
+      localTypes: _localFoodTypeDataSource,
+      localStock: _localFoodStockDataSource,
       offlineManager: offlineManager,
     );
 
@@ -259,6 +312,15 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<LocalSpeciesDataSource>.value(
         value: _localSpeciesDataSource,
       ),
+      RepositoryProvider<LocalEventTemplateDataSource>.value(
+        value: _localEventTemplateDataSource,
+      ),
+      RepositoryProvider<LocalFoodTypeDataSource>.value(
+        value: _localFoodTypeDataSource,
+      ),
+      RepositoryProvider<LocalFoodStockDataSource>.value(
+        value: _localFoodStockDataSource,
+      ),
       RepositoryProvider<LocalProfileDataSource>.value(
         value: _localProfileDataSource,
       ),
@@ -267,6 +329,12 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<EventRepository>(create: (_) => syncedEvent),
       RepositoryProvider<SpeciesRepository>(create: (_) => syncedSpecies),
       RepositoryProvider<ProfileRepository>(create: (_) => syncedProfile),
+      RepositoryProvider<EventTemplateRepository>(
+        create: (_) => syncedTemplate,
+      ),
+      RepositoryProvider<FoodInventoryRepository>(
+        create: (_) => syncedInventory,
+      ),
       RepositoryProvider<SupportRepository>(create: (_) => syncedSupport),
     ];
   }

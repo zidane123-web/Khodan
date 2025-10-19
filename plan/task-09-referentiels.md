@@ -1,16 +1,25 @@
-# Referentiels especes et gestion d'inventaire
+﻿# Referentiels especes & inventaire - plan detaille
 
-## Objectif
-- Donner vie a `SettingsReferentialsScreen` en permettant de CRUD les species config (gestation, sevrage, schema evenements) et de gerer les modeles d'evenement (`event_templates`).
-- Integrer les tables `food_types` et `food_stock` ajoutees par la migration actuelle pour suivre le stock d'aliments.
-- Synchroniser ces referentiels avec les ecrans qui les consomment (AnimalForm, AddEvent, AddBreedingRecord).
+La mise en place complete du module referentiels couvre trois chantiers consequents. Pour garder un rythme maitrise, on decoupe la tache 09 en sous-taches executees successivement.
 
-## Livrables
-- Nouveaux Cubits/Repositories (ex. `SpeciesCubit`, `InventoryCubit`) et widgets de liste/edition.
-- Validation des formulaires (valeurs positives, champs obligatoires) et affichage des erreurs backend.
-- Tests widget/unitaires verifiant la bonne propagation des mises a jour vers les ecrans de creation d'animaux/evenements.
+## 09A - Gestion especes & modeles d'evenements (termine)
+- Transformer SettingsReferentialsScreen en hub fonctionnel : liste des especes (species_config) et CRUD en modal/dialog.
+- Gestion des templates d'evenements (event_templates) rattaches au profil courant (liste + creation/edition/suppression).
+- Ajout des repositories/cubits necessaires, validations (valeurs positives, nom unique par profil, schema d'evenements non vide).
+- Tests unitaires/widget assurant le bon enregistrement local + Supabase et la synchronisation hors-ligne.
 
-## Notes techniques
-- Anticiper la multi-espece: les species doivent etre filtrees par profil et selectionnables dans les formulaires.
-- Pour l'inventaire, fournir un resume (quantite restante, cout, consommation estimee) reutilisable dans le dashboard.
-- Mettre a jour les seeds/migrations pour disposer d'exemples pertinents lors des tests.
+## 09B - Inventaire aliments
+- Modelisation Dart/Drift des tables food_types et food_stock, repositories synchronises et cubit d'inventaire.
+- Interfaces Settings pour gerer types d'aliments et entrees de stock (quantite kg, cout, dates), avec validations (>=0, champs requis).
+- Generation d'un resume reutilisable (quantite disponible, cout total, consommation estimee) expose via un provider/cubit.
+- Tests couvrant l'inventaire (ajout, mise a jour, calculs de resume, synchro offline).
+
+## 09C - Integration transversale
+- Connexion des referentiels aux formulaires consommateurs : AnimalForm, AddEvent, AddBreedingRecord (selection especes, templates, aliments).
+- Mise a jour du dashboard pour afficher le resume inventaire et les species avec metriques cles.
+- Ajustement des seeds/migrations de test pour inclure exemples d'especes/templates/aliments.
+- Tests de bout en bout (widgets/formulaires) garantissant l'utilisation des referentiels et l'absence de regressions.
+
+> Prochaine etape : attaquer la sous-tache **09B** une fois les decisions de priorisation valides.
+
+

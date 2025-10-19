@@ -1,9 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/breeding_record.dart';
-import '../services/api_client.dart';
 import '../local/local_data_sources.dart';
+import '../models/breeding_record.dart';
+import '../models/sync_action.dart';
+import '../services/api_client.dart';
 import '../services/offline_sync_manager.dart';
+
 abstract class BreedingRepository {
   Future<List<BreedingRecord>> fetchBreedingRecords();
 
@@ -92,8 +94,9 @@ class InMemoryBreedingRepository implements BreedingRepository {
 
   @override
   Future<BreedingRecord> updateBreedingRecord(BreedingRecord record) async {
-    final int index =
-        _records.indexWhere((BreedingRecord element) => element.id == record.id);
+    final int index = _records.indexWhere(
+      (BreedingRecord element) => element.id == record.id,
+    );
     if (index == -1) {
       throw StateError('Saillie ${record.id} introuvable');
     }
@@ -109,58 +112,47 @@ class InMemoryBreedingRepository implements BreedingRepository {
 
 class SupabaseBreedingRepository implements BreedingRepository {
   SupabaseBreedingRepository({ApiExecutor? apiClient})
-      : _api = apiClient ?? ApiClient();
+    : _api = apiClient ?? ApiClient();
 
   final ApiExecutor _api;
 
   @override
   Future<List<BreedingRecord>> fetchBreedingRecords() async {
-    final List<dynamic> data = await _api.run(
-      (SupabaseClient client) {
-        return client.from('breeding_records').select();
-      },
-      label: 'breeding.fetch',
-    );
+    final List<dynamic> data = await _api.run((SupabaseClient client) {
+      return client.from('breeding_records').select();
+    }, label: 'breeding.fetch');
     return data
-        .map((dynamic row) =>
-            BreedingRecord.fromJson(row as Map<String, dynamic>))
+        .map(
+          (dynamic row) => BreedingRecord.fromJson(row as Map<String, dynamic>),
+        )
         .toList();
   }
 
   @override
   Future<BreedingRecord> createBreedingRecord(BreedingRecord record) async {
-    final List<dynamic> response = await _api.run(
-      (SupabaseClient client) {
-        return client.from('breeding_records').insert(record.toJson()).select();
-      },
-      label: 'breeding.create',
-    );
+    final List<dynamic> response = await _api.run((SupabaseClient client) {
+      return client.from('breeding_records').insert(record.toJson()).select();
+    }, label: 'breeding.create');
     return BreedingRecord.fromJson(response.first as Map<String, dynamic>);
   }
 
   @override
   Future<BreedingRecord> updateBreedingRecord(BreedingRecord record) async {
-    final List<dynamic> response = await _api.run(
-      (SupabaseClient client) {
-        return client
-            .from('breeding_records')
-            .update(record.toJson())
-            .eq('id', record.id)
-            .select();
-      },
-      label: 'breeding.update',
-    );
+    final List<dynamic> response = await _api.run((SupabaseClient client) {
+      return client
+          .from('breeding_records')
+          .update(record.toJson())
+          .eq('id', record.id)
+          .select();
+    }, label: 'breeding.update');
     return BreedingRecord.fromJson(response.first as Map<String, dynamic>);
   }
 
   @override
   Future<void> deleteBreedingRecord(String id) {
-    return _api.run(
-      (SupabaseClient client) {
-        return client.from('breeding_records').delete().eq('id', id);
-      },
-      label: 'breeding.delete',
-    );
+    return _api.run((SupabaseClient client) {
+      return client.from('breeding_records').delete().eq('id', id);
+    }, label: 'breeding.delete');
   }
 }
 
@@ -169,13 +161,16 @@ class SyncedBreedingRepository implements BreedingRepository {
     required BreedingRepository remote,
     required LocalBreedingDataSource local,
     OfflineSyncManager? offlineManager,
-  })  : _remote = remote,
-        _local = local,
-        _offlineManager = offlineManager ?? OfflineSyncManager.instance;
+  }) : _remote = remote,
+       _local = local,
+       _offlineManager = offlineManager ?? OfflineSyncManager.instance {
+    _registerHandlers();
+  }
 
   final BreedingRepository _remote;
   final LocalBreedingDataSource _local;
   final OfflineSyncManager _offlineManager;
+  static bool _handlersRegistered = false;
   String? get _currentProfileId {
     try {
       return Supabase.instance.client.auth.currentUser?.id;
@@ -186,38 +181,53 @@ class SyncedBreedingRepository implements BreedingRepository {
 
   @override
   Future<List<BreedingRecord>> fetchBreedingRecords() async {
-      if (_offlineManager.isOffline.value) {
-        return _local.fetchBreedingRecords();
-      }
+    if (_offlineManager.isOffline.value) {
+      return _local.fetchBreedingRecords();
+    }
 
-      try {
-        final List<BreedingRecord> records =
-            await _remote.fetchBreedingRecords();
-        if (records.isNotEmpty) {
-          await _local.replaceBreedingRecords(
-            records,
-            profileId: _currentProfileId,
-          );
-        } else if (_currentProfileId != null) {
-          await _local.replaceBreedingRecords(
-            const <BreedingRecord>[],
-            profileId: _currentProfileId,
-          );
-        }
-        return records;
-      } catch (error) {
-        final List<BreedingRecord> cached = await _local.fetchBreedingRecords();
-        if (cached.isNotEmpty) {
-          return cached;
-        }
-        rethrow;
+    try {
+      final List<BreedingRecord> records = await _remote.fetchBreedingRecords();
+      if (records.isNotEmpty) {
+        await _local.replaceBreedingRecords(
+          records,
+          profileId: _currentProfileId,
+        );
+      } else if (_currentProfileId != null) {
+        await _local.replaceBreedingRecords(
+          const <BreedingRecord>[],
+          profileId: _currentProfileId,
+        );
       }
+      return records;
+    } catch (error) {
+      final List<BreedingRecord> cached = await _local.fetchBreedingRecords();
+      if (cached.isNotEmpty) {
+        return cached;
+      }
+      rethrow;
+    }
   }
 
   @override
   Future<BreedingRecord> createBreedingRecord(BreedingRecord record) async {
     if (_offlineManager.isOffline.value) {
       await _local.upsertBreedingRecord(record, syncState: kSyncStatePending);
+      await _offlineManager.enqueueAction(
+        SyncActionRequest(
+          type: SyncActionType.createBreeding,
+          rollbackType: SyncActionType.deleteBreeding,
+          description: 'Créer saillie ${record.id}',
+          payload: <String, dynamic>{'record': record.toJson()},
+          rollbackPayload: <String, dynamic>{'record_id': record.id},
+          priority: 90,
+          execute: () async {
+            final BreedingRecord created = await _remote.createBreedingRecord(
+              record,
+            );
+            await _local.upsertBreedingRecord(created);
+          },
+        ),
+      );
       return record;
     }
 
@@ -229,7 +239,30 @@ class SyncedBreedingRepository implements BreedingRepository {
   @override
   Future<BreedingRecord> updateBreedingRecord(BreedingRecord record) async {
     if (_offlineManager.isOffline.value) {
+      final BreedingRecord? previous = await _local.fetchBreedingRecordById(
+        record.id,
+      );
       await _local.upsertBreedingRecord(record, syncState: kSyncStatePending);
+      await _offlineManager.enqueueAction(
+        SyncActionRequest(
+          type: SyncActionType.updateBreeding,
+          rollbackType: previous == null
+              ? SyncActionType.deleteBreeding
+              : SyncActionType.updateBreeding,
+          description: 'Mettre à jour saillie ${record.id}',
+          payload: <String, dynamic>{'record': record.toJson()},
+          rollbackPayload: previous == null
+              ? <String, dynamic>{'record_id': record.id}
+              : <String, dynamic>{'record': previous.toJson()},
+          priority: 70,
+          execute: () async {
+            final BreedingRecord updated = await _remote.updateBreedingRecord(
+              record,
+            );
+            await _local.upsertBreedingRecord(updated);
+          },
+        ),
+      );
       return record;
     }
 
@@ -241,10 +274,92 @@ class SyncedBreedingRepository implements BreedingRepository {
   @override
   Future<void> deleteBreedingRecord(String id) async {
     if (_offlineManager.isOffline.value) {
+      final BreedingRecord? snapshot = await _local.fetchBreedingRecordById(id);
       await _local.deleteBreedingRecord(id);
+      await _offlineManager.enqueueAction(
+        SyncActionRequest(
+          type: SyncActionType.deleteBreeding,
+          rollbackType: snapshot == null ? null : SyncActionType.createBreeding,
+          description: 'Supprimer saillie $id',
+          payload: <String, dynamic>{'record_id': id},
+          rollbackPayload: snapshot == null
+              ? null
+              : <String, dynamic>{'record': snapshot.toJson()},
+          priority: 60,
+          execute: () async {
+            await _remote.deleteBreedingRecord(id);
+            await _local.deleteBreedingRecord(id);
+          },
+        ),
+      );
       return;
     }
     await _remote.deleteBreedingRecord(id);
     await _local.deleteBreedingRecord(id);
+  }
+
+  void _registerHandlers() {
+    if (_handlersRegistered) {
+      return;
+    }
+    _handlersRegistered = true;
+
+    _offlineManager.registerHandler(
+      SyncActionType.createBreeding,
+      (QueuedSyncAction action) async {
+        final Map<String, dynamic> raw =
+            action.payload['record'] as Map<String, dynamic>;
+        final BreedingRecord record = BreedingRecord.fromJson(raw);
+        final BreedingRecord created = await _remote.createBreedingRecord(
+          record,
+        );
+        await _local.upsertBreedingRecord(created);
+      },
+      rollback: (QueuedSyncAction action, Object _) async {
+        final String? id = action.rollbackPayload?['record_id'] as String?;
+        if (id != null) {
+          await _local.deleteBreedingRecord(id);
+        }
+      },
+    );
+
+    _offlineManager.registerHandler(
+      SyncActionType.updateBreeding,
+      (QueuedSyncAction action) async {
+        final Map<String, dynamic> raw =
+            action.payload['record'] as Map<String, dynamic>;
+        final BreedingRecord record = BreedingRecord.fromJson(raw);
+        final BreedingRecord updated = await _remote.updateBreedingRecord(
+          record,
+        );
+        await _local.upsertBreedingRecord(updated);
+      },
+      rollback: (QueuedSyncAction action, Object _) async {
+        final Map<String, dynamic>? raw =
+            action.rollbackPayload?['record'] as Map<String, dynamic>?;
+        if (raw != null) {
+          await _local.upsertBreedingRecord(
+            BreedingRecord.fromJson(raw),
+            syncState: kSyncStateSynced,
+          );
+        }
+      },
+    );
+
+    _offlineManager.registerHandler(
+      SyncActionType.deleteBreeding,
+      (QueuedSyncAction action) async {
+        final String id = action.payload['record_id'] as String;
+        await _remote.deleteBreedingRecord(id);
+        await _local.deleteBreedingRecord(id);
+      },
+      rollback: (QueuedSyncAction action, Object _) async {
+        final Map<String, dynamic>? raw =
+            action.rollbackPayload?['record'] as Map<String, dynamic>?;
+        if (raw != null) {
+          await _local.upsertBreedingRecord(BreedingRecord.fromJson(raw));
+        }
+      },
+    );
   }
 }

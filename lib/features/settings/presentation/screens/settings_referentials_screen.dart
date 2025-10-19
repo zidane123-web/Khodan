@@ -138,6 +138,8 @@ class _ReferentialsView extends StatelessWidget {
             children: const <Widget>[
               _SpeciesSection(),
               SizedBox(height: 24),
+              _InventorySection(),
+              SizedBox(height: 24),
               _EventTemplatesSection(),
             ],
           ),
@@ -1129,7 +1131,7 @@ Future<void> _showFoodStockDialog(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         DropdownButtonFormField<int>(
-                          value: selectedTypeId,
+                          initialValue: selectedTypeId,
                           decoration: const InputDecoration(
                             labelText: 'Type d\'aliment',
                           ),

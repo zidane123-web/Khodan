@@ -40,35 +40,37 @@ class AnimalFilters extends Equatable {
       searchTerm: searchTerm ?? this.searchTerm,
       sex: clearSex ? null : (sex ?? this.sex),
       origin: clearOrigin ? null : (origin ?? this.origin),
-      cageNumber:
-          clearCageNumber ? null : (cageNumber ?? this.cageNumber),
+      cageNumber: clearCageNumber ? null : (cageNumber ?? this.cageNumber),
     );
   }
 
   bool matches(Animal animal) {
     final String normalizedQuery = searchTerm.trim().toLowerCase();
-    final bool matchesSearch = normalizedQuery.isEmpty ||
+    final bool matchesSearch =
+        normalizedQuery.isEmpty ||
         <String?>[
-          animal.tagId,
-          animal.name,
-          animal.id,
-          animal.origin,
-          animal.cageNumber,
-        ]
+              animal.tagId,
+              animal.name,
+              animal.id,
+              animal.origin,
+              animal.cageNumber,
+            ]
             .where((String? value) => value != null)
             .map((String? value) => value!.toLowerCase())
             .any((String value) => value.contains(normalizedQuery));
 
     final bool matchesSex =
         sex == null || animal.sex.toLowerCase() == sex!.toLowerCase();
-    final bool matchesOrigin = origin == null ||
+    final bool matchesOrigin =
+        origin == null ||
         (animal.origin != null &&
             animal.origin!.toLowerCase().contains(origin!.toLowerCase()));
-    final bool matchesCage = cageNumber == null ||
+    final bool matchesCage =
+        cageNumber == null ||
         (animal.cageNumber != null &&
-            animal.cageNumber!
-                .toLowerCase()
-                .contains(cageNumber!.toLowerCase()));
+            animal.cageNumber!.toLowerCase().contains(
+              cageNumber!.toLowerCase(),
+            ));
 
     return matchesSearch && matchesSex && matchesOrigin && matchesCage;
   }
@@ -109,8 +111,13 @@ class AnimalState extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      <Object?>[status, animals, allAnimals, filters, errorMessage];
+  List<Object?> get props => <Object?>[
+    status,
+    animals,
+    allAnimals,
+    filters,
+    errorMessage,
+  ];
 }
 
 class AnimalCubit extends Cubit<AnimalState> {
@@ -118,9 +125,9 @@ class AnimalCubit extends Cubit<AnimalState> {
     this._repository, {
     OfflineSyncManager? offlineManager,
     LocalAnimalDataSource? localDataSource,
-  })  : _offlineManager = offlineManager ?? OfflineSyncManager.instance,
-        _localDataSource = localDataSource,
-        super(const AnimalState());
+  }) : _offlineManager = offlineManager ?? OfflineSyncManager.instance,
+       _localDataSource = localDataSource,
+       super(const AnimalState());
 
   final AnimalRepository _repository;
   final OfflineSyncManager _offlineManager;
@@ -173,8 +180,9 @@ class AnimalCubit extends Cubit<AnimalState> {
     }
     emit(state.copyWith(status: AnimalStatus.loading));
     try {
-      final List<Animal> animals =
-          await _repository.fetchAnimals(speciesId: speciesId);
+      final List<Animal> animals = await _repository.fetchAnimals(
+        speciesId: speciesId,
+      );
       await _localDataSource?.replaceAnimals(
         animals,
         profileId: _currentProfileId,
@@ -218,21 +226,10 @@ class AnimalCubit extends Cubit<AnimalState> {
 
   Future<void> createAnimal(Animal animal) async {
     if (_offlineManager.isOffline.value) {
+      final Animal created = await _repository.createAnimal(animal);
       final List<Animal> allAnimals = List<Animal>.from(state.allAnimals)
-        ..add(animal);
+        ..add(created);
       allAnimals.sort((Animal a, Animal b) => a.tagId.compareTo(b.tagId));
-      await _localDataSource?.upsertAnimal(
-        animal,
-        syncState: kSyncStatePending,
-      );
-      _offlineManager.enqueue(
-        QueuedSyncAction(
-          description: 'Créer ${animal.tagId}',
-          execute: () async {
-            await _repository.createAnimal(animal);
-          },
-        ),
-      );
       emit(
         state.copyWith(
           status: AnimalStatus.success,
@@ -259,33 +256,28 @@ class AnimalCubit extends Cubit<AnimalState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(status: AnimalStatus.failure, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          status: AnimalStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
   Future<void> updateAnimal(Animal animal) async {
     if (_offlineManager.isOffline.value) {
       final List<Animal> allAnimals = List<Animal>.from(state.allAnimals);
-      final int index =
-          allAnimals.indexWhere((Animal element) => element.id == animal.id);
+      final Animal updated = await _repository.updateAnimal(animal);
+      final int index = allAnimals.indexWhere(
+        (Animal element) => element.id == updated.id,
+      );
       if (index == -1) {
-        allAnimals.add(animal);
+        allAnimals.add(updated);
       } else {
-        allAnimals[index] = animal;
+        allAnimals[index] = updated;
       }
       allAnimals.sort((Animal a, Animal b) => a.tagId.compareTo(b.tagId));
-      await _localDataSource?.upsertAnimal(
-        animal,
-        syncState: kSyncStatePending,
-      );
-      _offlineManager.enqueue(
-        QueuedSyncAction(
-          description: 'Mettre à jour ${animal.tagId}',
-          execute: () async {
-            await _repository.updateAnimal(animal);
-          },
-        ),
-      );
       emit(
         state.copyWith(
           status: AnimalStatus.success,
@@ -300,8 +292,9 @@ class AnimalCubit extends Cubit<AnimalState> {
     try {
       final Animal updated = await _repository.updateAnimal(animal);
       final List<Animal> allAnimals = List<Animal>.from(state.allAnimals);
-      final int index =
-          allAnimals.indexWhere((Animal element) => element.id == updated.id);
+      final int index = allAnimals.indexWhere(
+        (Animal element) => element.id == updated.id,
+      );
       if (index == -1) {
         allAnimals.add(updated);
       } else {
@@ -318,23 +311,21 @@ class AnimalCubit extends Cubit<AnimalState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(status: AnimalStatus.failure, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          status: AnimalStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
   Future<void> deleteAnimal(String id) async {
     if (_offlineManager.isOffline.value) {
-      final List<Animal> allAnimals =
-          state.allAnimals.where((Animal animal) => animal.id != id).toList();
-      await _localDataSource?.deleteAnimal(id);
-      _offlineManager.enqueue(
-        QueuedSyncAction(
-          description: 'Supprimer $id',
-          execute: () async {
-            await _repository.deleteAnimal(id);
-          },
-        ),
-      );
+      await _repository.deleteAnimal(id);
+      final List<Animal> allAnimals = state.allAnimals
+          .where((Animal animal) => animal.id != id)
+          .toList();
       emit(
         state.copyWith(
           status: AnimalStatus.success,
@@ -349,8 +340,9 @@ class AnimalCubit extends Cubit<AnimalState> {
     try {
       await _repository.deleteAnimal(id);
       await _localDataSource?.deleteAnimal(id);
-      final List<Animal> allAnimals =
-          state.allAnimals.where((Animal animal) => animal.id != id).toList();
+      final List<Animal> allAnimals = state.allAnimals
+          .where((Animal animal) => animal.id != id)
+          .toList();
       emit(
         state.copyWith(
           status: AnimalStatus.success,
@@ -360,7 +352,12 @@ class AnimalCubit extends Cubit<AnimalState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(status: AnimalStatus.failure, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          status: AnimalStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -380,8 +377,9 @@ class AnimalCubit extends Cubit<AnimalState> {
       searchTerm: filters.searchTerm,
       sex: filters.sex,
       origin: filters.origin?.isEmpty == true ? null : filters.origin,
-      cageNumber:
-          filters.cageNumber?.isEmpty == true ? null : filters.cageNumber,
+      cageNumber: filters.cageNumber?.isEmpty == true
+          ? null
+          : filters.cageNumber,
     );
     emit(
       state.copyWith(

@@ -1,10 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../local/local_data_sources.dart';
 import '../models/animal_event.dart';
 import '../models/event.dart';
-import '../local/local_data_sources.dart';
-import '../services/offline_sync_manager.dart';
+import '../models/sync_action.dart';
 import '../services/api_client.dart';
+import '../services/offline_sync_manager.dart';
+
 abstract class EventRepository {
   Future<List<LivestockEvent>> fetchEvents({DateTime? start, DateTime? end});
 
@@ -88,25 +90,51 @@ class InMemoryEventRepository implements EventRepository {
   ];
 
   final List<AnimalEventLink> _links = <AnimalEventLink>[
-    const AnimalEventLink(eventId: 'event-001', animalId: 'doe-001', role: 'subject'),
-    const AnimalEventLink(eventId: 'event-002', animalId: 'buck-001', role: 'subject'),
-    const AnimalEventLink(eventId: 'event-003', animalId: 'doe-002', role: 'subject'),
-    const AnimalEventLink(eventId: 'event-004', animalId: 'doe-001', role: 'subject'),
-    const AnimalEventLink(eventId: 'event-004', animalId: 'doe-002', role: 'subject'),
+    const AnimalEventLink(
+      eventId: 'event-001',
+      animalId: 'doe-001',
+      role: 'subject',
+    ),
+    const AnimalEventLink(
+      eventId: 'event-002',
+      animalId: 'buck-001',
+      role: 'subject',
+    ),
+    const AnimalEventLink(
+      eventId: 'event-003',
+      animalId: 'doe-002',
+      role: 'subject',
+    ),
+    const AnimalEventLink(
+      eventId: 'event-004',
+      animalId: 'doe-001',
+      role: 'subject',
+    ),
+    const AnimalEventLink(
+      eventId: 'event-004',
+      animalId: 'doe-002',
+      role: 'subject',
+    ),
   ];
 
   @override
-  Future<List<LivestockEvent>> fetchEvents({DateTime? start, DateTime? end}) async {
-    final List<LivestockEvent> filtered = _events.where((LivestockEvent event) {
-      if (start != null && event.eventDate.isBefore(start)) {
-        return false;
-      }
-      if (end != null && event.eventDate.isAfter(end)) {
-        return false;
-      }
-      return true;
-    }).toList()
-      ..sort((LivestockEvent a, LivestockEvent b) => a.eventDate.compareTo(b.eventDate));
+  Future<List<LivestockEvent>> fetchEvents({
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    final List<LivestockEvent> filtered =
+        _events.where((LivestockEvent event) {
+          if (start != null && event.eventDate.isBefore(start)) {
+            return false;
+          }
+          if (end != null && event.eventDate.isAfter(end)) {
+            return false;
+          }
+          return true;
+        }).toList()..sort(
+          (LivestockEvent a, LivestockEvent b) =>
+              a.eventDate.compareTo(b.eventDate),
+        );
     return filtered;
   }
 
@@ -136,41 +164,42 @@ class InMemoryEventRepository implements EventRepository {
 
 class SupabaseEventRepository implements EventRepository {
   SupabaseEventRepository({ApiExecutor? apiClient})
-      : _api = apiClient ?? ApiClient();
+    : _api = apiClient ?? ApiClient();
 
   final ApiExecutor _api;
 
   @override
-  Future<List<LivestockEvent>> fetchEvents({DateTime? start, DateTime? end}) async {
-    final List<dynamic> data = await _api.run(
-      (SupabaseClient client) {
-        dynamic query = client.from('events').select();
-        if (start != null) {
-          query = query.gte('event_date', start.toIso8601String());
-        }
-        if (end != null) {
-          query = query.lte('event_date', end.toIso8601String());
-        }
-        return query.order('event_date');
-      },
-      label: 'events.fetch',
-    );
+  Future<List<LivestockEvent>> fetchEvents({
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    final List<dynamic> data = await _api.run((SupabaseClient client) {
+      dynamic query = client.from('events').select();
+      if (start != null) {
+        query = query.gte('event_date', start.toIso8601String());
+      }
+      if (end != null) {
+        query = query.lte('event_date', end.toIso8601String());
+      }
+      return query.order('event_date');
+    }, label: 'events.fetch');
     return data
-        .map((dynamic row) => LivestockEvent.fromJson(row as Map<String, dynamic>))
+        .map(
+          (dynamic row) => LivestockEvent.fromJson(row as Map<String, dynamic>),
+        )
         .toList();
   }
 
   @override
   Future<List<AnimalEventLink>> fetchEventLinks() async {
-    final List<dynamic> data = await _api.run(
-      (SupabaseClient client) {
-        return client.from('animal_events').select();
-      },
-      label: 'events.fetchLinks',
-    );
+    final List<dynamic> data = await _api.run((SupabaseClient client) {
+      return client.from('animal_events').select();
+    }, label: 'events.fetchLinks');
     return data
-        .map((dynamic row) =>
-            AnimalEventLink.fromJson(row as Map<String, dynamic>))
+        .map(
+          (dynamic row) =>
+              AnimalEventLink.fromJson(row as Map<String, dynamic>),
+        )
         .toList();
   }
 
@@ -179,27 +208,24 @@ class SupabaseEventRepository implements EventRepository {
     LivestockEvent event, {
     List<AnimalEventLink> links = const <AnimalEventLink>[],
   }) async {
-    return _api.run<LivestockEvent>(
-      (SupabaseClient client) async {
-        final List<dynamic> response =
-            await client.from('events').insert(event.toJson()).select();
-        final LivestockEvent createdEvent =
-            LivestockEvent.fromJson(response.first as Map<String, dynamic>);
+    return _api.run<LivestockEvent>((SupabaseClient client) async {
+      final List<dynamic> response = await client
+          .from('events')
+          .insert(event.toJson())
+          .select();
+      final LivestockEvent createdEvent = LivestockEvent.fromJson(
+        response.first as Map<String, dynamic>,
+      );
 
-        if (links.isNotEmpty) {
-          await client.from('animal_events').insert(<Map<String, dynamic>>[
-            for (final AnimalEventLink link in links)
-              <String, dynamic>{
-                ...link.toJson(),
-                'event_id': createdEvent.id,
-              },
-          ]);
-        }
+      if (links.isNotEmpty) {
+        await client.from('animal_events').insert(<Map<String, dynamic>>[
+          for (final AnimalEventLink link in links)
+            <String, dynamic>{...link.toJson(), 'event_id': createdEvent.id},
+        ]);
+      }
 
-        return createdEvent;
-      },
-      label: 'events.create',
-    );
+      return createdEvent;
+    }, label: 'events.create');
   }
 }
 
@@ -208,25 +234,33 @@ class SyncedEventRepository implements EventRepository {
     required EventRepository remote,
     required LocalEventDataSource local,
     OfflineSyncManager? offlineManager,
-  })  : _remote = remote,
-        _local = local,
-        _offlineManager = offlineManager ?? OfflineSyncManager.instance;
+  }) : _remote = remote,
+       _local = local,
+       _offlineManager = offlineManager ?? OfflineSyncManager.instance {
+    _registerHandlers();
+  }
 
   final EventRepository _remote;
   final LocalEventDataSource _local;
   final OfflineSyncManager _offlineManager;
+  static bool _handlersRegistered = false;
 
   List<AnimalEventLink>? _cachedLinks;
 
   @override
-  Future<List<LivestockEvent>> fetchEvents({DateTime? start, DateTime? end}) async {
+  Future<List<LivestockEvent>> fetchEvents({
+    DateTime? start,
+    DateTime? end,
+  }) async {
     if (_offlineManager.isOffline.value) {
       return _local.fetchEvents(start: start, end: end);
     }
 
     try {
-      final List<LivestockEvent> events =
-          await _remote.fetchEvents(start: start, end: end);
+      final List<LivestockEvent> events = await _remote.fetchEvents(
+        start: start,
+        end: end,
+      );
       List<AnimalEventLink>? links;
       try {
         links = await _remote.fetchEventLinks();
@@ -242,8 +276,10 @@ class SyncedEventRepository implements EventRepository {
       }
       return events;
     } catch (error) {
-      final List<LivestockEvent> cached =
-          await _local.fetchEvents(start: start, end: end);
+      final List<LivestockEvent> cached = await _local.fetchEvents(
+        start: start,
+        end: end,
+      );
       if (cached.isNotEmpty) {
         return cached;
       }
@@ -278,6 +314,28 @@ class SyncedEventRepository implements EventRepository {
         links: links,
         syncState: kSyncStatePending,
       );
+      await _offlineManager.enqueueAction(
+        SyncActionRequest(
+          type: SyncActionType.createEvent,
+          rollbackType: SyncActionType.deleteEvent,
+          description: 'Créer évènement ${event.eventType}',
+          payload: <String, dynamic>{
+            'event': event.toJson(),
+            'links': <Map<String, dynamic>>[
+              for (final AnimalEventLink link in links) link.toJson(),
+            ],
+          },
+          rollbackPayload: <String, dynamic>{'event_id': event.id},
+          priority: 75,
+          execute: () async {
+            final LivestockEvent created = await _remote.createEvent(
+              event,
+              links: links,
+            );
+            await _local.upsertEvent(created, links: links);
+          },
+        ),
+      );
       return event;
     }
 
@@ -287,5 +345,38 @@ class SyncedEventRepository implements EventRepository {
     );
     await _local.upsertEvent(created, links: links);
     return created;
+  }
+
+  void _registerHandlers() {
+    if (_handlersRegistered) {
+      return;
+    }
+    _handlersRegistered = true;
+
+    _offlineManager.registerHandler(
+      SyncActionType.createEvent,
+      (QueuedSyncAction action) async {
+        final Map<String, dynamic> rawEvent =
+            action.payload['event'] as Map<String, dynamic>;
+        final List<dynamic> rawLinks =
+            action.payload['links'] as List<dynamic>? ?? <dynamic>[];
+        final LivestockEvent event = LivestockEvent.fromJson(rawEvent);
+        final List<AnimalEventLink> links = <AnimalEventLink>[
+          for (final dynamic item in rawLinks)
+            AnimalEventLink.fromJson(item as Map<String, dynamic>),
+        ];
+        final LivestockEvent created = await _remote.createEvent(
+          event,
+          links: links,
+        );
+        await _local.upsertEvent(created, links: links);
+      },
+      rollback: (QueuedSyncAction action, Object _) async {
+        final String? eventId = action.rollbackPayload?['event_id'] as String?;
+        if (eventId != null) {
+          await _local.deleteEvent(eventId);
+        }
+      },
+    );
   }
 }

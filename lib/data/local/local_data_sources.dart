@@ -6,6 +6,9 @@ import '../models/animal.dart';
 import '../models/animal_event.dart';
 import '../models/breeding_record.dart';
 import '../models/event.dart';
+import '../models/event_template.dart';
+import '../models/food_stock.dart';
+import '../models/food_type.dart';
 import '../models/profile.dart';
 import '../models/species_config.dart';
 import '../models/sync_action.dart';
@@ -476,6 +479,12 @@ class LocalSpeciesDataSource {
     });
   }
 
+  Future<void> deleteSpeciesConfig(int id) async {
+    await (_db.delete(_db.speciesConfigsTable)
+          ..where((SpeciesConfigsTable tbl) => tbl.id.equals(id)))
+        .go();
+  }
+
   Future<List<SpeciesConfig>> fetchSpecies(String profileId) async {
     final List<SpeciesConfigsTableData> rows =
         await (_db.select(_db.speciesConfigsTable)
@@ -496,6 +505,280 @@ class LocalSpeciesDataSource {
     final Map<String, dynamic> json =
         jsonDecode(row.payload) as Map<String, dynamic>;
     return SpeciesConfig.fromJson(json);
+  }
+}
+
+class LocalEventTemplateDataSource {
+  LocalEventTemplateDataSource(this._db);
+
+  final LocalDatabase _db;
+
+  Future<void> replaceTemplates(
+    List<EventTemplate> templates, {
+    required String profileId,
+    }) async {
+      await _db.transaction(() async {
+        if (templates.isEmpty) {
+        await (_db.delete(_db.eventTemplatesTable)
+              ..where(
+                (EventTemplatesTable tbl) => tbl.profileId.equals(profileId),
+              ))
+            .go();
+        return;
+      }
+      final List<int> ids =
+          templates.map((EventTemplate template) => template.id).toList();
+      await (_db.delete(_db.eventTemplatesTable)
+            ..where(
+              (EventTemplatesTable tbl) =>
+                  tbl.profileId.equals(profileId) &
+                  (ids.isEmpty
+                      ? const Constant<bool>(true)
+                      : tbl.id.isNotIn(ids)),
+            ))
+          .go();
+        await upsertTemplates(
+          templates,
+          syncState: kSyncStateSynced,
+        );
+      });
+  }
+
+  Future<void> upsertTemplates(
+    List<EventTemplate> templates, {
+    String syncState = kSyncStateSynced,
+  }) async {
+    if (templates.isEmpty) {
+      return;
+    }
+    await _db.batch((Batch batch) {
+      batch.insertAllOnConflictUpdate(
+        _db.eventTemplatesTable,
+        templates.map((EventTemplate template) {
+          return EventTemplatesTableCompanion(
+            id: Value(template.id),
+            profileId: Value(template.userId),
+            templateName: Value(template.templateName),
+            eventType: Value(template.eventType),
+            payload: Value(jsonEncode(template.toJson())),
+            createdAt: Value(template.createdAt),
+            updatedAt: Value(template.updatedAt),
+            syncState: Value(syncState),
+          );
+        }).toList(),
+      );
+    });
+  }
+
+  Future<EventTemplate?> fetchTemplateById(int id) async {
+    final EventTemplatesTableData? row =
+        await (_db.select(_db.eventTemplatesTable)
+              ..where((EventTemplatesTable tbl) => tbl.id.equals(id)))
+            .getSingleOrNull();
+    return row == null ? null : _mapTemplate(row);
+  }
+
+  Future<void> deleteTemplate(int id) async {
+    await (_db.delete(_db.eventTemplatesTable)
+          ..where((EventTemplatesTable tbl) => tbl.id.equals(id)))
+        .go();
+  }
+
+  Future<List<EventTemplate>> fetchTemplates(String profileId) async {
+    final List<EventTemplatesTableData> rows =
+        await (_db.select(_db.eventTemplatesTable)
+              ..where(
+                (EventTemplatesTable tbl) => tbl.profileId.equals(profileId),
+              ))
+            .get();
+    final List<EventTemplate> templates =
+        rows.map(_mapTemplate).toList();
+    templates.sort(
+      (EventTemplate a, EventTemplate b) =>
+          a.templateName.compareTo(b.templateName),
+    );
+    return templates;
+  }
+
+  EventTemplate _mapTemplate(EventTemplatesTableData row) {
+    final Map<String, dynamic> json =
+        jsonDecode(row.payload) as Map<String, dynamic>;
+    return EventTemplate.fromJson(json);
+  }
+}
+
+class LocalFoodTypeDataSource {
+  LocalFoodTypeDataSource(this._db);
+
+  final LocalDatabase _db;
+
+  Future<void> replaceFoodTypes(
+    List<FoodType> types, {
+    required String profileId,
+  }) async {
+    await _db.transaction(() async {
+      final List<int> ids = types.map((FoodType type) => type.id).toList();
+      await (_db.delete(_db.foodTypesTable)
+            ..where(
+              (FoodTypesTable tbl) =>
+                  tbl.profileId.equals(profileId) &
+                  (ids.isEmpty
+                      ? const Constant<bool>(true)
+                      : tbl.id.isNotIn(ids)),
+            ))
+          .go();
+      if (types.isEmpty) {
+        return;
+      }
+      await upsertFoodTypes(types, syncState: kSyncStateSynced);
+    });
+  }
+
+  Future<void> upsertFoodTypes(
+    List<FoodType> types, {
+    String syncState = kSyncStateSynced,
+  }) async {
+    if (types.isEmpty) {
+      return;
+    }
+    await _db.batch((Batch batch) {
+      batch.insertAllOnConflictUpdate(
+        _db.foodTypesTable,
+        types.map((FoodType type) {
+          return FoodTypesTableCompanion(
+            id: Value(type.id),
+            profileId: Value(type.profileId),
+            name: Value(type.name),
+            payload: Value(jsonEncode(type.toJson())),
+            createdAt: Value(type.createdAt),
+            updatedAt: Value(type.updatedAt),
+            syncState: Value(syncState),
+          );
+        }).toList(),
+      );
+    });
+  }
+
+  Future<void> deleteFoodType(int id) async {
+    await (_db.delete(_db.foodTypesTable)
+          ..where((FoodTypesTable tbl) => tbl.id.equals(id)))
+        .go();
+  }
+
+  Future<List<FoodType>> fetchFoodTypes(String profileId) async {
+    final List<FoodTypesTableData> rows =
+        await (_db.select(_db.foodTypesTable)
+              ..where((FoodTypesTable tbl) => tbl.profileId.equals(profileId)))
+            .get();
+    final List<FoodType> types = rows.map(_mapFoodType).toList();
+    types.sort(
+      (FoodType a, FoodType b) => a.name.toLowerCase().compareTo(
+            b.name.toLowerCase(),
+          ),
+    );
+    return types;
+  }
+
+  Future<FoodType?> fetchFoodTypeById(int id) async {
+    final FoodTypesTableData? row =
+        await (_db.select(_db.foodTypesTable)
+              ..where((FoodTypesTable tbl) => tbl.id.equals(id)))
+            .getSingleOrNull();
+    return row == null ? null : _mapFoodType(row);
+  }
+
+  FoodType _mapFoodType(FoodTypesTableData row) {
+    final Map<String, dynamic> json =
+        jsonDecode(row.payload) as Map<String, dynamic>;
+    return FoodType.fromJson(json);
+  }
+}
+
+class LocalFoodStockDataSource {
+  LocalFoodStockDataSource(this._db);
+
+  final LocalDatabase _db;
+
+  Future<void> replaceEntries(
+    List<FoodStockEntry> entries, {
+    required String profileId,
+  }) async {
+    await _db.transaction(() async {
+      final List<int> ids =
+          entries.map((FoodStockEntry entry) => entry.id).toList();
+      await (_db.delete(_db.foodStockTable)
+            ..where(
+              (FoodStockTable tbl) =>
+                  tbl.profileId.equals(profileId) &
+                  (ids.isEmpty
+                      ? const Constant<bool>(true)
+                      : tbl.id.isNotIn(ids)),
+            ))
+          .go();
+      if (entries.isEmpty) {
+        return;
+      }
+      await upsertEntries(entries, syncState: kSyncStateSynced);
+    });
+  }
+
+  Future<void> upsertEntries(
+    List<FoodStockEntry> entries, {
+    String syncState = kSyncStateSynced,
+  }) async {
+    if (entries.isEmpty) {
+      return;
+    }
+    await _db.batch((Batch batch) {
+      batch.insertAllOnConflictUpdate(
+        _db.foodStockTable,
+        entries.map((FoodStockEntry entry) {
+          return FoodStockTableCompanion(
+            id: Value(entry.id),
+            profileId: Value(entry.profileId),
+            foodTypeId: Value(entry.foodTypeId),
+            payload: Value(jsonEncode(entry.toJson())),
+            createdAt: Value(entry.createdAt),
+            updatedAt: Value(entry.updatedAt),
+            syncState: Value(syncState),
+          );
+        }).toList(),
+      );
+    });
+  }
+
+  Future<void> deleteEntry(int id) async {
+    await (_db.delete(_db.foodStockTable)
+          ..where((FoodStockTable tbl) => tbl.id.equals(id)))
+        .go();
+  }
+
+  Future<List<FoodStockEntry>> fetchEntries(String profileId) async {
+    final List<FoodStockTableData> rows =
+        await (_db.select(_db.foodStockTable)
+              ..where((FoodStockTable tbl) => tbl.profileId.equals(profileId)))
+            .get();
+    final List<FoodStockEntry> entries =
+        rows.map(_mapEntry).toList();
+    entries.sort(
+      (FoodStockEntry a, FoodStockEntry b) =>
+          a.createdAt.compareTo(b.createdAt),
+    );
+    return entries;
+  }
+
+  Future<FoodStockEntry?> fetchEntryById(int id) async {
+    final FoodStockTableData? row =
+        await (_db.select(_db.foodStockTable)
+              ..where((FoodStockTable tbl) => tbl.id.equals(id)))
+            .getSingleOrNull();
+    return row == null ? null : _mapEntry(row);
+  }
+
+  FoodStockEntry _mapEntry(FoodStockTableData row) {
+    final Map<String, dynamic> json =
+        jsonDecode(row.payload) as Map<String, dynamic>;
+    return FoodStockEntry.fromJson(json);
   }
 }
 
