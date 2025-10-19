@@ -5,20 +5,22 @@ import '../../../../data/models/animal.dart';
 import '../../../../data/models/animal_event.dart';
 import '../../../../data/models/event.dart';
 import '../../../../data/models/event_template.dart';
+import '../../../../data/models/food_type.dart';
 import '../../../../data/repositories/event_repository.dart';
 import '../../../../data/repositories/event_template_repository.dart';
+import '../../../../data/repositories/food_inventory_repository.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../cubit/events_cubit.dart';
+import 'package:uuid/uuid.dart';
 
 class AddEventScreen extends StatefulWidget {
   const AddEventScreen({
     required this.animals,
-    required this.repository,
     this.category, // 'health' | 'other' | null
     super.key,
   });
 
   final List<Animal> animals;
-  final EventRepository repository;
   final String? category;
 
   @override
@@ -91,16 +93,23 @@ class _AddEventScreenState extends State<AddEventScreen> {
   bool _isGlobalEvent = false;
   late Set<String> _selectedAnimalIds;
 
+  final Uuid _uuid = const Uuid();
+  late final EventRepository _eventRepository;
+  bool _isSubmitting = false;
+
   // Simple in-memory templates for this session/screen
   static final List<_EventTemplate> _savedTemplates = <_EventTemplate>[];
 
   // Referentials
   List<EventTemplate> _templates = <EventTemplate>[];
+  List<FoodType> _foodTypes = <FoodType>[];
+  int? _selectedFoodTypeId;
   // No explicit loading indicator here; screen-level context remains responsive.
 
   @override
   void initState() {
     super.initState();
+    _eventRepository = context.read<EventRepository>();
     if (widget.category == 'health' && _eventType == null) {
       _eventType = 'vaccination';
     } else if (widget.category == 'other' && _eventType == null) {
@@ -160,11 +169,44 @@ class _AddEventScreenState extends State<AddEventScreen> {
       final AuthState auth = context.read<AuthCubit>().state;
       final String? profileId = auth.profile?.id ?? auth.session?.user.id;
       if (profileId != null) {
-        final EventTemplateRepository tplRepo = context.read<EventTemplateRepository>();
-        final List<EventTemplate> templates = await tplRepo.fetchTemplates(profileId);
-        templates.sort((EventTemplate a, EventTemplate b) => a.templateName.compareTo(b.templateName));
+        final EventTemplateRepository tplRepo = context
+            .read<EventTemplateRepository>();
+        FoodInventoryRepository? foodRepo;
+        try {
+          foodRepo = context.read<FoodInventoryRepository>();
+        } catch (_) {
+          foodRepo = null;
+        }
+        final List<EventTemplate> templates = await tplRepo.fetchTemplates(
+          profileId,
+        );
+        templates.sort(
+          (EventTemplate a, EventTemplate b) =>
+              a.templateName.compareTo(b.templateName),
+        );
+
+        List<FoodType> foodTypes = <FoodType>[];
+        if (foodRepo != null) {
+          try {
+            foodTypes = await foodRepo.fetchFoodTypes(profileId);
+            foodTypes.sort(
+              (FoodType a, FoodType b) => a.name.compareTo(b.name),
+            );
+          } catch (_) {
+            foodTypes = <FoodType>[];
+          }
+        }
+
+        if (!mounted) return;
         setState(() {
           _templates = templates;
+          _foodTypes = foodTypes;
+          if (_selectedFoodTypeId != null &&
+              _foodTypes.every(
+                (FoodType type) => type.id != _selectedFoodTypeId,
+              )) {
+            _selectedFoodTypeId = null;
+          }
         });
       } else {
         // not signed in; ignore
@@ -174,6 +216,11 @@ class _AddEventScreenState extends State<AddEventScreen> {
     }
   }
 
+  String _resolveProfileId() {
+    final AuthState auth = context.read<AuthCubit>().state;
+    return auth.profile?.id ?? auth.session?.user.id ?? 'demo-profile';
+  }
+
   void _applyTemplateFromModel(EventTemplate tpl) {
     setState(() {
       _eventType = tpl.eventType;
@@ -181,8 +228,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
       final Map<String, dynamic> d = tpl.defaultDetails;
       _weightController.text = (d['weight'] ?? '').toString();
       _priceController.text = (d['price'] ?? '').toString();
-      _treatmentController.text =
-          (d['product'] ?? d['treatment'] ?? '').toString();
+      _treatmentController.text = (d['product'] ?? d['treatment'] ?? '')
+          .toString();
       _notesController.text = (d['notes'] ?? '').toString();
       _doseController.text = (d['dose'] ?? '').toString();
       _doseUnitController.text = (d['doseUnit'] ?? '').toString();
@@ -190,8 +237,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
       _fromCageController.text = (d['from'] ?? '').toString();
       _toCageController.text = (d['to'] ?? '').toString();
       _inventoryScopeController.text = (d['scope'] ?? '').toString();
-      _inventoryDescriptionController.text =
-          (d['description'] ?? '').toString();
+      _inventoryDescriptionController.text = (d['description'] ?? '')
+          .toString();
       _noteTitleController.text = (d['title'] ?? '').toString();
       _fromLocationController.text = (d['from'] ?? '').toString();
       _toLocationController.text = (d['to'] ?? '').toString();
@@ -213,12 +260,22 @@ class _AddEventScreenState extends State<AddEventScreen> {
       _oldTagController.text = (d['oldTag'] ?? '').toString();
       _newTagController.text = (d['newTag'] ?? '').toString();
       _reasonController.text = (d['reason'] ?? '').toString();
-      _feedNameController.text =
-          (d['feed'] ?? d['feedName'] ?? '').toString();
+      _feedNameController.text = (d['feed'] ?? d['feedName'] ?? '').toString();
       _rationController.text = (d['ration'] ?? '').toString();
       _frequencyController.text = (d['frequency'] ?? '').toString();
       _feedReasonController.text = (d['reason'] ?? '').toString();
-      // Food type id from template is ignored here; selection happens in referentials screen.
+      if (tpl.eventType == 'feed_change') {
+        final Object? rawFoodTypeId = d['foodTypeId'] ?? d['food_type_id'];
+        int? parsedFoodTypeId;
+        if (rawFoodTypeId is int) {
+          parsedFoodTypeId = rawFoodTypeId;
+        } else if (rawFoodTypeId is String) {
+          parsedFoodTypeId = int.tryParse(rawFoodTypeId);
+        }
+        _selectedFoodTypeId = parsedFoodTypeId;
+      } else {
+        _selectedFoodTypeId = null;
+      }
       final String? nextDue = d['nextDueDate'] as String?;
       _nextDueDate = nextDue == null ? null : DateTime.tryParse(nextDue);
     });
@@ -291,6 +348,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
       _treatmentController.text = template.product ?? '';
       _notesController.text = template.notes ?? '';
       _templateNameController.text = template.name;
+      if (template.eventType != 'feed_change') {
+        _selectedFoodTypeId = null;
+      }
     });
     _eventTypeFieldKey.currentState?.didChange(_eventType);
   }
@@ -494,6 +554,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
         if (_frequencyController.text.trim().isNotEmpty) {
           details['frequency'] = _frequencyController.text.trim();
         }
+        if (_selectedFoodTypeId != null) {
+          details['foodTypeId'] = _selectedFoodTypeId;
+        }
         if (_feedReasonController.text.trim().isNotEmpty) {
           details['reason'] = _feedReasonController.text.trim();
         }
@@ -513,12 +576,15 @@ class _AddEventScreenState extends State<AddEventScreen> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) {
+      return;
+    }
     if (!_formKey.currentState!.validate()) {
       return;
     }
     if (_eventType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Choisissez un type d\'évènement.')),
+        const SnackBar(content: Text('Choisissez un type d\'evenement.')),
       );
       return;
     }
@@ -538,12 +604,60 @@ class _AddEventScreenState extends State<AddEventScreen> {
         ? null
         : _notesController.text.trim();
 
+    if (_requiresWeight && (parsedWeight == null || parsedWeight <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Saisissez un poids positif.')),
+      );
+      return;
+    }
+    if (_requiresPrice && (parsedPrice == null || parsedPrice <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Saisissez un montant positif.')),
+      );
+      return;
+    }
+    if (_requiresTreatment &&
+        (parsedProduct == null || parsedProduct.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Precisez le produit utilise.')),
+      );
+      return;
+    }
+
+    final Set<String> availableIds = widget.animals
+        .map((Animal animal) => animal.id)
+        .toSet();
+    final List<String> missingIds = _isGlobalEvent
+        ? const <String>[]
+        : _selectedAnimalIds
+              .where((String id) => !availableIds.contains(id))
+              .toList();
+    if (missingIds.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Certains animaux selectionnes ne sont plus disponibles.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (_isGlobalEvent && widget.animals.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ajoutez au moins un animal avant de continuer.'),
+        ),
+      );
+      return;
+    }
+
     if (_saveAsTemplate) {
       final String name = _templateNameController.text.trim();
       if (name.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Indiquez un nom pour enregistrer le modèle.'),
+            content: Text('Indiquez un nom pour enregistrer le modele.'),
           ),
         );
         return;
@@ -567,75 +681,96 @@ class _AddEventScreenState extends State<AddEventScreen> {
       _selectedTemplateName = name;
     }
 
+    final String profileId = _resolveProfileId();
+    final DateTime eventDateUtc = _eventDate.toUtc();
     final List<LivestockEvent> createdEvents = <LivestockEvent>[];
 
-    final List<Animal> targetAnimals = _isGlobalEvent
-        ? <Animal>[]
-        : widget.animals
-              .where((Animal a) => _selectedAnimalIds.contains(a.id))
-              .toList();
-
-    if (!_isGlobalEvent && targetAnimals.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selectionnez au moins un animal.')),
-      );
-      return;
-    }
-
-    if (_isGlobalEvent) {
-      final Animal? representative = widget.animals.isNotEmpty
-          ? widget.animals.first
-          : null;
-      final LivestockEvent draft = LivestockEvent(
-        id: 'event-${DateTime.now().millisecondsSinceEpoch}-global',
-        profileId: representative?.profileId ?? 'demo-profile',
-        eventType: _eventType!,
-        eventDate: _eventDate,
-        details: _buildDetails(
-          representative ?? widget.animals.first,
-          weight: parsedWeight,
-          price: parsedPrice,
-          product: parsedProduct,
-        ),
-        notes: trimmedNotes,
-      );
-      final LivestockEvent created = await widget.repository.createEvent(
-        draft,
-        links: const <AnimalEventLink>[],
-      );
-      createdEvents.add(created);
-    } else {
-      for (final Animal animal in targetAnimals) {
+    setState(() => _isSubmitting = true);
+    try {
+      if (_isGlobalEvent) {
+        final Animal representative = widget.animals.first;
         final LivestockEvent draft = LivestockEvent(
-          id: 'event-${DateTime.now().millisecondsSinceEpoch}-${animal.id}',
-          profileId: animal.profileId,
+          id: _uuid.v4(),
+          profileId: representative.profileId.isEmpty
+              ? profileId
+              : representative.profileId,
           eventType: _eventType!,
-          eventDate: _eventDate,
+          eventDate: eventDateUtc,
           details: _buildDetails(
-            animal,
+            representative,
             weight: parsedWeight,
             price: parsedPrice,
             product: parsedProduct,
           ),
           notes: trimmedNotes,
         );
-
-        final LivestockEvent created = await widget.repository.createEvent(
+        final LivestockEvent created = await _eventRepository.createEvent(
           draft,
-          links: <AnimalEventLink>[
-            AnimalEventLink(
-              eventId: draft.id,
-              animalId: animal.id,
-              role: 'subject',
-            ),
-          ],
+          links: const <AnimalEventLink>[],
         );
         createdEvents.add(created);
+      } else {
+        final List<Animal> targetAnimals = widget.animals
+            .where((Animal animal) => _selectedAnimalIds.contains(animal.id))
+            .toList();
+        if (targetAnimals.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Selectionnez au moins un animal.')),
+          );
+          return;
+        }
+        for (final Animal animal in targetAnimals) {
+          final LivestockEvent draft = LivestockEvent(
+            id: _uuid.v4(),
+            profileId: animal.profileId.isEmpty ? profileId : animal.profileId,
+            eventType: _eventType!,
+            eventDate: eventDateUtc,
+            details: _buildDetails(
+              animal,
+              weight: parsedWeight,
+              price: parsedPrice,
+              product: parsedProduct,
+            ),
+            notes: trimmedNotes,
+          );
+
+          final LivestockEvent created = await _eventRepository.createEvent(
+            draft,
+            links: <AnimalEventLink>[
+              AnimalEventLink(
+                eventId: draft.id,
+                animalId: animal.id,
+                role: 'subject',
+              ),
+            ],
+          );
+          createdEvents.add(created);
+        }
+      }
+
+      if (!mounted) {
+        return;
+      }
+      try {
+        context.read<EventsCubit>().refresh();
+      } catch (_) {
+        // EventsCubit absent in this scope.
+      }
+      Navigator.of(context).pop(createdEvents);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Impossible d\'enregistrer l\'evenement: $error'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
       }
     }
-
-    if (!mounted) return;
-    Navigator.of(context).pop(createdEvents);
   }
 
   @override
@@ -748,8 +883,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
                         .toList(),
                     onSelected: (int? id) {
                       if (id == null) return;
-                      final EventTemplate tpl =
-                          _templates.firstWhere((EventTemplate t) => t.id == id);
+                      final EventTemplate tpl = _templates.firstWhere(
+                        (EventTemplate t) => t.id == id,
+                      );
                       _applyTemplateFromModel(tpl);
                     },
                   ),
@@ -872,8 +1008,12 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       ),
                     ],
                   ],
-                  onChanged: (String? value) =>
-                      setState(() => _eventType = value),
+                  onChanged: (String? value) => setState(() {
+                    _eventType = value;
+                    if (value != 'feed_change') {
+                      _selectedFoodTypeId = null;
+                    }
+                  }),
                   validator: (String? value) =>
                       value == null ? 'Sélection obligatoire' : null,
                 ),
@@ -1244,6 +1384,45 @@ class _AddEventScreenState extends State<AddEventScreen> {
                 ],
                 if (_eventType == 'feed_change') ...<Widget>[
                   const SizedBox(height: 8),
+                  InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: "Type d'aliment",
+                    ),
+                    isEmpty:
+                        !(_selectedFoodTypeId != null &&
+                            _foodTypes.any(
+                              (FoodType type) => type.id == _selectedFoodTypeId,
+                            )),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int?>(
+                        value:
+                            _selectedFoodTypeId != null &&
+                                _foodTypes.any(
+                                  (FoodType type) =>
+                                      type.id == _selectedFoodTypeId,
+                                )
+                            ? _selectedFoodTypeId
+                            : null,
+                        isExpanded: true,
+                        hint: const Text('Type non defini'),
+                        items: <DropdownMenuItem<int?>>[
+                          const DropdownMenuItem<int?>(
+                            value: null,
+                            child: Text('Type non defini'),
+                          ),
+                          ..._foodTypes.map(
+                            (FoodType type) => DropdownMenuItem<int?>(
+                              value: type.id,
+                              child: Text(type.name),
+                            ),
+                          ),
+                        ],
+                        onChanged: (int? value) =>
+                            setState(() => _selectedFoodTypeId = value),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   TextFormField(
                     controller: _feedNameController,
                     decoration: const InputDecoration(labelText: 'Aliment'),
@@ -1351,8 +1530,14 @@ class _AddEventScreenState extends State<AddEventScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton(
-                  onPressed: _submit,
-                  child: const Text('Enregistrer'),
+                  onPressed: _isSubmitting ? null : _submit,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Enregistrer'),
                 ),
               ),
             ],

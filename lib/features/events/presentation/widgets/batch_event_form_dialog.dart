@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../../data/models/animal.dart';
 import '../../../../data/models/animal_event.dart';
 import '../../../../data/models/event.dart';
 import '../../../../data/repositories/event_repository.dart';
+import '../cubit/events_cubit.dart';
 
 class _EventTemplate {
   const _EventTemplate({
@@ -26,24 +29,17 @@ class _EventTemplate {
 final List<_EventTemplate> _savedEventTemplates = <_EventTemplate>[];
 
 class BatchEventFormDialog extends StatefulWidget {
-  const BatchEventFormDialog({
-    required this.animals,
-    required this.repository,
-    super.key,
-  });
+  const BatchEventFormDialog({required this.animals, super.key});
 
   final List<Animal> animals;
-  final EventRepository repository;
 
   static Future<List<LivestockEvent>?> show(
     BuildContext context, {
     required List<Animal> animals,
-    required EventRepository repository,
   }) {
     return showDialog<List<LivestockEvent>>(
       context: context,
-      builder: (BuildContext context) =>
-          BatchEventFormDialog(animals: animals, repository: repository),
+      builder: (BuildContext context) => BatchEventFormDialog(animals: animals),
     );
   }
 
@@ -62,6 +58,15 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
   String? _eventType;
   String? _selectedTemplateName;
   bool _saveAsTemplate = false;
+  final Uuid _uuid = const Uuid();
+  late final EventRepository _eventRepository;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _eventRepository = context.read<EventRepository>();
+  }
 
   @override
   void dispose() {
@@ -155,12 +160,15 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) {
+      return;
+    }
     if (!_formKey.currentState!.validate()) {
       return;
     }
     if (_eventType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Choisissez un type d’évènement.')),
+        const SnackBar(content: Text('Choisissez un type d\'evenement.')),
       );
       return;
     }
@@ -180,12 +188,32 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
         ? null
         : _notesController.text.trim();
 
+    if (_requiresWeight && (parsedWeight == null || parsedWeight <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Saisissez un poids positif.')),
+      );
+      return;
+    }
+    if (_requiresPrice && (parsedPrice == null || parsedPrice <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Saisissez un montant positif.')),
+      );
+      return;
+    }
+    if (_requiresTreatment &&
+        (parsedProduct == null || parsedProduct.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Precisez le produit utilise.')),
+      );
+      return;
+    }
+
     if (_saveAsTemplate) {
       final String name = _templateNameController.text.trim();
       if (name.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Indiquez un nom pour enregistrer le modèle.'),
+            content: Text('Indiquez un nom pour enregistrer le modele.'),
           ),
         );
         return;
@@ -209,41 +237,65 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
       _selectedTemplateName = name;
     }
 
-    final List<LivestockEvent> createdEvents = <LivestockEvent>[];
-
-    for (final Animal animal in widget.animals) {
-      final LivestockEvent draft = LivestockEvent(
-        id: 'event-${DateTime.now().millisecondsSinceEpoch}-${animal.id}',
-        profileId: animal.profileId,
-        eventType: _eventType!,
-        eventDate: _eventDate,
-        details: _buildDetails(
-          animal,
-          weight: parsedWeight,
-          price: parsedPrice,
-          product: parsedProduct,
-        ),
-        notes: trimmedNotes,
+    if (widget.animals.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selectionnez au moins un animal.')),
       );
-
-      final LivestockEvent created = await widget.repository.createEvent(
-        draft,
-        links: <AnimalEventLink>[
-          AnimalEventLink(
-            eventId: draft.id,
-            animalId: animal.id,
-            role: 'subject',
-          ),
-        ],
-      );
-      createdEvents.add(created);
-    }
-
-    if (!mounted) {
       return;
     }
 
-    Navigator.of(context).pop(createdEvents);
+    setState(() => _isSubmitting = true);
+    final DateTime eventDateUtc = _eventDate.toUtc();
+    final List<LivestockEvent> createdEvents = <LivestockEvent>[];
+    try {
+      for (final Animal animal in widget.animals) {
+        final LivestockEvent draft = LivestockEvent(
+          id: _uuid.v4(),
+          profileId: animal.profileId,
+          eventType: _eventType!,
+          eventDate: eventDateUtc,
+          details: _buildDetails(
+            animal,
+            weight: parsedWeight,
+            price: parsedPrice,
+            product: parsedProduct,
+          ),
+          notes: trimmedNotes,
+        );
+        final LivestockEvent created = await _eventRepository.createEvent(
+          draft,
+          links: <AnimalEventLink>[
+            AnimalEventLink(
+              eventId: draft.id,
+              animalId: animal.id,
+              role: 'subject',
+            ),
+          ],
+        );
+        createdEvents.add(created);
+      }
+      if (!mounted) {
+        return;
+      }
+      try {
+        context.read<EventsCubit>().refresh();
+      } catch (_) {
+        // EventsCubit not available in this scope.
+      }
+      Navigator.of(context).pop(createdEvents);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Impossible d\'enregistrer l\'evenement: $error'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -461,7 +513,16 @@ class _BatchEventFormDialogState extends State<BatchEventFormDialog> {
           onPressed: () => Navigator.of(context).maybePop(),
           child: const Text('Annuler'),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Enregistrer')),
+        FilledButton(
+          onPressed: _isSubmitting ? null : _submit,
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Enregistrer'),
+        ),
       ],
     );
   }

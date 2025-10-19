@@ -10,6 +10,12 @@ import '../../../animals/domain/genealogy_analyzer.dart';
 
 import '../cubit/breeding_cubit.dart';
 
+import 'package:uuid/uuid.dart';
+
+import '../../../auth/presentation/cubit/auth_cubit.dart';
+
+import '../cubit/events_cubit.dart';
+
 class AddBreedingRecordScreen extends StatefulWidget {
   const AddBreedingRecordScreen({
     this.initialRecord,
@@ -55,6 +61,8 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
 
   final TextEditingController _selectedBuckController = TextEditingController();
 
+  final Uuid _uuid = const Uuid();
+
   late List<Animal> _animals;
 
   bool _isSaving = false;
@@ -83,13 +91,15 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
       )
       .toList();
 
-  List<Animal> get _bucks => _animals
-      .where(
-        (Animal animal) =>
-            animal.sex.toLowerCase().contains('mâ') ||
-            animal.sex.toLowerCase().contains('mal'),
-      )
-      .toList();
+  List<Animal> get _bucks => _animals.where((Animal animal) {
+    final String sex = animal.sex.toLowerCase();
+    return sex.contains('m') && !sex.contains('fem');
+  }).toList();
+
+  String _resolveProfileId() {
+    final AuthState auth = context.read<AuthCubit>().state;
+    return auth.profile?.id ?? auth.session?.user.id ?? 'demo-profile';
+  }
 
   Animal? _findAnimalById(String? id) {
     if (id == null) {
@@ -117,6 +127,63 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
     _selectedBuckController.text = buck == null
         ? ''
         : _buildAnimalDisplayName(buck);
+  }
+
+  void _showError(String message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  bool _validateBeforeSubmit() {
+    final Animal? doe = _findAnimalById(_selectedDoeId);
+    if (doe == null) {
+      _showError('Femelle introuvable.');
+      return false;
+    }
+    final Animal? buck = _findAnimalById(_selectedBuckId);
+    if (buck == null) {
+      _showError('Male introuvable.');
+      return false;
+    }
+    if (_palpationDate != null && _palpationDate!.isBefore(_matingDate)) {
+      _showError('La date de palpation doit etre posterieure a la saillie.');
+      return false;
+    }
+    if (_kindlingDate != null && _kindlingDate!.isBefore(_matingDate)) {
+      _showError('La mise bas ne peut pas preceder la saillie.');
+      return false;
+    }
+    if (_weaningDate != null) {
+      final DateTime reference = _kindlingDate ?? _matingDate;
+      if (_weaningDate!.isBefore(reference)) {
+        _showError('La date de sevrage doit suivre la mise bas.');
+        return false;
+      }
+    }
+    final Map<String, int?> counts = <String, int?>{
+      'Nombre de nes vivants': _parseInt(_bornAliveController.text),
+      'Nombre de nes morts': _parseInt(_bornDeadController.text),
+      'Adoptions': _parseInt(_adoptedController.text),
+      'Retraits': _parseInt(_removedController.text),
+      'Sevres': _parseInt(_weanedController.text),
+    };
+    for (final MapEntry<String, int?> entry in counts.entries) {
+      final int? value = entry.value;
+      if (value != null && value < 0) {
+        _showError(' doit etre positif.');
+        return false;
+      }
+    }
+    final double? avgWeight = _parseDouble(_weightController.text);
+    if (avgWeight != null && avgWeight < 0) {
+      _showError('Le poids moyen doit etre positif.');
+      return false;
+    }
+    return true;
   }
 
   String _buildAnimalDisplayName(Animal animal) {
@@ -428,26 +495,34 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
 
     if (_selectedDoeId == null || _selectedBuckId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sélectionnez une femelle et un mâle.')),
+        const SnackBar(content: Text('Selectionnez une femelle et un male.')),
       );
 
+      return;
+    }
+    if (!_validateBeforeSubmit()) {
       return;
     }
 
     setState(() => _isSaving = true);
 
+    final DateTime matingUtc = _matingDate.toUtc();
+    final DateTime? palpationUtc = _palpationDate?.toUtc();
+    final DateTime? kindlingUtc = _kindlingDate?.toUtc();
+    final DateTime? weaningUtc = _weaningDate?.toUtc();
+
     final BreedingRecord base =
         widget.initialRecord ??
         BreedingRecord(
-          id: 'breeding-${DateTime.now().millisecondsSinceEpoch}',
+          id: _uuid.v4(),
 
-          profileId: 'demo-profile',
+          profileId: _resolveProfileId(),
 
           doeId: _selectedDoeId!,
 
           buckId: _selectedBuckId!,
 
-          matingDate: _matingDate,
+          matingDate: matingUtc,
         );
 
     final bool? palpationPositive;
@@ -472,15 +547,15 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
 
       buckId: _selectedBuckId!,
 
-      matingDate: _matingDate,
+      matingDate: matingUtc,
 
-      palpationDate: _palpationDate,
+      palpationDate: palpationUtc,
 
       palpationPositive: palpationPositive,
 
-      kindlingDate: _kindlingDate,
+      kindlingDate: kindlingUtc,
 
-      weaningDate: _weaningDate,
+      weaningDate: weaningUtc,
 
       kitsBornAlive: _parseInt(_bornAliveController.text),
 
@@ -508,6 +583,11 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
     setState(() => _isSaving = false);
 
     if (success) {
+      try {
+        context.read<EventsCubit>().refresh();
+      } catch (_) {
+        // EventsCubit not available in this scope.
+      }
       Navigator.of(context).pop(true);
     }
   }

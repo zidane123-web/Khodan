@@ -8,7 +8,6 @@ import '../../../../data/models/event.dart';
 import '../../../../data/local/local_data_sources.dart';
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
-import '../../../../data/repositories/event_repository.dart';
 import '../../../events/presentation/screens/add_breeding_record_screen.dart';
 import '../../../events/presentation/widgets/batch_event_form_dialog.dart';
 import '../cubit/animal_cubit.dart';
@@ -41,7 +40,6 @@ class _AnimalListView extends StatefulWidget {
 
 class _AnimalListViewState extends State<_AnimalListView> {
   late final TextEditingController _searchController;
-  late final EventRepository _eventRepository;
   late final BreedingRepository _breedingRepository;
   bool _selectionMode = false;
   final Set<String> _selectedIds = <String>{};
@@ -51,7 +49,6 @@ class _AnimalListViewState extends State<_AnimalListView> {
     super.initState();
     _searchController = TextEditingController();
     _searchController.addListener(_onSearchChanged);
-    _eventRepository = context.read<EventRepository>();
     _breedingRepository = context.read<BreedingRepository>();
   }
 
@@ -113,20 +110,19 @@ class _AnimalListViewState extends State<_AnimalListView> {
       // So we just refresh the list
       await context.read<AnimalCubit>().fetchAnimals();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fiche animal créée.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Fiche animal créée.')));
     }
   }
 
   Future<void> _openQuickBreeding(Animal animal, AnimalState state) async {
-    final BreedingRecord? record = await Navigator.of(context).push<BreedingRecord>(
-      MaterialPageRoute<BreedingRecord>(
-        builder: (_) => AddBreedingRecordScreen(
-          initialDoeId: animal.id,
-        ),
-      ),
-    );
+    final BreedingRecord? record = await Navigator.of(context)
+        .push<BreedingRecord>(
+          MaterialPageRoute<BreedingRecord>(
+            builder: (_) => AddBreedingRecordScreen(initialDoeId: animal.id),
+          ),
+        );
 
     if (record != null && mounted) {
       await _breedingRepository.createBreedingRecord(record);
@@ -147,7 +143,6 @@ class _AnimalListViewState extends State<_AnimalListView> {
     final List<LivestockEvent>? created = await BatchEventFormDialog.show(
       context,
       animals: animals,
-      repository: _eventRepository,
     );
 
     if (created != null && created.isNotEmpty && mounted) {
@@ -235,9 +230,9 @@ class _AnimalListViewState extends State<_AnimalListView> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fiche animal supprimée.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Fiche animal supprimée.')));
     }
   }
 
@@ -259,24 +254,24 @@ class _AnimalListViewState extends State<_AnimalListView> {
       if (state.filters.sex != null)
         InputChip(
           label: Text('Sexe : ${state.filters.sex}'),
-          onDeleted: () => context
-              .read<AnimalCubit>()
-              .setFilters(state.filters.copyWith(clearSex: true)),
+          onDeleted: () => context.read<AnimalCubit>().setFilters(
+            state.filters.copyWith(clearSex: true),
+          ),
         ),
       if (state.filters.origin != null && state.filters.origin!.isNotEmpty)
         InputChip(
           label: Text('Origine : ${state.filters.origin}'),
-          onDeleted: () => context
-              .read<AnimalCubit>()
-              .setFilters(state.filters.copyWith(clearOrigin: true)),
+          onDeleted: () => context.read<AnimalCubit>().setFilters(
+            state.filters.copyWith(clearOrigin: true),
+          ),
         ),
       if (state.filters.cageNumber != null &&
           state.filters.cageNumber!.isNotEmpty)
         InputChip(
           label: Text('Cage : ${state.filters.cageNumber}'),
-          onDeleted: () => context
-              .read<AnimalCubit>()
-              .setFilters(state.filters.copyWith(clearCageNumber: true)),
+          onDeleted: () => context.read<AnimalCubit>().setFilters(
+            state.filters.copyWith(clearCageNumber: true),
+          ),
         ),
     ];
 
@@ -286,11 +281,7 @@ class _AnimalListViewState extends State<_AnimalListView> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: chips,
-      ),
+      child: Wrap(spacing: 8, runSpacing: 8, children: chips),
     );
   }
 
@@ -367,9 +358,7 @@ class _AnimalListViewState extends State<_AnimalListView> {
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                         _searchController.clear();
-                        context
-                            .read<AnimalCubit>()
-                            .updateSearchTerm('');
+                        context.read<AnimalCubit>().updateSearchTerm('');
                       },
                     )
                   : null,
@@ -453,8 +442,9 @@ class _AnimalListViewState extends State<_AnimalListView> {
                   icon: Icon(
                     _selectionMode ? Icons.check_box : Icons.check_box_outlined,
                   ),
-                  tooltip:
-                      _selectionMode ? 'Quitter la sélection' : 'Sélection multiple',
+                  tooltip: _selectionMode
+                      ? 'Quitter la sélection'
+                      : 'Sélection multiple',
                   onPressed: _toggleSelectionMode,
                 ),
               ],
@@ -570,10 +560,12 @@ class _AnimalFiltersSheetState extends State<_AnimalFiltersSheet> {
   void initState() {
     super.initState();
     _selectedSex = widget.initialFilters.sex;
-    _originController =
-        TextEditingController(text: widget.initialFilters.origin ?? '');
-    _cageController =
-        TextEditingController(text: widget.initialFilters.cageNumber ?? '');
+    _originController = TextEditingController(
+      text: widget.initialFilters.origin ?? '',
+    );
+    _cageController = TextEditingController(
+      text: widget.initialFilters.cageNumber ?? '',
+    );
   }
 
   @override
@@ -642,10 +634,14 @@ class _AnimalFiltersSheetState extends State<_AnimalFiltersSheet> {
               decoration: const InputDecoration(labelText: 'Sexe'),
               hint: const Text('Tous'),
               items: const <DropdownMenuItem<String>>[
-                DropdownMenuItem<String>(value: 'Femelle', child: Text('Femelle')),
+                DropdownMenuItem<String>(
+                  value: 'Femelle',
+                  child: Text('Femelle'),
+                ),
                 DropdownMenuItem<String>(value: 'Mâle', child: Text('Mâle')),
               ],
-              onChanged: (String? value) => setState(() => _selectedSex = value),
+              onChanged: (String? value) =>
+                  setState(() => _selectedSex = value),
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -658,9 +654,7 @@ class _AnimalFiltersSheetState extends State<_AnimalFiltersSheet> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _cageController,
-              decoration: const InputDecoration(
-                labelText: 'Numéro de cage',
-              ),
+              decoration: const InputDecoration(labelText: 'Numéro de cage'),
             ),
             const SizedBox(height: 24),
             SizedBox(

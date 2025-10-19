@@ -54,6 +54,46 @@ class BreedingCubit extends Cubit<BreedingState> {
 
   Future<void> loadData() async {
     emit(state.copyWith(status: BreedingStatus.loading));
+    await _reloadData();
+  }
+
+  Future<void> addRecord(BreedingRecord record) async {
+    await _performAndReload(() => _repository.createBreedingRecord(record));
+  }
+
+  Future<void> updateRecord(BreedingRecord record) async {
+    await _performAndReload(() => _repository.updateBreedingRecord(record));
+  }
+
+  Future<void> deleteRecord(String id) async {
+    await _performAndReload(() => _repository.deleteBreedingRecord(id));
+  }
+
+  List<BreedingRecord> _sort(List<BreedingRecord> records) {
+    final List<BreedingRecord> sorted = List<BreedingRecord>.from(records);
+    sorted.sort(
+      (BreedingRecord a, BreedingRecord b) =>
+          b.matingDate.compareTo(a.matingDate),
+    );
+    return sorted;
+  }
+
+  Future<void> _performAndReload(Future<void> Function() operation) async {
+    emit(state.copyWith(status: BreedingStatus.loading));
+    try {
+      await operation();
+      await _reloadData();
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: BreedingStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _reloadData() async {
     try {
       final List<Animal> animals = await _animalRepository.fetchAnimals();
       final List<BreedingRecord> records =
@@ -74,76 +114,5 @@ class BreedingCubit extends Cubit<BreedingState> {
         ),
       );
     }
-  }
-
-  Future<void> addRecord(BreedingRecord record) async {
-    emit(state.copyWith(status: BreedingStatus.loading));
-    try {
-      final BreedingRecord created =
-          await _repository.createBreedingRecord(record);
-      final List<BreedingRecord> records =
-          _sort(<BreedingRecord>[...state.records, created]);
-      emit(
-        state.copyWith(
-          status: BreedingStatus.success,
-          records: records,
-          errorMessage: null,
-        ),
-      );
-    } catch (error) {
-      emit(state.copyWith(status: BreedingStatus.failure, errorMessage: error.toString()));
-    }
-  }
-
-  Future<void> updateRecord(BreedingRecord record) async {
-    emit(state.copyWith(status: BreedingStatus.loading));
-    try {
-      final BreedingRecord updated =
-          await _repository.updateBreedingRecord(record);
-      final List<BreedingRecord> records = List<BreedingRecord>.from(state.records);
-      final int index =
-          records.indexWhere((BreedingRecord element) => element.id == updated.id);
-      if (index == -1) {
-        records.add(updated);
-      } else {
-        records[index] = updated;
-      }
-      emit(
-        state.copyWith(
-          status: BreedingStatus.success,
-          records: _sort(records),
-          errorMessage: null,
-        ),
-      );
-    } catch (error) {
-      emit(state.copyWith(status: BreedingStatus.failure, errorMessage: error.toString()));
-    }
-  }
-
-  Future<void> deleteRecord(String id) async {
-    emit(state.copyWith(status: BreedingStatus.loading));
-    try {
-      await _repository.deleteBreedingRecord(id);
-      final List<BreedingRecord> records =
-          state.records.where((BreedingRecord record) => record.id != id).toList();
-      emit(
-        state.copyWith(
-          status: BreedingStatus.success,
-          records: _sort(records),
-          errorMessage: null,
-        ),
-      );
-    } catch (error) {
-      emit(state.copyWith(status: BreedingStatus.failure, errorMessage: error.toString()));
-    }
-  }
-
-  List<BreedingRecord> _sort(List<BreedingRecord> records) {
-    final List<BreedingRecord> sorted = List<BreedingRecord>.from(records);
-    sorted.sort(
-      (BreedingRecord a, BreedingRecord b) =>
-          b.matingDate.compareTo(a.matingDate),
-    );
-    return sorted;
   }
 }

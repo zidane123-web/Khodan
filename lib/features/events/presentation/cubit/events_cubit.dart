@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../data/models/animal_event.dart';
 import '../../../../data/models/event.dart';
 import '../../../../data/repositories/event_repository.dart';
 
@@ -66,6 +67,38 @@ class EventsCubit extends Cubit<EventsState> {
 
   Future<void> loadEvents() async {
     emit(state.copyWith(status: EventsStatus.loading));
+    await _reload();
+  }
+
+  Future<void> refresh() => loadEvents();
+
+  Future<void> createEvent(
+    LivestockEvent event, {
+    List<AnimalEventLink> links = const <AnimalEventLink>[],
+  }) async {
+    await _performAndReload(
+      () => _repository.createEvent(event, links: links),
+    );
+  }
+
+  Future<void> _performAndReload(
+    Future<LivestockEvent> Function() operation,
+  ) async {
+    emit(state.copyWith(status: EventsStatus.loading));
+    try {
+      await operation();
+      await _reload();
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: EventsStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _reload() async {
     try {
       final List<LivestockEvent> events = await _repository.fetchEvents();
       final List<LivestockEvent> healthEvents = <LivestockEvent>[];

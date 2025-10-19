@@ -25,7 +25,6 @@ import '../../features/settings/presentation/screens/settings_profile_screen.dar
 import '../../features/settings/presentation/screens/settings_referentials_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../data/models/animal.dart';
-import '../../data/repositories/event_repository.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'rootNavigator',
@@ -56,12 +55,12 @@ class KhodanRouter {
             path: const EmailConfirmationRoute().path,
             builder: (BuildContext context, GoRouterState state) {
               final Object? extra = state.extra;
-              final String emailFromExtra =
-                  extra is String ? extra : '';
+              final String emailFromExtra = extra is String ? extra : '';
               final String emailFromQuery =
                   state.uri.queryParameters['email'] ?? '';
-              final String email =
-                  emailFromExtra.isNotEmpty ? emailFromExtra : emailFromQuery;
+              final String email = emailFromExtra.isNotEmpty
+                  ? emailFromExtra
+                  : emailFromQuery;
               return EmailConfirmationScreen(email: email);
             },
           ),
@@ -129,25 +128,21 @@ class KhodanRouter {
                         path: 'add-event',
                         builder: (BuildContext context, GoRouterState state) {
                           final Object? extra = state.extra;
-                          EventRepository? repository;
                           List<Animal>? animals;
                           String? category;
 
                           if (extra is Map) {
-                            final Object? repo = extra['repository'];
                             final Object? list = extra['animals'];
                             final Object? cat = extra['category'];
-                            if (repo is EventRepository) repository = repo;
                             if (list is List<Animal>) animals = list;
                             if (cat is String) category = cat;
                           }
 
-                          repository ??= context.read<EventRepository>();
-
                           // Try to fallback to breeding cubit animals if not provided
                           animals ??= () {
                             try {
-                              final BreedingCubit cubit = context.read<BreedingCubit>();
+                              final BreedingCubit cubit = context
+                                  .read<BreedingCubit>();
                               return cubit.state.animals;
                             } catch (_) {
                               return <Animal>[];
@@ -156,7 +151,6 @@ class KhodanRouter {
 
                           return AddEventScreen(
                             animals: animals,
-                            repository: repository,
                             category: category,
                           );
                         },
@@ -228,15 +222,13 @@ class KhodanRouter {
 
   final GoRouter router;
 
-  static String? _redirectWithAuth(
-    BuildContext context,
-    GoRouterState state,
-  ) {
+  static String? _redirectWithAuth(BuildContext context, GoRouterState state) {
     final Session? session = Supabase.instance.client.auth.currentSession;
     final bool hasSession = session != null;
     final String path = state.uri.path;
 
-    final bool isAuthRoute = path == const LoginRoute().path ||
+    final bool isAuthRoute =
+        path == const LoginRoute().path ||
         path == const EmailConfirmationRoute().path;
     final bool isSplashRoute = path == const SplashRoute().path;
 
