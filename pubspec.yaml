@@ -39,6 +39,7 @@ dependencies:
   pdf: ^3.10.8
   printing: ^5.11.1 # <- AJOUTÉ ICI
   share_plus: ^9.0.0
+  flutter_markdown: ^0.6.20
   intl: ^0.20.2
   csv: ^6.0.0
   shared_preferences: ^2.3.2

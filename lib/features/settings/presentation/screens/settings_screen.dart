@@ -5,14 +5,24 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/config/router.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/offline_cubit.dart';
+import '../cubit/sync_history_cubit.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<OfflineCubit>(
-      create: (BuildContext context) => OfflineCubit()..initialize(),
+    return MultiBlocProvider(
+      providers: <BlocProvider<dynamic>>[
+        BlocProvider<SyncHistoryCubit>(
+          create: (BuildContext context) => SyncHistoryCubit()..initialize(),
+        ),
+        BlocProvider<OfflineCubit>(
+          create: (BuildContext context) => OfflineCubit(
+            historyCubit: context.read<SyncHistoryCubit>(),
+          )..initialize(),
+        ),
+      ],
       child: const _SettingsView(),
     );
   }

@@ -4,29 +4,35 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../app/core/logging/diagnostics_service.dart';
+
 class SyncHistoryEntry extends Equatable {
   const SyncHistoryEntry({
     required this.timestamp,
     required this.message,
+    this.category = 'sync',
   });
 
   final DateTime timestamp;
   final String message;
+  final String category;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'timestamp': timestamp.toIso8601String(),
         'message': message,
+        'category': category,
       };
 
   factory SyncHistoryEntry.fromJson(Map<String, dynamic> json) {
     return SyncHistoryEntry(
       timestamp: DateTime.parse(json['timestamp'] as String),
       message: json['message'] as String,
+      category: (json['category'] ?? 'sync') as String,
     );
   }
 
   @override
-  List<Object?> get props => <Object?>[timestamp, message];
+  List<Object?> get props => <Object?>[timestamp, message, category];
 }
 
 class SyncHistoryState extends Equatable {
@@ -88,18 +94,27 @@ class SyncHistoryCubit extends Cubit<SyncHistoryState> {
     }
   }
 
-  Future<void> addEntry(String message, {DateTime? timestamp}) async {
+  Future<void> addEntry(
+    String message, {
+    DateTime? timestamp,
+    String category = 'sync',
+  }) async {
     try {
       _preferences ??= await SharedPreferences.getInstance();
       final DateTime time = timestamp ?? DateTime.now();
       final List<SyncHistoryEntry> updated = <SyncHistoryEntry>[
-        SyncHistoryEntry(timestamp: time, message: message),
+        SyncHistoryEntry(
+          timestamp: time,
+          message: message,
+          category: category,
+        ),
         ...state.entries,
       ];
       if (updated.length > _maxEntries) {
         updated.removeRange(_maxEntries, updated.length);
       }
       await _saveEntries(updated);
+      await _relayToDiagnostics(message, time, category);
       emit(
         state.copyWith(
           entries: updated,
@@ -132,5 +147,34 @@ class SyncHistoryCubit extends Cubit<SyncHistoryState> {
       entries.map((SyncHistoryEntry entry) => entry.toJson()).toList(),
     );
     await _preferences!.setString(_historyKey, raw);
+  }
+
+  Future<void> _relayToDiagnostics(
+    String message,
+    DateTime timestamp,
+    String category,
+  ) {
+    switch (category) {
+      case 'error':
+        return DiagnosticsService.instance.logError(
+          message,
+          source: 'sync',
+        );
+      case 'info':
+        return DiagnosticsService.instance.logInfo(
+          message,
+          source: 'sync',
+        );
+      case 'debug':
+        return DiagnosticsService.instance.logDebug(
+          message,
+          source: 'sync',
+        );
+      default:
+        return DiagnosticsService.instance.logSync(
+          message,
+          timestamp: timestamp,
+        );
+    }
   }
 }

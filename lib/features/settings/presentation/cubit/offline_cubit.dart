@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -135,20 +135,30 @@ class OfflineCubit extends Cubit<OfflineState> {
       DateTime? lastSuccess = state.lastSuccess;
 
       if (!enabled) {
-        await _historyCubit?.addEntry('Mode hors-ligne désactivé');
+        await _historyCubit?.addEntry(
+          'Mode hors-ligne desactive',
+          category: 'info',
+        );
         final bool success = await _manager.flush();
         if (success) {
           lastSuccess = DateTime.now();
           await _saveLastSuccess(lastSuccess);
-          await _historyCubit
-              ?.addEntry('Synchronisation automatique réussie', timestamp: lastSuccess);
+          await _historyCubit?.addEntry(
+            'Synchronisation automatique reussie',
+            timestamp: lastSuccess,
+            category: 'info',
+          );
         } else {
           await _historyCubit?.addEntry(
             'Synchronisation automatique partielle : des actions restent en attente.',
+            category: 'warning',
           );
         }
       } else {
-        await _historyCubit?.addEntry('Mode hors-ligne activé');
+        await _historyCubit?.addEntry(
+          'Mode hors-ligne active',
+          category: 'info',
+        );
       }
 
       emit(
@@ -160,15 +170,16 @@ class OfflineCubit extends Cubit<OfflineState> {
               List<QueuedSyncAction>.from(_manager.pendingQueueNotifier.value),
           lastSuccess: lastSuccess,
           statusMessage: enabled
-              ? 'Mode hors-ligne activé.'
+              ? 'Mode hors-ligne active.'
               : (_manager.pendingQueueNotifier.value.isEmpty
-                  ? 'Synchronisation réalisée avec succès.'
+                  ? 'Synchronisation realisee avec succes.'
                   : 'Synchronisation partielle, des actions restent en attente.'),
         ),
       );
     } catch (error) {
       await _historyCubit?.addEntry(
         'Erreur lors du changement de mode : $error',
+        category: 'error',
       );
       emit(
         state.copyWith(
@@ -178,7 +189,6 @@ class OfflineCubit extends Cubit<OfflineState> {
       );
     }
   }
-
   Future<void> synchronizeNow() async {
     emit(
       state.copyWith(
@@ -195,12 +205,14 @@ class OfflineCubit extends Cubit<OfflineState> {
         lastSuccess = DateTime.now();
         await _saveLastSuccess(lastSuccess);
         await _historyCubit?.addEntry(
-          'Synchronisation manuelle réussie',
+          'Synchronisation manuelle reussie',
           timestamp: lastSuccess,
+          category: 'info',
         );
       } else {
         await _historyCubit?.addEntry(
           'Synchronisation manuelle partielle : des actions restent en attente.',
+          category: 'warning',
         );
       }
 
@@ -212,13 +224,14 @@ class OfflineCubit extends Cubit<OfflineState> {
               List<QueuedSyncAction>.from(_manager.pendingQueueNotifier.value),
           lastSuccess: lastSuccess,
           statusMessage: success
-              ? 'Synchronisation terminée.'
-              : 'Des actions restent à synchroniser.',
+              ? 'Synchronisation terminee.'
+              : 'Des actions restent a synchroniser.',
         ),
       );
     } catch (error) {
       await _historyCubit?.addEntry(
         'Erreur de synchronisation manuelle : $error',
+        category: 'error',
       );
       emit(
         state.copyWith(
@@ -228,7 +241,6 @@ class OfflineCubit extends Cubit<OfflineState> {
       );
     }
   }
-
   void acknowledgeStatus() {
     if (state.statusMessage != null) {
       emit(state.copyWith(clearStatusMessage: true));
@@ -298,3 +310,11 @@ class OfflineCubit extends Cubit<OfflineState> {
     return super.close();
   }
 }
+
+
+
+
+
+
+
+

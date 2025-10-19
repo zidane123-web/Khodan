@@ -10,6 +10,7 @@ import 'app/config/app_env.dart';
 import 'app/config/router.dart';
 import 'app/config/theme.dart';
 import 'app/core/constants.dart';
+import 'app/core/logging/diagnostics_service.dart';
 import 'data/local/local_data_sources.dart';
 import 'data/local/local_database.dart';
 import 'data/repositories/animal_repository.dart';
@@ -20,6 +21,7 @@ import 'data/repositories/event_template_repository.dart';
 import 'data/repositories/food_inventory_repository.dart';
 import 'data/repositories/media_repository.dart';
 import 'data/repositories/dashboard_repository.dart';
+import 'data/repositories/knowledge_base_repository.dart';
 import 'data/repositories/profile_repository.dart';
 import 'data/repositories/support_repository.dart';
 import 'data/repositories/species_repository.dart';
@@ -29,17 +31,39 @@ import 'data/services/offline_sync_manager.dart';
 import 'data/services/reporting_service.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final AppEnv env = await AppEnv.load();
-  if (kDebugMode) {
-    debugPrint('App environment: ${env.label}');
-  }
-  await _initializeSupabase(env);
-  if (env.useInMemoryRepositories) {
-    _resetInMemoryRepositories();
-  }
-  runApp(KhodanApp(env: env));
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    await DiagnosticsService.instance.initialize();
+    FlutterError.onError = (FlutterErrorDetails details) {
+      DiagnosticsService.instance.logError(
+        details.exceptionAsString(),
+        source: 'flutter',
+        error: details.exception,
+        stackTrace: details.stack,
+      );
+      FlutterError.presentError(details);
+    };
+
+    final AppEnv env = await AppEnv.load();
+    if (kDebugMode) {
+      debugPrint('App environment: ${env.label}');
+    }
+    await _initializeSupabase(env);
+    if (env.useInMemoryRepositories) {
+      _resetInMemoryRepositories();
+    }
+    runApp(KhodanApp(env: env));
+  }, (Object error, StackTrace stackTrace) {
+    unawaited(
+      DiagnosticsService.instance.logError(
+        'Erreur zone non interceptée',
+        source: 'zone',
+        error: error,
+        stackTrace: stackTrace,
+      ),
+    );
+  });
 }
 
 void _resetInMemoryRepositories() {
@@ -104,6 +128,8 @@ class _KhodanAppState extends State<KhodanApp> {
         LocalDashboardPreferencesDataSource(_localDb);
     _localQueueDataSource = LocalSyncQueueDataSource(_localDb);
     OfflineSyncManager.instance.attachQueue(_localQueueDataSource);
+    OfflineSyncManager.instance
+        .setHistoryLogger(DiagnosticsService.instance.logSync);
     _router = KhodanRouter(
       enableAuth:
           widget.env.hasSupabaseCredentials &&
@@ -240,6 +266,9 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<MediaRepository>(
         create: (_) => InMemoryMediaRepository(),
       ),
+      RepositoryProvider<KnowledgeBaseRepository>(
+        create: (_) => InMemoryKnowledgeBaseRepository(),
+      ),
         RepositoryProvider<SupportRepository>(
           create: (_) => InMemorySupportRepository(),
         ),
@@ -282,6 +311,8 @@ class _KhodanAppState extends State<KhodanApp> {
       final SupportRepository remoteSupport = SupabaseSupportRepository(
         apiClient: apiClient,
       );
+      final KnowledgeBaseRepository remoteKnowledgeBase =
+          SupabaseKnowledgeBaseRepository(apiClient: apiClient);
     final EventTemplateRepository remoteTemplate =
         SupabaseEventTemplateRepository(apiClient: apiClient);
     final FoodInventoryRepository remoteInventory =
@@ -384,6 +415,9 @@ class _KhodanAppState extends State<KhodanApp> {
         create: (_) => syncedInventory,
       ),
       RepositoryProvider<MediaRepository>(create: (_) => syncedMedia),
+      RepositoryProvider<KnowledgeBaseRepository>(
+        create: (_) => remoteKnowledgeBase,
+      ),
       RepositoryProvider<SupportRepository>(create: (_) => syncedSupport),
       RepositoryProvider<DashboardRepository>(
         create: (_) => dashboardRepository,

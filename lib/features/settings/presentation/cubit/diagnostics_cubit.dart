@@ -1,0 +1,336 @@
+﻿import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+import '../../../../app/core/logging/diagnostics_service.dart';
+import '../../../../app/core/logging/platform_info.dart';
+import '../../../../data/services/offline_sync_manager.dart';
+
+class DeviceDiagnostics extends Equatable {
+  const DeviceDiagnostics({
+    required this.platform,
+    required this.osVersion,
+    required this.appVersion,
+    required this.buildNumber,
+    required this.locale,
+    required this.offlineMode,
+    required this.pendingActions,
+    required this.generatedAt,
+  });
+
+  final String platform;
+  final String osVersion;
+  final String appVersion;
+  final String buildNumber;
+  final String locale;
+  final bool offlineMode;
+  final int pendingActions;
+  final DateTime generatedAt;
+
+  DeviceDiagnostics copyWith({
+    String? platform,
+    String? osVersion,
+    String? appVersion,
+    String? buildNumber,
+    String? locale,
+    bool? offlineMode,
+    int? pendingActions,
+    DateTime? generatedAt,
+  }) {
+    return DeviceDiagnostics(
+      platform: platform ?? this.platform,
+      osVersion: osVersion ?? this.osVersion,
+      appVersion: appVersion ?? this.appVersion,
+      buildNumber: buildNumber ?? this.buildNumber,
+      locale: locale ?? this.locale,
+      offlineMode: offlineMode ?? this.offlineMode,
+      pendingActions: pendingActions ?? this.pendingActions,
+      generatedAt: generatedAt ?? this.generatedAt,
+    );
+  }
+
+  @override
+  List<Object?> get props => <Object?>[
+        platform,
+        osVersion,
+        appVersion,
+        buildNumber,
+        locale,
+        offlineMode,
+        pendingActions,
+        generatedAt,
+      ];
+}
+
+class DiagnosticsState extends Equatable {
+  const DiagnosticsState({
+    this.loading = false,
+    this.exporting = false,
+    this.detailedLogging = false,
+    this.entries = const <DiagnosticsEntry>[],
+    this.deviceDiagnostics,
+    this.errorMessage,
+    this.infoMessage,
+    this.exportPath,
+  });
+
+  final bool loading;
+  final bool exporting;
+  final bool detailedLogging;
+  final List<DiagnosticsEntry> entries;
+  final DeviceDiagnostics? deviceDiagnostics;
+  final String? errorMessage;
+  final String? infoMessage;
+  final String? exportPath;
+
+  DiagnosticsState copyWith({
+    bool? loading,
+    bool? exporting,
+    bool? detailedLogging,
+    List<DiagnosticsEntry>? entries,
+    DeviceDiagnostics? deviceDiagnostics,
+    bool clearError = false,
+    String? errorMessage,
+    bool clearInfo = false,
+    String? infoMessage,
+    String? exportPath,
+  }) {
+    return DiagnosticsState(
+      loading: loading ?? this.loading,
+      exporting: exporting ?? this.exporting,
+      detailedLogging: detailedLogging ?? this.detailedLogging,
+      entries: entries ?? this.entries,
+      deviceDiagnostics: deviceDiagnostics ?? this.deviceDiagnostics,
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+      infoMessage: clearInfo ? null : infoMessage ?? this.infoMessage,
+      exportPath: exportPath ?? this.exportPath,
+    );
+  }
+
+  @override
+  List<Object?> get props => <Object?>[
+        loading,
+        exporting,
+        detailedLogging,
+        entries,
+        deviceDiagnostics,
+        errorMessage,
+        infoMessage,
+        exportPath,
+      ];
+}
+
+class DiagnosticsCubit extends Cubit<DiagnosticsState> {
+  DiagnosticsCubit({
+    required DiagnosticsService service,
+    OfflineSyncManager? offlineManager,
+  })  : _service = service,
+        _offlineManager = offlineManager ?? OfflineSyncManager.instance,
+        super(const DiagnosticsState());
+
+  final DiagnosticsService _service;
+  final OfflineSyncManager _offlineManager;
+  VoidCallback? _entriesListener;
+  VoidCallback? _pendingListener;
+  VoidCallback? _offlineListener;
+  bool _initialized = false;
+
+  Future<void> initialize() async {
+    if (_initialized) {
+      return;
+    }
+    _initialized = true;
+    emit(state.copyWith(loading: true, clearError: true, clearInfo: true));
+    await _service.initialize();
+    final DeviceDiagnostics device = await _collectDiagnostics();
+    emit(
+      state.copyWith(
+        loading: false,
+        detailedLogging: _service.detailedLoggingEnabled,
+        entries: _service.entries,
+        deviceDiagnostics: device,
+      ),
+    );
+    _listenToChanges();
+  }
+
+  Future<void> refreshDeviceSnapshot() async {
+    emit(state.copyWith(loading: true));
+    final DeviceDiagnostics device = await _collectDiagnostics();
+    emit(
+      state.copyWith(
+        loading: false,
+        deviceDiagnostics: device,
+      ),
+    );
+  }
+
+  Future<void> toggleDetailedLogging(bool enabled) async {
+    emit(state.copyWith(detailedLogging: enabled));
+    await _service.setDetailedLogging(enabled);
+    emit(
+      state.copyWith(
+        detailedLogging: _service.detailedLoggingEnabled,
+        infoMessage: enabled
+            ? 'Journalisation detaillee activee.'
+            : 'Journalisation detaillee desactivee.',
+      ),
+    );
+  }
+
+  Future<String?> exportLogs() async {
+    emit(
+      state.copyWith(
+        exporting: true,
+        clearError: true,
+        clearInfo: true,
+      ),
+    );
+    try {
+      final List<String> header = _buildHeaderLines();
+      final String path = await _service.exportToFile(headerLines: header);
+      emit(
+        state.copyWith(
+          exporting: false,
+          exportPath: path,
+          infoMessage: 'Fichier de logs genere.',
+        ),
+      );
+      return path;
+    } catch (error) {
+      emit(
+        state.copyWith(
+          exporting: false,
+          errorMessage: error.toString(),
+        ),
+      );
+      return null;
+    }
+  }
+
+  Future<void> clearLogs() async {
+    await _service.clear();
+    emit(
+      state.copyWith(
+        entries: _service.entries,
+        infoMessage: 'Historique des journaux efface.',
+      ),
+    );
+  }
+
+  void acknowledgeError() {
+    if (state.errorMessage != null) {
+      emit(state.copyWith(clearError: true));
+    }
+  }
+
+  void acknowledgeInfo() {
+    if (state.infoMessage != null) {
+      emit(state.copyWith(clearInfo: true));
+    }
+  }
+
+  List<String> _buildHeaderLines() {
+    final DeviceDiagnostics? device = state.deviceDiagnostics;
+    final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
+    final List<String> lines = <String>[
+      'Export genere le ${formatter.format(DateTime.now())}',
+      'Total entrees : ${state.entries.length}',
+    ];
+    if (device != null) {
+      lines
+        ..add('Plateforme : ${device.platform} (${device.osVersion})')
+        ..add('Version app : ${device.appVersion}+${device.buildNumber}')
+        ..add('Locale active : ${device.locale}')
+        ..add('Mode hors-ligne : ${device.offlineMode ? 'active' : 'desactive'}')
+        ..add('Actions en attente : ${device.pendingActions}')
+        ..add('Diagnostic rafraichi : ${formatter.format(device.generatedAt)}');
+    }
+    return lines;
+  }
+
+  Future<DeviceDiagnostics> _collectDiagnostics() async {
+    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    Locale locale = WidgetsBinding.instance.platformDispatcher.locale;
+    if (locale.languageCode.isEmpty) {
+      locale = const Locale('fr');
+    }
+    final bool offline = _offlineManager.isOffline.value;
+    final int pending = _offlineManager.pendingActions.value;
+    final PlatformInfo platformInfo = getPlatformInfo();
+    return DeviceDiagnostics(
+      platform: platformInfo.platform,
+      osVersion: platformInfo.osVersion,
+      appVersion: packageInfo.version,
+      buildNumber: packageInfo.buildNumber,
+      locale: locale.toLanguageTag(),
+      offlineMode: offline,
+      pendingActions: pending,
+      generatedAt: DateTime.now(),
+    );
+  }
+
+  void _listenToChanges() {
+    _entriesListener ??= () {
+      emit(
+        state.copyWith(
+          entries: _service.entries,
+        ),
+      );
+    };
+    _service.entriesListenable.addListener(_entriesListener!);
+
+    _pendingListener ??= () {
+      final DeviceDiagnostics? device = state.deviceDiagnostics;
+      if (device != null) {
+        emit(
+          state.copyWith(
+            deviceDiagnostics: device.copyWith(
+              pendingActions: _offlineManager.pendingActions.value,
+              generatedAt: DateTime.now(),
+            ),
+          ),
+        );
+      }
+    };
+    _offlineManager.pendingActions.addListener(_pendingListener!);
+
+    _offlineListener ??= () {
+      final DeviceDiagnostics? device = state.deviceDiagnostics;
+      if (device != null) {
+        emit(
+          state.copyWith(
+            deviceDiagnostics: device.copyWith(
+              offlineMode: _offlineManager.isOffline.value,
+              generatedAt: DateTime.now(),
+            ),
+          ),
+        );
+      }
+    };
+    _offlineManager.isOffline.addListener(_offlineListener!);
+  }
+
+  @override
+  Future<void> close() {
+    if (_entriesListener != null) {
+      _service.entriesListenable.removeListener(_entriesListener!);
+    }
+    if (_pendingListener != null) {
+      _offlineManager.pendingActions.removeListener(_pendingListener!);
+    }
+    if (_offlineListener != null) {
+      _offlineManager.isOffline.removeListener(_offlineListener!);
+    }
+    return super.close();
+  }
+}
+
+
+
+
+
+
+
