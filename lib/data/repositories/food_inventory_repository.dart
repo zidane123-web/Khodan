@@ -61,6 +61,25 @@ class InventorySummary {
     );
     return total / quantityPerMonth.length;
   }
+
+  factory InventorySummary.fromJson(Map<String, dynamic> json) {
+    return InventorySummary(
+      totalQuantityKg: (json['total_quantity_kg'] as num?)?.toDouble() ?? 0,
+      totalCost: (json['total_cost'] as num?)?.toDouble() ?? 0,
+      entriesCount: (json['entries_count'] as num?)?.toInt() ?? 0,
+      estimatedMonthlyConsumptionKg:
+          (json['estimated_monthly_consumption_kg'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'total_quantity_kg': totalQuantityKg,
+      'total_cost': totalCost,
+      'entries_count': entriesCount,
+      'estimated_monthly_consumption_kg': estimatedMonthlyConsumptionKg,
+    };
+  }
 }
 
 abstract class FoodInventoryRepository {

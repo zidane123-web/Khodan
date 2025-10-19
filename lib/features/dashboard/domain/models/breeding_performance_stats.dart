@@ -26,4 +26,17 @@ class BreedingPerformanceStats extends Equatable {
         topDoeLabel,
         topBuckLabel,
       ];
+
+  factory BreedingPerformanceStats.fromJson(Map<String, dynamic> json) {
+    return BreedingPerformanceStats(
+      totalLitters: (json['total_litters'] as num?)?.toInt() ?? 0,
+      averageKitsBornAlive:
+          (json['average_kits_born_alive'] as num?)?.toDouble(),
+      averageKitsWeaned:
+          (json['average_kits_weaned'] as num?)?.toDouble(),
+      totalKitsWeaned: (json['total_kits_weaned'] as num?)?.toInt() ?? 0,
+      topDoeLabel: json['top_doe_label'] as String?,
+      topBuckLabel: json['top_buck_label'] as String?,
+    );
+  }
 }
