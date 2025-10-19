@@ -3,11 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../data/models/animal.dart';
 import '../../../../data/models/animal_event.dart';
+import '../../../../data/models/animal_media.dart';
 import '../../../../data/models/breeding_record.dart';
 import '../../../../data/models/event.dart';
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
+import '../../../../data/repositories/media_repository.dart';
 import '../../domain/genealogy_analyzer.dart';
 
 enum AnimalDetailStatus { initial, loading, success, failure }
@@ -18,27 +20,36 @@ class AnimalDetailState extends Equatable {
     this.status = AnimalDetailStatus.initial,
     this.timeline = const <AnimalTimelineEntry>[],
     this.performance,
-    this.gallery = const <String>[],
+    this.gallery = const <AnimalMedia>[],
     this.genealogy,
     this.errorMessage,
+    this.galleryLoading = false,
+    this.isUploadingMedia = false,
+    this.mediaMessage,
   });
 
   final Animal animal;
   final AnimalDetailStatus status;
   final List<AnimalTimelineEntry> timeline;
   final AnimalPerformanceStats? performance;
-  final List<String> gallery;
+  final List<AnimalMedia> gallery;
   final GenealogyAnalysis? genealogy;
   final String? errorMessage;
+  final bool galleryLoading;
+  final bool isUploadingMedia;
+  final String? mediaMessage;
 
   AnimalDetailState copyWith({
     Animal? animal,
     AnimalDetailStatus? status,
     List<AnimalTimelineEntry>? timeline,
     AnimalPerformanceStats? performance,
-    List<String>? gallery,
+    List<AnimalMedia>? gallery,
     GenealogyAnalysis? genealogy,
     String? errorMessage,
+    bool? galleryLoading,
+    bool? isUploadingMedia,
+    String? mediaMessage,
   }) {
     return AnimalDetailState(
       animal: animal ?? this.animal,
@@ -48,6 +59,9 @@ class AnimalDetailState extends Equatable {
       gallery: gallery ?? this.gallery,
       genealogy: genealogy ?? this.genealogy,
       errorMessage: errorMessage ?? this.errorMessage,
+      galleryLoading: galleryLoading ?? this.galleryLoading,
+      isUploadingMedia: isUploadingMedia ?? this.isUploadingMedia,
+      mediaMessage: mediaMessage,
     );
   }
 
@@ -60,6 +74,9 @@ class AnimalDetailState extends Equatable {
         gallery,
         genealogy,
         errorMessage,
+        galleryLoading,
+        isUploadingMedia,
+        mediaMessage,
       ];
 }
 
@@ -69,14 +86,23 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
     this._animalRepository,
     this._breedingRepository,
     this._eventRepository,
+    this._mediaRepository,
   ) : super(AnimalDetailState(animal: animal));
 
   final AnimalRepository _animalRepository;
   final BreedingRepository _breedingRepository;
   final EventRepository _eventRepository;
+  final MediaRepository _mediaRepository;
 
   Future<void> load() async {
-    emit(state.copyWith(status: AnimalDetailStatus.loading));
+    emit(
+      state.copyWith(
+        status: AnimalDetailStatus.loading,
+        galleryLoading: true,
+        mediaMessage: null,
+        errorMessage: null,
+      ),
+    );
     try {
       final List<Animal> animals = await _animalRepository.fetchAnimals();
       final Map<String, Animal> animalsById = <String, Animal>{
@@ -113,7 +139,10 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
         records,
       );
 
-      final List<String> gallery = _buildInitialGallery(state.animal);
+      final List<AnimalMedia> gallery = await _mediaRepository.fetchAnimalGallery(
+        profileId: state.animal.profileId,
+        animalId: state.animal.id,
+      );
       final GenealogyAnalysis genealogy = analyzer.analyze(state.animal.id);
 
       emit(
@@ -124,6 +153,8 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
           gallery: gallery,
           genealogy: genealogy,
           errorMessage: null,
+          galleryLoading: false,
+          mediaMessage: null,
         ),
       );
     } catch (error) {
@@ -131,26 +162,108 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
         state.copyWith(
           status: AnimalDetailStatus.failure,
           errorMessage: error.toString(),
+          galleryLoading: false,
+          mediaMessage: null,
         ),
       );
     }
   }
 
-  void addPhoto(String url) {
-    final String trimmed = url.trim();
-    if (trimmed.isEmpty) {
-      return;
+  Future<void> refreshGallery({bool forceRemote = false}) async {
+    emit(
+      state.copyWith(
+        galleryLoading: true,
+        mediaMessage: null,
+      ),
+    );
+    try {
+      final List<AnimalMedia> gallery = await _mediaRepository.fetchAnimalGallery(
+        profileId: state.animal.profileId,
+        animalId: state.animal.id,
+        forceRemote: forceRemote,
+      );
+      emit(
+        state.copyWith(
+          gallery: gallery,
+          galleryLoading: false,
+          mediaMessage: null,
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          galleryLoading: false,
+          mediaMessage: 'Impossible de charger la galerie : $error',
+        ),
+      );
     }
-    final List<String> updated = List<String>.from(state.gallery)
-      ..add(trimmed);
-    emit(state.copyWith(gallery: updated));
   }
 
-  void removePhoto(String url) {
-    final List<String> updated = state.gallery
-        .where((String photo) => photo != url)
-        .toList();
-    emit(state.copyWith(gallery: updated));
+  Future<bool> uploadPhoto(String filePath) async {
+    emit(
+      state.copyWith(
+        isUploadingMedia: true,
+        mediaMessage: null,
+      ),
+    );
+    try {
+      final AnimalMedia media = await _mediaRepository.uploadAnimalPhoto(
+        profileId: state.animal.profileId,
+        animalId: state.animal.id,
+        filePath: filePath,
+      );
+      final List<AnimalMedia> updated = <AnimalMedia>[media, ...state.gallery]
+        ..sort(
+          (AnimalMedia a, AnimalMedia b) => b.createdAt.compareTo(a.createdAt),
+        );
+      emit(
+        state.copyWith(
+          gallery: updated,
+          isUploadingMedia: false,
+          mediaMessage: 'Photo ajoutée.',
+        ),
+      );
+      return true;
+    } catch (error) {
+      emit(
+        state.copyWith(
+          isUploadingMedia: false,
+          mediaMessage: 'Impossible d\'ajouter la photo : $error',
+        ),
+      );
+      return false;
+    }
+  }
+
+  Future<void> removeMedia(AnimalMedia media) async {
+    final List<AnimalMedia> previous = state.gallery;
+    final List<AnimalMedia> updated =
+        previous.where((AnimalMedia element) => element.id != media.id).toList();
+    emit(
+      state.copyWith(
+        gallery: updated,
+        mediaMessage: null,
+      ),
+    );
+    try {
+      await _mediaRepository.deleteAnimalPhoto(
+        profileId: state.animal.profileId,
+        animalId: state.animal.id,
+        mediaId: media.id,
+      );
+      emit(
+        state.copyWith(
+          mediaMessage: 'Photo supprimée.',
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          gallery: previous,
+          mediaMessage: 'Impossible de supprimer la photo : $error',
+        ),
+      );
+    }
   }
 
   List<AnimalTimelineEntry> _buildTimeline({
@@ -359,18 +472,6 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
     );
   }
 
-  List<String> _buildInitialGallery(Animal animal) {
-    final List<String> gallery = <String>[];
-    if (animal.imageUrl != null && animal.imageUrl!.isNotEmpty) {
-      gallery.add(animal.imageUrl!);
-    }
-    final List<String>? samples = _sampleGallery[animal.id];
-    if (samples != null) {
-      gallery.addAll(samples);
-    }
-    return gallery;
-  }
-
   String _animalLabel(Animal? animal, String fallbackId) {
     if (animal == null) {
       return fallbackId;
@@ -451,21 +552,6 @@ class AnimalDetailCubit extends Cubit<AnimalDetailState> {
     }
   }
 
-  static const Map<String, List<String>> _sampleGallery = <String, List<String>>{
-    'doe-001': <String>[
-      'https://picsum.photos/seed/doe001/600/400',
-      'https://picsum.photos/seed/doe001b/600/400',
-    ],
-    'doe-002': <String>[
-      'https://picsum.photos/seed/doe002/600/400',
-    ],
-    'buck-001': <String>[
-      'https://picsum.photos/seed/buck001/600/400',
-    ],
-    'buck-002': <String>[
-      'https://picsum.photos/seed/buck002/600/400',
-    ],
-  };
 }
 
 enum AnimalReproductiveRole { doe, buck, unknown }

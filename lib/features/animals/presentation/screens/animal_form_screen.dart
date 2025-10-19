@@ -1,10 +1,18 @@
 // lib/features/animals/presentation/screens/animal_form_screen.dart
+import 'dart:async';
 import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../../../../data/models/animal.dart';
+import '../../../../data/models/animal_media.dart';
 import '../../../../data/models/species_config.dart';
+import '../../../../data/repositories/animal_repository.dart';
+import '../../../../data/repositories/media_repository.dart';
 import '../../../../data/repositories/species_repository.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/animal_cubit.dart';
@@ -32,7 +40,10 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
   DateTime? _firstBreedingDate;
   String? _sireId;
   String? _damId;
-  XFile? _imageFile;
+  String? _photoPath;
+  String? _pendingPhotoPath;
+  String? _coverPreviewUrl;
+  bool _isSaving = false;
 
   // Referentials
   List<SpeciesConfig> _species = <SpeciesConfig>[];
@@ -57,7 +68,9 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
     _firstBreedingDate = initial?.firstBreedingDate;
     _sireId = initial?.sireId;
     _damId = initial?.damId;
-    _imageFile = initial?.imageUrl != null ? XFile(initial!.imageUrl!) : null;
+    _photoPath = null;
+    _pendingPhotoPath = null;
+    _coverPreviewUrl = initial?.imageUrl;
     _selectedSpeciesId = initial?.speciesId;
     _loadSpecies();
   }
@@ -82,7 +95,10 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
       }
       final SpeciesRepository repo = context.read<SpeciesRepository>();
       final List<SpeciesConfig> all = await repo.fetchSpecies(profileId);
-      all.sort((SpeciesConfig a, SpeciesConfig b) => a.speciesName.compareTo(b.speciesName));
+      all.sort(
+        (SpeciesConfig a, SpeciesConfig b) =>
+            a.speciesName.compareTo(b.speciesName),
+      );
       setState(() {
         _species = all;
         if (_selectedSpeciesId == null && _species.isNotEmpty) {
@@ -96,7 +112,6 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
   }
 
   Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
     final ImageSource? source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (BuildContext context) => SafeArea(
@@ -118,17 +133,71 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
       ),
     );
 
-    if (source != null) {
-      final XFile? pickedFile = await picker.pickImage(source: source);
-      if (pickedFile != null) {
-        setState(() {
-          _imageFile = pickedFile;
-        });
-      }
+    if (source == null || !mounted) {
+      return;
+    }
+
+    final ImagePicker picker = ImagePicker();
+    final XFile? picked = await picker.pickImage(source: source);
+    if (picked == null || !mounted) {
+      return;
+    }
+
+    CroppedFile? cropped;
+    try {
+      cropped = await ImageCropper().cropImage(
+        sourcePath: picked.path,
+        compressFormat: ImageCompressFormat.jpg,
+        compressQuality: 90,
+        uiSettings: <PlatformUiSettings>[
+          AndroidUiSettings(
+            toolbarTitle: 'Recadrer la photo',
+            toolbarColor: Theme.of(context).colorScheme.primary,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false,
+            aspectRatioPresets: <CropAspectRatioPreset>[
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio4x3,
+            ],
+          ),
+          IOSUiSettings(
+            title: 'Recadrer la photo',
+            aspectRatioLockEnabled: false,
+            aspectRatioPresets: <CropAspectRatioPreset>[
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio4x3,
+            ],
+          ),
+        ],
+      );
+    } catch (_) {
+      cropped = null;
+    }
+
+    final String targetPath = cropped?.path ?? picked.path;
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _photoPath = targetPath;
+      _pendingPhotoPath = targetPath;
+      _coverPreviewUrl = null;
+    });
+
+    if (cropped != null && cropped.path != picked.path) {
+      final File original = File(picked.path);
+      try {
+        if (await original.exists()) {
+          await original.delete();
+        }
+      } catch (_) {}
     }
   }
 
-  Animal? _submit() {
+  Animal? _buildAnimal() {
     if (!_formKey.currentState!.validate()) {
       return null;
     }
@@ -144,8 +213,10 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
     if (_entryDate!.isBefore(_birthDate!)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text(
-                "La date d'entrée ne peut pas être antérieure à la date de naissance.")),
+          content: Text(
+            "La date d'entrée ne peut pas être antérieure à la date de naissance.",
+          ),
+        ),
       );
       return null;
     }
@@ -153,8 +224,10 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
         _firstBreedingDate!.isBefore(_birthDate!)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text(
-                'La date de première saillie ne peut pas être antérieure à la date de naissance.')),
+          content: Text(
+            'La date de première saillie ne peut pas être antérieure à la date de naissance.',
+          ),
+        ),
       );
       return null;
     }
@@ -163,7 +236,8 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
     final String profileId =
         auth.profile?.id ?? auth.session?.user.id ?? 'demo-profile';
 
-    final Animal baseAnimal = widget.animal ??
+    final Animal baseAnimal =
+        widget.animal ??
         Animal(
           id: 'animal-${DateTime.now().millisecondsSinceEpoch}',
           profileId: profileId,
@@ -176,8 +250,9 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
 
     final Animal result = baseAnimal.copyWith(
       tagId: _tagController.text.trim(),
-      name:
-          _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
+      name: _nameController.text.trim().isEmpty
+          ? null
+          : _nameController.text.trim(),
       sex: _selectedSex,
       status: _selectedStatus,
       birthDate: _birthDate,
@@ -191,47 +266,151 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
           : _originController.text.trim(),
       sireId: _sireId,
       damId: _damId,
-      imageUrl: _imageFile?.path,
+      imageUrl: _pendingPhotoPath != null ? null : _coverPreviewUrl,
     );
 
     return result;
   }
 
-  void _submitAndClose() {
-    final animal = _submit();
-    if (animal != null) {
+  Future<Animal?> _submit() async {
+    if (_isSaving) {
+      return null;
+    }
+    final Animal? built = _buildAnimal();
+    if (built == null) {
+      return null;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      final AnimalRepository repository = context.read<AnimalRepository>();
+      final MediaRepository mediaRepository = context.read<MediaRepository>();
+      Animal saved = widget.animal == null
+          ? await repository.createAnimal(built)
+          : await repository.updateAnimal(built);
+
+      if (_pendingPhotoPath != null && _pendingPhotoPath!.isNotEmpty) {
+        try {
+          final AnimalMedia uploaded = await mediaRepository.uploadAnimalPhoto(
+            profileId: saved.profileId,
+            animalId: saved.id,
+            filePath: _pendingPhotoPath!,
+          );
+          saved = saved.copyWith(
+            imageUrl: uploaded.signedUrl ?? saved.imageUrl,
+          );
+          if (mounted) {
+            setState(() {
+              _coverPreviewUrl = uploaded.signedUrl ?? _coverPreviewUrl;
+              _photoPath = uploaded.localPath ?? _photoPath;
+              _pendingPhotoPath = null;
+            });
+          }
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    "Photo mise en file d'attente pour synchronisation.",
+                  ),
+                ),
+              );
+          }
+        }
+      }
+
+      if (mounted) {
+        unawaited(context.read<AnimalCubit>().fetchAnimals());
+      }
+      return saved;
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(content: Text('Enregistrement impossible : $error')),
+          );
+      }
+      return null;
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  Future<void> _submitAndClose() async {
+    final Animal? animal = await _submit();
+    if (animal != null && mounted) {
       Navigator.of(context).pop(animal);
     }
   }
 
-  void _submitAndReset() {
-    final animal = _submit();
-    if (animal != null) {
-      // Add the animal to the state via the cubit
-      if (widget.animal == null) {
-        context.read<AnimalCubit>().createAnimal(animal);
-      } else {
-        context.read<AnimalCubit>().updateAnimal(animal);
-      }
-
-      // Show a confirmation message
+  Future<void> _submitAndReset() async {
+    final Animal? animal = await _submit();
+    if (animal != null && mounted) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text('${animal.tagId} a été enregistré.')),
+          SnackBar(content: Text('${animal.tagId} a ete enregistre.')),
         );
-
-      // Reset the form for a new entry
       setState(() {
         _formKey.currentState?.reset();
-        _initializeForm(null); // Reset all fields to default for a new animal
+        _initializeForm(null);
       });
     }
   }
 
-  Future<void> _pickDate(
-      {required DateTime? initialDate,
-      required ValueChanged<DateTime> onSelected}) async {
+  Widget _buildCoverPreview(ThemeData theme) {
+    if (_photoPath != null && _photoPath!.isNotEmpty) {
+      final File file = File(_photoPath!);
+      if (file.existsSync()) {
+        return Image.file(file, fit: BoxFit.cover);
+      }
+    }
+
+    if (_coverPreviewUrl != null && _coverPreviewUrl!.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: _coverPreviewUrl!,
+        fit: BoxFit.cover,
+        placeholder: (BuildContext context, String _) => Container(
+          color: theme.colorScheme.surfaceContainerHighest,
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator.adaptive(),
+        ),
+        errorWidget: (BuildContext context, String _, Object __) =>
+            _coverPlaceholder(theme),
+      );
+    }
+
+    return _coverPlaceholder(theme);
+  }
+
+  Widget _coverPlaceholder(ThemeData theme) {
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(
+            Icons.add_a_photo_outlined,
+            size: 64,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(height: 8),
+          const Text('Ajouter une photo'),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickDate({
+    required DateTime? initialDate,
+    required ValueChanged<DateTime> onSelected,
+  }) async {
     final DateTime now = DateTime.now();
     final DateTime? result = await showDatePicker(
       context: context,
@@ -253,12 +432,15 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
 
     final allAnimals = context.read<AnimalCubit>().state.allAnimals;
     final males = allAnimals
-        .where((a) =>
-            a.sex.toLowerCase().contains('mâ') ||
-            a.sex.toLowerCase().contains('mal'))
+        .where(
+          (a) =>
+              a.sex.toLowerCase().contains('mâ') ||
+              a.sex.toLowerCase().contains('mal'),
+        )
         .toList();
-    final females =
-        allAnimals.where((a) => a.sex.toLowerCase().contains('fem')).toList();
+    final females = allAnimals
+        .where((a) => a.sex.toLowerCase().contains('fem'))
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -267,7 +449,7 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
           IconButton(
             icon: const Icon(Icons.save),
             tooltip: 'Enregistrer',
-            onPressed: _submitAndClose,
+            onPressed: _isSaving ? null : () => _submitAndClose(),
           ),
         ],
       ),
@@ -276,28 +458,32 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[
+            if (_isSaving) ...<Widget>[
+              const LinearProgressIndicator(),
+              const SizedBox(height: 16),
+            ],
             // --- Section Photo ---
             GestureDetector(
-              onTap: _pickImage,
+              onTap: _isSaving ? null : _pickImage,
               child: Card(
                 clipBehavior: Clip.antiAlias,
                 child: SizedBox(
                   height: 200,
                   width: double.infinity,
-                  child: _imageFile != null
-                      ? Image.file(
-                          File(_imageFile!.path),
-                          fit: BoxFit.cover,
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add_a_photo_outlined,
-                                size: 64, color: theme.colorScheme.primary),
-                            const SizedBox(height: 8),
-                            const Text('Ajouter une photo'),
-                          ],
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: <Widget>[
+                      _buildCoverPreview(theme),
+                      if (_isSaving)
+                        Container(
+                          color: theme.colorScheme.surface.withValues(
+                            alpha: 0.45,
+                          ),
+                          alignment: Alignment.center,
+                          child: const CircularProgressIndicator.adaptive(),
                         ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -312,7 +498,9 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
                 child: DropdownButtonFormField<int>(
                   initialValue: _selectedSpeciesId,
                   isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Sélectionner une espèce'),
+                  decoration: const InputDecoration(
+                    labelText: 'Sélectionner une espèce',
+                  ),
                   items: _species
                       .map(
                         (SpeciesConfig s) => DropdownMenuItem<int>(
@@ -328,7 +516,8 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
                             _selectedSpeciesId = value;
                           });
                         },
-                  validator: (int? v) => v == null ? 'Sélection obligatoire' : null,
+                  validator: (int? v) =>
+                      v == null ? 'Sélection obligatoire' : null,
                 ),
               ),
             ),
@@ -344,16 +533,18 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
                   children: [
                     TextFormField(
                       controller: _tagController,
-                      decoration:
-                          const InputDecoration(labelText: 'Identifiant (Tag)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Identifiant (Tag)',
+                      ),
                       validator: (value) =>
                           value?.isEmpty ?? true ? 'Champ obligatoire' : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _nameController,
-                      decoration:
-                          const InputDecoration(labelText: 'Nom (Optionnel)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Nom (Optionnel)',
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const Align(
@@ -379,11 +570,15 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
                       decoration: const InputDecoration(labelText: 'Statut'),
                       items: const [
                         DropdownMenuItem(
-                            value: 'Vivant', child: Text('Vivant')),
+                          value: 'Vivant',
+                          child: Text('Vivant'),
+                        ),
                         DropdownMenuItem(value: 'Vendu', child: Text('Vendu')),
                         DropdownMenuItem(value: 'Mort', child: Text('Mort')),
                         DropdownMenuItem(
-                            value: 'Réformé', child: Text('Réformé')),
+                          value: 'Réformé',
+                          child: Text('Réformé'),
+                        ),
                       ],
                       onChanged: (String? value) {
                         if (value != null) {
@@ -407,20 +602,32 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
                   children: [
                     DropdownButtonFormField<String>(
                       initialValue: _sireId,
-                      decoration: const InputDecoration(labelText: 'Père (Sire)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Père (Sire)',
+                      ),
                       items: males
-                          .map((animal) => DropdownMenuItem(
-                              value: animal.id, child: Text(animal.tagId)))
+                          .map(
+                            (animal) => DropdownMenuItem(
+                              value: animal.id,
+                              child: Text(animal.tagId),
+                            ),
+                          )
                           .toList(),
                       onChanged: (value) => setState(() => _sireId = value),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       initialValue: _damId,
-                      decoration: const InputDecoration(labelText: 'Mère (Dam)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Mère (Dam)',
+                      ),
                       items: females
-                          .map((animal) => DropdownMenuItem(
-                              value: animal.id, child: Text(animal.tagId)))
+                          .map(
+                            (animal) => DropdownMenuItem(
+                              value: animal.id,
+                              child: Text(animal.tagId),
+                            ),
+                          )
                           .toList(),
                       onChanged: (value) => setState(() => _damId = value),
                     ),
@@ -469,17 +676,19 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
                       ),
                       validator: (_) => null, // Not required
                     ),
-                     const SizedBox(height: 12),
+                    const SizedBox(height: 12),
                     TextFormField(
                       controller: _originController,
-                      decoration:
-                          const InputDecoration(labelText: 'Origine (Optionnel)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Origine (Optionnel)',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _cageController,
-                      decoration:
-                          const InputDecoration(labelText: 'Cage (Optionnel)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Cage (Optionnel)',
+                      ),
                     ),
                   ],
                 ),
@@ -494,14 +703,14 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.add),
-                      onPressed: _submitAndReset,
+                      onPressed: _isSaving ? null : () => _submitAndReset(),
                       label: const Text('Enregistrer et Ajouter'),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: FilledButton(
-                      onPressed: _submitAndClose,
+                      onPressed: _isSaving ? null : () => _submitAndClose(),
                       child: const Text('Enregistrer'),
                     ),
                   ),
@@ -511,7 +720,7 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: _submitAndClose,
+                  onPressed: _isSaving ? null : () => _submitAndClose(),
                   child: const Text('Enregistrer les modifications'),
                 ),
               ),
@@ -538,8 +747,9 @@ class _DateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
+    final MaterialLocalizations localizations = MaterialLocalizations.of(
+      context,
+    );
     return TextFormField(
       readOnly: true,
       controller: TextEditingController(

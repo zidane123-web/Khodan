@@ -73,6 +73,15 @@ class FoodStockTable extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
+class DashboardPreferencesTable extends Table {
+  TextColumn get profileId => text()();
+  TextColumn get payload => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{profileId};
+}
+
 class AnimalsTable extends Table {
   TextColumn get id => text()();
   TextColumn get profileId => text()();
@@ -122,6 +131,21 @@ class AnimalEventsTable extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{eventId, animalId, role};
 }
 
+class AnimalMediaTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get profileId => text()();
+  TextColumn get animalId => text()();
+  TextColumn get storagePath => text()();
+  TextColumn get payload => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get syncState =>
+      text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
 class QueuedActionsTable extends Table {
   TextColumn get id => text()();
   TextColumn get type => text()();
@@ -148,7 +172,9 @@ class QueuedActionsTable extends Table {
     EventTemplatesTable,
     FoodTypesTable,
     FoodStockTable,
+    DashboardPreferencesTable,
     AnimalsTable,
+    AnimalMediaTable,
     BreedingRecordsTable,
     EventsTable,
     AnimalEventsTable,
@@ -171,7 +197,7 @@ class LocalDatabase extends _$LocalDatabase {
   }
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -189,6 +215,12 @@ class LocalDatabase extends _$LocalDatabase {
             await migrator.createTable(foodTypesTable);
             await migrator.createTable(foodStockTable);
           }
+          if (from < 5) {
+            await migrator.createTable(dashboardPreferencesTable);
+          }
+          if (from < 6) {
+            await migrator.createTable(animalMediaTable);
+          }
         },
       );
 
@@ -198,10 +230,12 @@ class LocalDatabase extends _$LocalDatabase {
       await delete(eventsTable).go();
       await delete(breedingRecordsTable).go();
       await delete(animalsTable).go();
+      await delete(animalMediaTable).go();
       await delete(speciesConfigsTable).go();
       await delete(eventTemplatesTable).go();
       await delete(foodStockTable).go();
       await delete(foodTypesTable).go();
+      await delete(dashboardPreferencesTable).go();
       await delete(profilesTable).go();
       await delete(queuedActionsTable).go();
     });

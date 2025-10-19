@@ -20,6 +20,8 @@ enum SyncActionType {
   createAnimal('animal.create'),
   updateAnimal('animal.update'),
   deleteAnimal('animal.delete'),
+  uploadAnimalMedia('media.upload'),
+  deleteAnimalMedia('media.delete'),
   createBreeding('breeding.create'),
   updateBreeding('breeding.update'),
   deleteBreeding('breeding.delete'),

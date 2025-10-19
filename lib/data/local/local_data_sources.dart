@@ -4,11 +4,13 @@ import 'package:drift/drift.dart';
 
 import '../models/animal.dart';
 import '../models/animal_event.dart';
+import '../models/animal_media.dart';
 import '../models/breeding_record.dart';
 import '../models/event.dart';
 import '../models/event_template.dart';
 import '../models/food_stock.dart';
 import '../models/food_type.dart';
+import '../models/dashboard_preferences.dart';
 import '../models/profile.dart';
 import '../models/species_config.dart';
 import '../models/sync_action.dart';
@@ -119,6 +121,167 @@ class LocalAnimalDataSource {
     final Map<String, dynamic> json =
         jsonDecode(row.payload) as Map<String, dynamic>;
     return Animal.fromJson(json);
+  }
+}
+
+class LocalAnimalMediaDataSource {
+  LocalAnimalMediaDataSource(this._db);
+
+  final LocalDatabase _db;
+
+  Future<void> replaceMedia(
+    List<AnimalMedia> media, {
+    required String profileId,
+    required String animalId,
+  }) async {
+    await _db.transaction(() async {
+      final List<String> ids =
+          media.map((AnimalMedia asset) => asset.id).toList();
+      await (_db.delete(_db.animalMediaTable)
+            ..where(
+              (AnimalMediaTable tbl) =>
+                  tbl.profileId.equals(profileId) &
+                  tbl.animalId.equals(animalId) &
+                  (ids.isEmpty
+                      ? const Constant<bool>(true)
+                      : tbl.id.isNotIn(ids)),
+            ))
+          .go();
+      if (media.isEmpty) {
+        return;
+      }
+      await _db.batch((Batch batch) {
+        batch.insertAllOnConflictUpdate(
+          _db.animalMediaTable,
+          media.map((AnimalMedia asset) {
+            return AnimalMediaTableCompanion.insert(
+              id: asset.id,
+              profileId: asset.profileId,
+              animalId: asset.animalId,
+              storagePath: asset.storagePath,
+              payload: jsonEncode(asset.toJson()),
+              createdAt: asset.createdAt,
+              updatedAt: asset.updatedAt,
+              syncState: Value(asset.syncState),
+            );
+          }).toList(),
+        );
+      });
+    });
+  }
+
+  Future<void> upsertMedia(
+    AnimalMedia asset, {
+    String? syncState,
+  }) async {
+    await _db.into(_db.animalMediaTable).insertOnConflictUpdate(
+          AnimalMediaTableCompanion.insert(
+            id: asset.id,
+            profileId: asset.profileId,
+            animalId: asset.animalId,
+            storagePath: asset.storagePath,
+            payload: jsonEncode(
+              asset.copyWith(
+                syncState: syncState ?? asset.syncState,
+              ).toJson(),
+            ),
+            createdAt: asset.createdAt,
+            updatedAt: asset.updatedAt,
+            syncState: Value(syncState ?? asset.syncState),
+          ),
+        );
+  }
+
+  Future<void> upsertAll(
+    List<AnimalMedia> assets, {
+    String? syncState,
+  }) async {
+    if (assets.isEmpty) {
+      return;
+    }
+    await _db.batch((Batch batch) {
+      batch.insertAllOnConflictUpdate(
+        _db.animalMediaTable,
+        assets.map((AnimalMedia asset) {
+          final String targetSyncState = syncState ?? asset.syncState;
+          return AnimalMediaTableCompanion.insert(
+            id: asset.id,
+            profileId: asset.profileId,
+            animalId: asset.animalId,
+            storagePath: asset.storagePath,
+            payload: jsonEncode(
+              asset.copyWith(syncState: targetSyncState).toJson(),
+            ),
+            createdAt: asset.createdAt,
+            updatedAt: asset.updatedAt,
+            syncState: Value(targetSyncState),
+          );
+        }).toList(),
+      );
+    });
+  }
+
+  Future<AnimalMedia?> fetchById(String id) async {
+    final AnimalMediaTableData? row = await (_db.select(_db.animalMediaTable)
+          ..where((AnimalMediaTable tbl) => tbl.id.equals(id)))
+        .getSingleOrNull();
+    if (row == null) {
+      return null;
+    }
+    return _mapMedia(row);
+  }
+
+  Future<List<AnimalMedia>> fetchByAnimal({
+    required String profileId,
+    required String animalId,
+  }) async {
+    final List<AnimalMediaTableData> rows = await (_db
+            .select(_db.animalMediaTable)
+          ..where(
+            (AnimalMediaTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                tbl.animalId.equals(animalId),
+          ))
+        .get();
+    final List<AnimalMedia> assets =
+        rows.map(_mapMedia).toList(growable: false);
+    assets.sort(
+      (AnimalMedia a, AnimalMedia b) => b.createdAt.compareTo(a.createdAt),
+    );
+    return assets;
+  }
+
+  Future<void> delete(String id) async {
+    await (_db.delete(_db.animalMediaTable)
+          ..where((AnimalMediaTable tbl) => tbl.id.equals(id)))
+        .go();
+  }
+
+  Future<void> deleteForAnimal({
+    required String profileId,
+    required String animalId,
+  }) async {
+    await (_db.delete(_db.animalMediaTable)
+          ..where(
+            (AnimalMediaTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                tbl.animalId.equals(animalId),
+          ))
+        .go();
+  }
+
+  Future<void> updateSyncState(String id, String syncState) async {
+    final AnimalMedia? current = await fetchById(id);
+    if (current == null) {
+      return;
+    }
+    await upsertMedia(current.copyWith(syncState: syncState));
+  }
+
+  AnimalMedia _mapMedia(AnimalMediaTableData row) {
+    final Map<String, dynamic> json =
+        jsonDecode(row.payload) as Map<String, dynamic>;
+    return AnimalMedia.fromJson(json);
   }
 }
 
@@ -811,6 +974,47 @@ class LocalProfileDataSource {
     final Map<String, dynamic> json =
         jsonDecode(row.payload) as Map<String, dynamic>;
     return Profile.fromJson(json);
+  }
+}
+
+class LocalDashboardPreferencesDataSource {
+  LocalDashboardPreferencesDataSource(this._db);
+
+  final LocalDatabase _db;
+
+  Future<DashboardPreferences?> fetch(String profileId) async {
+    final DashboardPreferencesTableData? row =
+        await (_db.select(_db.dashboardPreferencesTable)
+              ..where(
+                (DashboardPreferencesTable tbl) => tbl.profileId.equals(
+                  profileId,
+                ),
+              ))
+            .getSingleOrNull();
+    if (row == null) {
+      return null;
+    }
+    final Map<String, dynamic> json =
+        jsonDecode(row.payload) as Map<String, dynamic>;
+    return DashboardPreferences.fromJson(json);
+  }
+
+  Future<void> upsert(DashboardPreferences preferences) async {
+    await _db.into(_db.dashboardPreferencesTable).insertOnConflictUpdate(
+          DashboardPreferencesTableCompanion.insert(
+            profileId: preferences.profileId,
+            payload: jsonEncode(preferences.toJson()),
+            updatedAt: preferences.updatedAt,
+          ),
+        );
+  }
+
+  Future<void> delete(String profileId) async {
+    await (_db.delete(_db.dashboardPreferencesTable)
+          ..where(
+            (DashboardPreferencesTable tbl) => tbl.profileId.equals(profileId),
+          ))
+        .go();
   }
 }
 

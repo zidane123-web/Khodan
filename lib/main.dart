@@ -18,6 +18,7 @@ import 'data/repositories/breeding_repository.dart';
 import 'data/repositories/event_repository.dart';
 import 'data/repositories/event_template_repository.dart';
 import 'data/repositories/food_inventory_repository.dart';
+import 'data/repositories/media_repository.dart';
 import 'data/repositories/dashboard_repository.dart';
 import 'data/repositories/profile_repository.dart';
 import 'data/repositories/support_repository.dart';
@@ -72,6 +73,7 @@ class _KhodanAppState extends State<KhodanApp> {
   ApiExecutor? _apiClient;
   late final LocalDatabase _localDb;
   late final LocalAnimalDataSource _localAnimalDataSource;
+  late final LocalAnimalMediaDataSource _localAnimalMediaDataSource;
   late final LocalBreedingDataSource _localBreedingDataSource;
   late final LocalEventDataSource _localEventDataSource;
   late final LocalSpeciesDataSource _localSpeciesDataSource;
@@ -90,6 +92,7 @@ class _KhodanAppState extends State<KhodanApp> {
     super.initState();
     _localDb = LocalDatabase();
     _localAnimalDataSource = LocalAnimalDataSource(_localDb);
+    _localAnimalMediaDataSource = LocalAnimalMediaDataSource(_localDb);
     _localBreedingDataSource = LocalBreedingDataSource(_localDb);
     _localEventDataSource = LocalEventDataSource(_localDb);
     _localSpeciesDataSource = LocalSpeciesDataSource(_localDb);
@@ -167,6 +170,9 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<LocalAnimalDataSource>.value(
         value: _localAnimalDataSource,
       ),
+      RepositoryProvider<LocalAnimalMediaDataSource>.value(
+        value: _localAnimalMediaDataSource,
+      ),
       RepositoryProvider<LocalBreedingDataSource>.value(
         value: _localBreedingDataSource,
       ),
@@ -221,16 +227,19 @@ class _KhodanAppState extends State<KhodanApp> {
             offlineManager: OfflineSyncManager.instance,
           ),
         ),
-        RepositoryProvider<FoodInventoryRepository>(
-          create: (_) => SyncedFoodInventoryRepository(
-            remote: SupabaseFoodInventoryRepository(
-              apiClient: _apiClient ??= ApiClient(),
-            ),
-            localTypes: _localFoodTypeDataSource,
-            localStock: _localFoodStockDataSource,
-            offlineManager: OfflineSyncManager.instance,
+      RepositoryProvider<FoodInventoryRepository>(
+        create: (_) => SyncedFoodInventoryRepository(
+          remote: SupabaseFoodInventoryRepository(
+            apiClient: _apiClient ??= ApiClient(),
           ),
+          localTypes: _localFoodTypeDataSource,
+          localStock: _localFoodStockDataSource,
+          offlineManager: OfflineSyncManager.instance,
         ),
+      ),
+      RepositoryProvider<MediaRepository>(
+        create: (_) => InMemoryMediaRepository(),
+      ),
         RepositoryProvider<SupportRepository>(
           create: (_) => InMemorySupportRepository(),
         ),
@@ -261,6 +270,9 @@ class _KhodanAppState extends State<KhodanApp> {
     final EventRepository remoteEvent = SupabaseEventRepository(
       apiClient: apiClient,
     );
+    final SupabaseMediaRepository remoteMedia = SupabaseMediaRepository(
+      apiClient: apiClient,
+    );
       final SpeciesRepository remoteSpecies = SupabaseSpeciesRepository(
         apiClient: apiClient,
       );
@@ -288,6 +300,11 @@ class _KhodanAppState extends State<KhodanApp> {
     final EventRepository syncedEvent = SyncedEventRepository(
       remote: remoteEvent,
       local: _localEventDataSource,
+      offlineManager: offlineManager,
+    );
+    final MediaRepository syncedMedia = SyncedMediaRepository(
+      remote: remoteMedia,
+      local: _localAnimalMediaDataSource,
       offlineManager: offlineManager,
     );
       final SpeciesRepository syncedSpecies = SyncedSpeciesRepository(
@@ -328,6 +345,9 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<LocalAnimalDataSource>.value(
         value: _localAnimalDataSource,
       ),
+      RepositoryProvider<LocalAnimalMediaDataSource>.value(
+        value: _localAnimalMediaDataSource,
+      ),
       RepositoryProvider<LocalBreedingDataSource>.value(
         value: _localBreedingDataSource,
       ),
@@ -363,6 +383,7 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<FoodInventoryRepository>(
         create: (_) => syncedInventory,
       ),
+      RepositoryProvider<MediaRepository>(create: (_) => syncedMedia),
       RepositoryProvider<SupportRepository>(create: (_) => syncedSupport),
       RepositoryProvider<DashboardRepository>(
         create: (_) => dashboardRepository,

@@ -6,9 +6,10 @@ import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
 import '../../../../data/repositories/food_inventory_repository.dart';
+import '../../../../data/repositories/dashboard_repository.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../animals/presentation/models/animal_quick_filter.dart';
-import '../cubit/dashboard_cubit.dart';
+import 'package:khodan/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 import '../widgets/alerts_list.dart';
 import '../widgets/breeding_performance_card.dart';
 import '../widgets/dashboard_calendar.dart';
@@ -22,11 +23,19 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<DashboardCubit>(
-      create: (BuildContext context) => DashboardCubit(
-        context.read<AnimalRepository>(),
-        context.read<BreedingRepository>(),
-        context.read<EventRepository>(),
-      )..loadDashboard(),
+      create: (BuildContext context) {
+        final AuthState authState = context.read<AuthCubit>().state;
+        final String? profileId =
+            authState.profile?.id ?? authState.session?.user.id;
+        return DashboardCubit(
+          context.read<AnimalRepository>(),
+          context.read<BreedingRepository>(),
+          context.read<EventRepository>(),
+          context.read<DashboardRepository>(),
+          context.read<FoodInventoryRepository>(),
+          profileId: profileId,
+        )..loadDashboard();
+      },
       child: const _DashboardView(),
     );
   }
@@ -276,15 +285,12 @@ class _DashboardModuleGrid extends StatelessWidget {
               'Ajoutez des évènements de pesée à vos animaux pour visualiser leur évolution directement ici.',
         );
       case DashboardModuleType.healthAlerts:
-        return _buildInfoCard(
-          theme,
-          title: 'Alertes santé',
-          icon: Icons.medical_services_outlined,
-          message:
-              'Planifiez les traitements et vaccinations pour recevoir des rappels automatiques.',
+        return AlertsList(
+          alerts: state.healthAlerts,
+          title: 'Alertes sante',
         );
       case DashboardModuleType.feedInventory:
-        return const _FeedInventoryCard();
+        return _FeedInventoryCard(summary: state.inventorySummary);
     }
   }
 
@@ -317,80 +323,68 @@ class _DashboardModuleGrid extends StatelessWidget {
 }
 
 class _FeedInventoryCard extends StatelessWidget {
-  const _FeedInventoryCard();
+  const _FeedInventoryCard({required this.summary});
+
+  final InventorySummary? summary;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final AuthCubit authCubit = context.read<AuthCubit>();
-    final String? profileId =
-        authCubit.state.profile?.id ?? authCubit.state.session?.user.id;
-    if (profileId == null) {
+    if (summary == null) {
       return _placeholder(theme);
     }
-
-    final FoodInventoryRepository repo =
-        context.read<FoodInventoryRepository>();
-    return FutureBuilder<InventorySummary>(
-      future: repo.computeSummary(profileId),
-      builder: (BuildContext context, AsyncSnapshot<InventorySummary> snap) {
-        if (!snap.hasData) {
-          return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: const <Widget>[
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  SizedBox(width: 12),
-                  Text('Chargement de l\'inventaire...'),
-                ],
-              ),
-            ),
-          );
-        }
-        final InventorySummary s = snap.data!;
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    final InventorySummary s = summary!;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
               children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Icon(Icons.inventory_2_outlined,
-                        color: theme.colorScheme.primary),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Inventaire des aliments',
-                        style: theme.textTheme.titleLarge,
-                      ),
-                    ),
-                  ],
+                Icon(
+                  Icons.inventory_2_outlined,
+                  color: theme.colorScheme.primary,
                 ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
-                  children: <Widget>[
-                    _metricChip(theme, 'Quantité (kg)',
-                        s.totalQuantityKg.toStringAsFixed(1)),
-                    _metricChip(theme, 'Coût total',
-                        '${s.totalCost.toStringAsFixed(2)} €'),
-                    _metricChip(theme, 'Conso/mois (kg)',
-                        s.estimatedMonthlyConsumptionKg.toStringAsFixed(1)),
-                    _metricChip(theme, 'Entrées', s.entriesCount.toString()),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Inventaire des aliments',
+                    style: theme.textTheme.titleLarge,
+                  ),
                 ),
               ],
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: <Widget>[
+                _metricChip(
+                  theme,
+                  'Quantite (kg)',
+                  s.totalQuantityKg.toStringAsFixed(1),
+                ),
+                _metricChip(
+                  theme,
+                  'Cout total',
+                  '${s.totalCost.toStringAsFixed(2)} EUR',
+                ),
+                _metricChip(
+                  theme,
+                  'Conso/mois (kg)',
+                  s.estimatedMonthlyConsumptionKg.toStringAsFixed(1),
+                ),
+                _metricChip(
+                  theme,
+                  'Entrees',
+                  s.entriesCount.toString(),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -398,9 +392,11 @@ class _FeedInventoryCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(label,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
         const SizedBox(height: 4),
         Text(value, style: theme.textTheme.titleLarge),
       ],
@@ -416,7 +412,10 @@ class _FeedInventoryCard extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(Icons.inventory_2_outlined, color: theme.colorScheme.primary),
+                Icon(
+                  Icons.inventory_2_outlined,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -428,7 +427,7 @@ class _FeedInventoryCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Connectez-vous pour consulter le résumé de votre inventaire.',
+              'Connectez-vous pour consulter le resume de votre inventaire.',
               style: theme.textTheme.bodyMedium,
             ),
           ],
@@ -437,6 +436,7 @@ class _FeedInventoryCard extends StatelessWidget {
     );
   }
 }
+
 
 class _DashboardCustomizationResult {
   const _DashboardCustomizationResult({
@@ -533,21 +533,21 @@ class _DashboardCustomizationSheetState
   String _moduleLabel(DashboardModuleType type) {
     switch (type) {
       case DashboardModuleType.kpis:
-        return 'Indicateurs clés';
+        return 'Indicateurs cles';
       case DashboardModuleType.alerts:
-        return 'Alertes de santé';
+        return 'Alertes generales';
       case DashboardModuleType.calendar:
         return 'Calendrier';
       case DashboardModuleType.tasksToday:
-        return 'Tâches du jour';
+        return 'Taches du jour';
       case DashboardModuleType.tasksUpcoming:
-        return 'Tâches à venir';
+        return 'Taches a venir';
       case DashboardModuleType.performance:
         return 'Performances repro';
       case DashboardModuleType.weightTracking:
         return 'Suivi des poids';
       case DashboardModuleType.healthAlerts:
-        return 'Alertes santé avancées';
+        return 'Alertes sante';
       case DashboardModuleType.feedInventory:
         return 'Inventaire des aliments';
     }
@@ -556,23 +556,23 @@ class _DashboardCustomizationSheetState
   String _moduleDescription(DashboardModuleType type) {
     switch (type) {
       case DashboardModuleType.kpis:
-        return 'Résumé rapide des métriques clés.';
+        return 'Resume rapide des metriques cles.';
       case DashboardModuleType.alerts:
         return 'Notifications importantes et rappels critiques.';
       case DashboardModuleType.calendar:
-        return 'Vue condensée des évènements à venir.';
+        return 'Vue condensee des evenements a venir.';
       case DashboardModuleType.tasksToday:
-        return 'Actions à réaliser dans la journée.';
+        return 'Actions a realiser dans la journee.';
       case DashboardModuleType.tasksUpcoming:
-        return 'Préparez les tâches des prochains jours.';
+        return 'Preparez les taches des prochains jours.';
       case DashboardModuleType.performance:
         return 'Statistiques globales de reproduction.';
       case DashboardModuleType.weightTracking:
-        return 'Synthèse des pesées enregistrées.';
+        return 'Suivi des poids et tendances.';
       case DashboardModuleType.healthAlerts:
-        return 'Suivi des traitements et soins en cours.';
+        return 'Suivi des traitements, controles et soins planifies.';
       case DashboardModuleType.feedInventory:
-        return 'Gestion des stocks d’aliments.';
+        return 'Gestion des stocks daliments et consommation.';
     }
   }
 

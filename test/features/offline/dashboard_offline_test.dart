@@ -6,6 +6,8 @@ import 'package:khodan/data/local/local_database.dart';
 import 'package:khodan/data/repositories/animal_repository.dart';
 import 'package:khodan/data/repositories/breeding_repository.dart';
 import 'package:khodan/data/repositories/event_repository.dart';
+import 'package:khodan/data/repositories/dashboard_repository.dart';
+import 'package:khodan/data/repositories/food_inventory_repository.dart';
 import 'package:khodan/data/services/offline_sync_manager.dart';
 import 'package:khodan/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 
@@ -60,10 +62,18 @@ void main() {
       offlineManager: offlineManager,
     );
 
+    final DashboardRepository dashboardRepository =
+        InMemoryDashboardRepository();
+    final FoodInventoryRepository foodInventoryRepository =
+        InMemoryFoodInventoryRepository();
+
     final DashboardCubit cubit = DashboardCubit(
       animalRepository,
       breedingRepository,
       eventRepository,
+      dashboardRepository,
+      foodInventoryRepository,
+      profileId: 'demo-profile',
     );
     addTearDown(cubit.close);
 

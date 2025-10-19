@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -35,13 +37,46 @@ class _ScanAnimalScreenState extends State<ScanAnimalScreen> {
       if (value == null || value.isEmpty) {
         continue;
       }
-      final Animal? animal = _findAnimal(value);
+      final Animal? animal = _resolveAnimal(value);
       if (animal != null) {
         setState(() => _found = true);
         Navigator.of(context).pop(animal);
         return;
       }
     }
+  }
+
+  Animal? _resolveAnimal(String raw) {
+    final Animal? parsed = _tryParsePayload(raw);
+    return parsed ?? _findAnimal(raw);
+  }
+
+  Animal? _tryParsePayload(String raw) {
+    try {
+      final dynamic decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        final String? type = decoded['type'] as String?;
+        if (type == 'khodan.animal') {
+          final String? id = decoded['animal_id'] as String? ?? decoded['id'] as String?;
+          final String? tag = decoded['tag'] as String?;
+          if (id != null) {
+            final Animal? byId = _findAnimal(id);
+            if (byId != null) {
+              return byId;
+            }
+          }
+          if (tag != null) {
+            final Animal? byTag = _findAnimal(tag);
+            if (byTag != null) {
+              return byTag;
+            }
+          }
+        }
+      }
+    } catch (_) {
+      // Ignore malformed payloads
+    }
+    return null;
   }
 
   Animal? _findAnimal(String tag) {
@@ -64,7 +99,7 @@ class _ScanAnimalScreenState extends State<ScanAnimalScreen> {
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
-            hintText: 'Tag ou identifiant de l’animal',
+            hintText: 'Tag, identifiant ou payload QR',
           ),
         ),
         actions: <Widget>[
@@ -126,7 +161,7 @@ class _ScanAnimalScreenState extends State<ScanAnimalScreen> {
             child: Column(
               children: <Widget>[
                 const Text(
-                  'Visez le QR code ou la puce NFC associée à l’animal pour ouvrir sa fiche instantanément.',
+                  'Visez le QR code généré dans la fiche animal ou la puce NFC pour ouvrir sa fiche instantanément.',
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),

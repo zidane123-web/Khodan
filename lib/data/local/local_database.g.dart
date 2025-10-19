@@ -1737,6 +1737,247 @@ class FoodStockTableCompanion extends UpdateCompanion<FoodStockTableData> {
   }
 }
 
+class $DashboardPreferencesTableTable extends DashboardPreferencesTable
+    with
+        TableInfo<$DashboardPreferencesTableTable,
+            DashboardPreferencesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DashboardPreferencesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _payloadMeta =
+      const VerificationMeta('payload');
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+      'payload', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [profileId, payload, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'dashboard_preferences_table';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<DashboardPreferencesTableData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(_payloadMeta,
+          payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta));
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {profileId};
+  @override
+  DashboardPreferencesTableData map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DashboardPreferencesTableData(
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}profile_id'])!,
+      payload: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $DashboardPreferencesTableTable createAlias(String alias) {
+    return $DashboardPreferencesTableTable(attachedDatabase, alias);
+  }
+}
+
+class DashboardPreferencesTableData extends DataClass
+    implements Insertable<DashboardPreferencesTableData> {
+  final String profileId;
+  final String payload;
+  final DateTime updatedAt;
+  const DashboardPreferencesTableData(
+      {required this.profileId,
+      required this.payload,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['profile_id'] = Variable<String>(profileId);
+    map['payload'] = Variable<String>(payload);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  DashboardPreferencesTableCompanion toCompanion(bool nullToAbsent) {
+    return DashboardPreferencesTableCompanion(
+      profileId: Value(profileId),
+      payload: Value(payload),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory DashboardPreferencesTableData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DashboardPreferencesTableData(
+      profileId: serializer.fromJson<String>(json['profileId']),
+      payload: serializer.fromJson<String>(json['payload']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'profileId': serializer.toJson<String>(profileId),
+      'payload': serializer.toJson<String>(payload),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  DashboardPreferencesTableData copyWith(
+          {String? profileId, String? payload, DateTime? updatedAt}) =>
+      DashboardPreferencesTableData(
+        profileId: profileId ?? this.profileId,
+        payload: payload ?? this.payload,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  DashboardPreferencesTableData copyWithCompanion(
+      DashboardPreferencesTableCompanion data) {
+    return DashboardPreferencesTableData(
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DashboardPreferencesTableData(')
+          ..write('profileId: $profileId, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(profileId, payload, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DashboardPreferencesTableData &&
+          other.profileId == this.profileId &&
+          other.payload == this.payload &&
+          other.updatedAt == this.updatedAt);
+}
+
+class DashboardPreferencesTableCompanion
+    extends UpdateCompanion<DashboardPreferencesTableData> {
+  final Value<String> profileId;
+  final Value<String> payload;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const DashboardPreferencesTableCompanion({
+    this.profileId = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DashboardPreferencesTableCompanion.insert({
+    required String profileId,
+    required String payload,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : profileId = Value(profileId),
+        payload = Value(payload),
+        updatedAt = Value(updatedAt);
+  static Insertable<DashboardPreferencesTableData> custom({
+    Expression<String>? profileId,
+    Expression<String>? payload,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (profileId != null) 'profile_id': profileId,
+      if (payload != null) 'payload': payload,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DashboardPreferencesTableCompanion copyWith(
+      {Value<String>? profileId,
+      Value<String>? payload,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return DashboardPreferencesTableCompanion(
+      profileId: profileId ?? this.profileId,
+      payload: payload ?? this.payload,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DashboardPreferencesTableCompanion(')
+          ..write('profileId: $profileId, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $AnimalsTableTable extends AnimalsTable
     with TableInfo<$AnimalsTableTable, AnimalsTableData> {
   @override
@@ -2076,6 +2317,439 @@ class AnimalsTableCompanion extends UpdateCompanion<AnimalsTableData> {
           ..write('profileId: $profileId, ')
           ..write('speciesId: $speciesId, ')
           ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AnimalMediaTableTable extends AnimalMediaTable
+    with TableInfo<$AnimalMediaTableTable, AnimalMediaTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AnimalMediaTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _animalIdMeta =
+      const VerificationMeta('animalId');
+  @override
+  late final GeneratedColumn<String> animalId = GeneratedColumn<String>(
+      'animal_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _storagePathMeta =
+      const VerificationMeta('storagePath');
+  @override
+  late final GeneratedColumn<String> storagePath = GeneratedColumn<String>(
+      'storage_path', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _payloadMeta =
+      const VerificationMeta('payload');
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+      'payload', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _syncStateMeta =
+      const VerificationMeta('syncState');
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+      'sync_state', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('synced'));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        profileId,
+        animalId,
+        storagePath,
+        payload,
+        createdAt,
+        updatedAt,
+        syncState
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'animal_media_table';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<AnimalMediaTableData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('animal_id')) {
+      context.handle(_animalIdMeta,
+          animalId.isAcceptableOrUnknown(data['animal_id']!, _animalIdMeta));
+    } else if (isInserting) {
+      context.missing(_animalIdMeta);
+    }
+    if (data.containsKey('storage_path')) {
+      context.handle(
+          _storagePathMeta,
+          storagePath.isAcceptableOrUnknown(
+              data['storage_path']!, _storagePathMeta));
+    } else if (isInserting) {
+      context.missing(_storagePathMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(_payloadMeta,
+          payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta));
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(_syncStateMeta,
+          syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AnimalMediaTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AnimalMediaTableData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}profile_id'])!,
+      animalId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}animal_id'])!,
+      storagePath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}storage_path'])!,
+      payload: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      syncState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_state'])!,
+    );
+  }
+
+  @override
+  $AnimalMediaTableTable createAlias(String alias) {
+    return $AnimalMediaTableTable(attachedDatabase, alias);
+  }
+}
+
+class AnimalMediaTableData extends DataClass
+    implements Insertable<AnimalMediaTableData> {
+  final String id;
+  final String profileId;
+  final String animalId;
+  final String storagePath;
+  final String payload;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String syncState;
+  const AnimalMediaTableData(
+      {required this.id,
+      required this.profileId,
+      required this.animalId,
+      required this.storagePath,
+      required this.payload,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.syncState});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['profile_id'] = Variable<String>(profileId);
+    map['animal_id'] = Variable<String>(animalId);
+    map['storage_path'] = Variable<String>(storagePath);
+    map['payload'] = Variable<String>(payload);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['sync_state'] = Variable<String>(syncState);
+    return map;
+  }
+
+  AnimalMediaTableCompanion toCompanion(bool nullToAbsent) {
+    return AnimalMediaTableCompanion(
+      id: Value(id),
+      profileId: Value(profileId),
+      animalId: Value(animalId),
+      storagePath: Value(storagePath),
+      payload: Value(payload),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      syncState: Value(syncState),
+    );
+  }
+
+  factory AnimalMediaTableData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AnimalMediaTableData(
+      id: serializer.fromJson<String>(json['id']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      animalId: serializer.fromJson<String>(json['animalId']),
+      storagePath: serializer.fromJson<String>(json['storagePath']),
+      payload: serializer.fromJson<String>(json['payload']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'profileId': serializer.toJson<String>(profileId),
+      'animalId': serializer.toJson<String>(animalId),
+      'storagePath': serializer.toJson<String>(storagePath),
+      'payload': serializer.toJson<String>(payload),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'syncState': serializer.toJson<String>(syncState),
+    };
+  }
+
+  AnimalMediaTableData copyWith(
+          {String? id,
+          String? profileId,
+          String? animalId,
+          String? storagePath,
+          String? payload,
+          DateTime? createdAt,
+          DateTime? updatedAt,
+          String? syncState}) =>
+      AnimalMediaTableData(
+        id: id ?? this.id,
+        profileId: profileId ?? this.profileId,
+        animalId: animalId ?? this.animalId,
+        storagePath: storagePath ?? this.storagePath,
+        payload: payload ?? this.payload,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        syncState: syncState ?? this.syncState,
+      );
+  AnimalMediaTableData copyWithCompanion(AnimalMediaTableCompanion data) {
+    return AnimalMediaTableData(
+      id: data.id.present ? data.id.value : this.id,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      animalId: data.animalId.present ? data.animalId.value : this.animalId,
+      storagePath:
+          data.storagePath.present ? data.storagePath.value : this.storagePath,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AnimalMediaTableData(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('animalId: $animalId, ')
+          ..write('storagePath: $storagePath, ')
+          ..write('payload: $payload, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, profileId, animalId, storagePath, payload,
+      createdAt, updatedAt, syncState);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AnimalMediaTableData &&
+          other.id == this.id &&
+          other.profileId == this.profileId &&
+          other.animalId == this.animalId &&
+          other.storagePath == this.storagePath &&
+          other.payload == this.payload &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.syncState == this.syncState);
+}
+
+class AnimalMediaTableCompanion extends UpdateCompanion<AnimalMediaTableData> {
+  final Value<String> id;
+  final Value<String> profileId;
+  final Value<String> animalId;
+  final Value<String> storagePath;
+  final Value<String> payload;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> syncState;
+  final Value<int> rowid;
+  const AnimalMediaTableCompanion({
+    this.id = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.animalId = const Value.absent(),
+    this.storagePath = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AnimalMediaTableCompanion.insert({
+    required String id,
+    required String profileId,
+    required String animalId,
+    required String storagePath,
+    required String payload,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        profileId = Value(profileId),
+        animalId = Value(animalId),
+        storagePath = Value(storagePath),
+        payload = Value(payload),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt);
+  static Insertable<AnimalMediaTableData> custom({
+    Expression<String>? id,
+    Expression<String>? profileId,
+    Expression<String>? animalId,
+    Expression<String>? storagePath,
+    Expression<String>? payload,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? syncState,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (profileId != null) 'profile_id': profileId,
+      if (animalId != null) 'animal_id': animalId,
+      if (storagePath != null) 'storage_path': storagePath,
+      if (payload != null) 'payload': payload,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncState != null) 'sync_state': syncState,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AnimalMediaTableCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? profileId,
+      Value<String>? animalId,
+      Value<String>? storagePath,
+      Value<String>? payload,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<String>? syncState,
+      Value<int>? rowid}) {
+    return AnimalMediaTableCompanion(
+      id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
+      animalId: animalId ?? this.animalId,
+      storagePath: storagePath ?? this.storagePath,
+      payload: payload ?? this.payload,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncState: syncState ?? this.syncState,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (animalId.present) {
+      map['animal_id'] = Variable<String>(animalId.value);
+    }
+    if (storagePath.present) {
+      map['storage_path'] = Variable<String>(storagePath.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AnimalMediaTableCompanion(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('animalId: $animalId, ')
+          ..write('storagePath: $storagePath, ')
+          ..write('payload: $payload, ')
+          ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncState: $syncState, ')
           ..write('rowid: $rowid')
@@ -3719,7 +4393,11 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
       $EventTemplatesTableTable(this);
   late final $FoodTypesTableTable foodTypesTable = $FoodTypesTableTable(this);
   late final $FoodStockTableTable foodStockTable = $FoodStockTableTable(this);
+  late final $DashboardPreferencesTableTable dashboardPreferencesTable =
+      $DashboardPreferencesTableTable(this);
   late final $AnimalsTableTable animalsTable = $AnimalsTableTable(this);
+  late final $AnimalMediaTableTable animalMediaTable =
+      $AnimalMediaTableTable(this);
   late final $BreedingRecordsTableTable breedingRecordsTable =
       $BreedingRecordsTableTable(this);
   late final $EventsTableTable eventsTable = $EventsTableTable(this);
@@ -3737,7 +4415,9 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
         eventTemplatesTable,
         foodTypesTable,
         foodStockTable,
+        dashboardPreferencesTable,
         animalsTable,
+        animalMediaTable,
         breedingRecordsTable,
         eventsTable,
         animalEventsTable,
@@ -4462,6 +5142,103 @@ class $$FoodStockTableTableOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
+typedef $$DashboardPreferencesTableTableCreateCompanionBuilder
+    = DashboardPreferencesTableCompanion Function({
+  required String profileId,
+  required String payload,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$DashboardPreferencesTableTableUpdateCompanionBuilder
+    = DashboardPreferencesTableCompanion Function({
+  Value<String> profileId,
+  Value<String> payload,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$DashboardPreferencesTableTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $DashboardPreferencesTableTable,
+    DashboardPreferencesTableData,
+    $$DashboardPreferencesTableTableFilterComposer,
+    $$DashboardPreferencesTableTableOrderingComposer,
+    $$DashboardPreferencesTableTableCreateCompanionBuilder,
+    $$DashboardPreferencesTableTableUpdateCompanionBuilder> {
+  $$DashboardPreferencesTableTableTableManager(
+      _$LocalDatabase db, $DashboardPreferencesTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$DashboardPreferencesTableTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$DashboardPreferencesTableTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> profileId = const Value.absent(),
+            Value<String> payload = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              DashboardPreferencesTableCompanion(
+            profileId: profileId,
+            payload: payload,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String profileId,
+            required String payload,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              DashboardPreferencesTableCompanion.insert(
+            profileId: profileId,
+            payload: payload,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$DashboardPreferencesTableTableFilterComposer
+    extends FilterComposer<_$LocalDatabase, $DashboardPreferencesTableTable> {
+  $$DashboardPreferencesTableTableFilterComposer(super.$state);
+  ColumnFilters<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$DashboardPreferencesTableTableOrderingComposer
+    extends OrderingComposer<_$LocalDatabase, $DashboardPreferencesTableTable> {
+  $$DashboardPreferencesTableTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
 typedef $$AnimalsTableTableCreateCompanionBuilder = AnimalsTableCompanion
     Function({
   required String id,
@@ -4592,6 +5369,183 @@ class $$AnimalsTableTableOrderingComposer
 
   ColumnOrderings<String> get payload => $state.composableBuilder(
       column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+typedef $$AnimalMediaTableTableCreateCompanionBuilder
+    = AnimalMediaTableCompanion Function({
+  required String id,
+  required String profileId,
+  required String animalId,
+  required String storagePath,
+  required String payload,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+typedef $$AnimalMediaTableTableUpdateCompanionBuilder
+    = AnimalMediaTableCompanion Function({
+  Value<String> id,
+  Value<String> profileId,
+  Value<String> animalId,
+  Value<String> storagePath,
+  Value<String> payload,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+
+class $$AnimalMediaTableTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $AnimalMediaTableTable,
+    AnimalMediaTableData,
+    $$AnimalMediaTableTableFilterComposer,
+    $$AnimalMediaTableTableOrderingComposer,
+    $$AnimalMediaTableTableCreateCompanionBuilder,
+    $$AnimalMediaTableTableUpdateCompanionBuilder> {
+  $$AnimalMediaTableTableTableManager(
+      _$LocalDatabase db, $AnimalMediaTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$AnimalMediaTableTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$AnimalMediaTableTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> profileId = const Value.absent(),
+            Value<String> animalId = const Value.absent(),
+            Value<String> storagePath = const Value.absent(),
+            Value<String> payload = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AnimalMediaTableCompanion(
+            id: id,
+            profileId: profileId,
+            animalId: animalId,
+            storagePath: storagePath,
+            payload: payload,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String profileId,
+            required String animalId,
+            required String storagePath,
+            required String payload,
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AnimalMediaTableCompanion.insert(
+            id: id,
+            profileId: profileId,
+            animalId: animalId,
+            storagePath: storagePath,
+            payload: payload,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$AnimalMediaTableTableFilterComposer
+    extends FilterComposer<_$LocalDatabase, $AnimalMediaTableTable> {
+  $$AnimalMediaTableTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get animalId => $state.composableBuilder(
+      column: $state.table.animalId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get storagePath => $state.composableBuilder(
+      column: $state.table.storagePath,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$AnimalMediaTableTableOrderingComposer
+    extends OrderingComposer<_$LocalDatabase, $AnimalMediaTableTable> {
+  $$AnimalMediaTableTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get animalId => $state.composableBuilder(
+      column: $state.table.animalId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get storagePath => $state.composableBuilder(
+      column: $state.table.storagePath,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -5278,8 +6232,13 @@ class $LocalDatabaseManager {
       $$FoodTypesTableTableTableManager(_db, _db.foodTypesTable);
   $$FoodStockTableTableTableManager get foodStockTable =>
       $$FoodStockTableTableTableManager(_db, _db.foodStockTable);
+  $$DashboardPreferencesTableTableTableManager get dashboardPreferencesTable =>
+      $$DashboardPreferencesTableTableTableManager(
+          _db, _db.dashboardPreferencesTable);
   $$AnimalsTableTableTableManager get animalsTable =>
       $$AnimalsTableTableTableManager(_db, _db.animalsTable);
+  $$AnimalMediaTableTableTableManager get animalMediaTable =>
+      $$AnimalMediaTableTableTableManager(_db, _db.animalMediaTable);
   $$BreedingRecordsTableTableTableManager get breedingRecordsTable =>
       $$BreedingRecordsTableTableTableManager(_db, _db.breedingRecordsTable);
   $$EventsTableTableTableManager get eventsTable =>

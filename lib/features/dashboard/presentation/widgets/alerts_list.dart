@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
-import '../cubit/dashboard_cubit.dart';
+import 'package:khodan/features/dashboard/presentation/cubit/dashboard_cubit.dart';
 
 class AlertsList extends StatelessWidget {
   const AlertsList({
     required this.alerts,
+    this.title = 'Alertes importantes',
     super.key,
   });
 
   final List<DashboardAlert> alerts;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +22,7 @@ class AlertsList extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              'Alertes importantes',
+              title,
               style: theme.textTheme.titleLarge,
             ),
             const SizedBox(height: 12),

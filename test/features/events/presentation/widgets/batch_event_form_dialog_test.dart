@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -22,15 +22,17 @@ class _RecordingEventRepository implements EventRepository {
   }
 
   @override
-  Future<List<LivestockEvent>> fetchEvents({DateTime? start, DateTime? end}) async =>
-      <LivestockEvent>[];
+  Future<List<LivestockEvent>> fetchEvents({
+    DateTime? start,
+    DateTime? end,
+  }) async => <LivestockEvent>[];
 
   @override
   Future<List<AnimalEventLink>> fetchEventLinks() async => <AnimalEventLink>[];
 }
 
 class _TestEventsCubit extends EventsCubit {
-  _TestEventsCubit(EventRepository repository) : super(repository);
+  _TestEventsCubit(super.repository);
 
   int refreshCalls = 0;
 
@@ -53,7 +55,9 @@ void main() {
     status: 'active',
   );
 
-  testWidgets('enqueues batch events and refreshes list', (WidgetTester tester) async {
+  testWidgets('enqueues batch events and refreshes list', (
+    WidgetTester tester,
+  ) async {
     final _RecordingEventRepository repository = _RecordingEventRepository();
     final _TestEventsCubit eventsCubit = _TestEventsCubit(repository);
 
@@ -93,7 +97,10 @@ void main() {
     await tester.tap(find.textContaining('Pes').last);
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextFormField, 'Poids (kg)'), '2');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Poids (kg)'),
+      '2',
+    );
 
     await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
