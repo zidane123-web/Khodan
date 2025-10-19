@@ -1,5 +1,11 @@
 adb tcpip 5555 
 adb connect 192.168.100.61
+adb connect 10.50.101.165
+adb connect 192.168.100.159
+adb connect 192.168.43.194
+adb connect
+adb connect
+
 flutter run --dart-define=SUPABASE_URL=https://rmtkvalfhbhhqczwvtoz.supabase.co --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtdGt2YWxmaGJoaHFjend2dG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMjc3MjAsImV4cCI6MjA3MzcwMzcyMH0.iCunOEha0B-Lxz4y2I94tzqNs3UqlQdNMUa7mM7fsHE
 
 flutter run --dart-define-from-file=.env (lien plus court)
@@ -16,6 +22,8 @@ supabase migrations new Nom_du_fichier
 Mon objectif est de créer une application pour gérer l'élevage de Lapin. Il faut parcourir tout le projet (le frontend,la logique, le backend, les fonctionnalités ) qui ont été déjà faites et tu recences tout ce qui reste à faire pour une application complète, prête à être déployée. Pour cela, tu cré un dossier plan avec à l'intérieur l'ensemble des tâches  à faire (un ficher par tâche). Les taches doivent etre bien détaillé. tu crees au total 15 taches, qui couvrent tout.
 
 
-Passe à l'exécution de la tache 9. N'oublie pas de faires les tests pour t'assurer de l'abasense de problèmes de compilation, d'avertissement et autres.Déplace cette tâche une fois terminée dans le sous dossier done et cré un commite en lui donnant le nom "Tache 9".
+Passe à l'exécution de la tache 9.
+N'oublie pas de faires les tests pour t'assurer de l'abasense de problèmes de compilation, d'avertissement et autres.
+Déplace cette tâche une fois terminée dans le sous dossier done et cré un commite en lui donnant le nom "Tache 9".
 
-Passe à l'exécution de la tache 9 mais en sa partie 09B avec les mêmes instructions que la parte 09a (remplir uniquement cette tâche,de sorte à ne pas créer de problème, faire des tests de vérifications pour s'assurer que tout est en ordre et de créer un commite à la fin). N'oublie pas les mêmes tests puis de corriger les problèmes éventuels (compliation, avertissement, affichage,et autres) qui pourraient intervenir ou qui sont déjà là afin de s'assurer que tout fonctionne bien avant de m'informer
+Passe à l'exécution de la tache 9 mais en sa partie 09C avec les mêmes instructions que la parte 09a (remplir uniquement cette tâche,de sorte à ne pas créer de problème, faire des tests de vérifications pour s'assurer que tout est en ordre et de créer un commite à la fin). N'oublie pas les mêmes tests puis de corriger les problèmes éventuels (compliation, avertissement, affichage,et autres) qui pourraient intervenir ou qui sont déjà là afin de s'assurer que tout fonctionne bien avant de m'informer

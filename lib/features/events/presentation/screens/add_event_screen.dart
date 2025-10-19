@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../data/models/animal.dart';
 import '../../../../data/models/animal_event.dart';
 import '../../../../data/models/event.dart';
+import '../../../../data/models/event_template.dart';
 import '../../../../data/repositories/event_repository.dart';
+import '../../../../data/repositories/event_template_repository.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 
 class AddEventScreen extends StatefulWidget {
   const AddEventScreen({
@@ -90,6 +94,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
   // Simple in-memory templates for this session/screen
   static final List<_EventTemplate> _savedTemplates = <_EventTemplate>[];
 
+  // Referentials
+  List<EventTemplate> _templates = <EventTemplate>[];
+  // No explicit loading indicator here; screen-level context remains responsive.
+
   @override
   void initState() {
     super.initState();
@@ -99,6 +107,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
       _eventType = 'cage_change';
     }
     _selectedAnimalIds = widget.animals.map((Animal a) => a.id).toSet();
+    _loadReferentials();
   }
 
   @override
@@ -143,6 +152,79 @@ class _AddEventScreenState extends State<AddEventScreen> {
     _frequencyController.dispose();
     _feedReasonController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadReferentials() async {
+    // no-op loading flag
+    try {
+      final AuthState auth = context.read<AuthCubit>().state;
+      final String? profileId = auth.profile?.id ?? auth.session?.user.id;
+      if (profileId != null) {
+        final EventTemplateRepository tplRepo =
+            context.read<EventTemplateRepository>();
+        final List<EventTemplate> templates =
+            await tplRepo.fetchTemplates(profileId);
+        templates.sort(
+            (EventTemplate a, EventTemplate b) => a.templateName.compareTo(b.templateName));
+        setState(() {
+          _templates = templates;
+        });
+      } else {
+        // not signed in; ignore
+      }
+    } catch (_) {
+      // ignore errors and keep screen usable
+    }
+  }
+
+  void _applyTemplateFromModel(EventTemplate tpl) {
+    setState(() {
+      _eventType = tpl.eventType;
+      _selectedTemplateName = tpl.templateName;
+      final Map<String, dynamic> d = tpl.defaultDetails;
+      _weightController.text = (d['weight'] ?? '').toString();
+      _priceController.text = (d['price'] ?? '').toString();
+      _treatmentController.text =
+          (d['product'] ?? d['treatment'] ?? '').toString();
+      _notesController.text = (d['notes'] ?? '').toString();
+      _doseController.text = (d['dose'] ?? '').toString();
+      _doseUnitController.text = (d['doseUnit'] ?? '').toString();
+      _lotNumberController.text = (d['lotNumber'] ?? '').toString();
+      _fromCageController.text = (d['from'] ?? '').toString();
+      _toCageController.text = (d['to'] ?? '').toString();
+      _inventoryScopeController.text = (d['scope'] ?? '').toString();
+      _inventoryDescriptionController.text =
+          (d['description'] ?? '').toString();
+      _noteTitleController.text = (d['title'] ?? '').toString();
+      _fromLocationController.text = (d['from'] ?? '').toString();
+      _toLocationController.text = (d['to'] ?? '').toString();
+      _operatorController.text = (d['operator'] ?? '').toString();
+      _zoneController.text = (d['zone'] ?? '').toString();
+      _cleaningProductController.text = (d['product'] ?? '').toString();
+      _concentrationController.text = (d['concentration'] ?? '').toString();
+      _contactTimeController.text = (d['contactTimeMin'] ?? '').toString();
+      _equipmentController.text = (d['equipment'] ?? '').toString();
+      _maintenanceActionController.text = (d['action'] ?? '').toString();
+      _supplierController.text = (d['supplier'] ?? '').toString();
+      _quantityController.text = (d['quantity'] ?? '').toString();
+      _unitPriceController.text = (d['unitPrice'] ?? '').toString();
+      _purchaseLotController.text = (d['lot'] ?? '').toString();
+      _deathCauseController.text = (d['cause'] ?? '').toString();
+      _deathMethodController.text = (d['method'] ?? '').toString();
+      _deathWeightController.text = (d['weightKg'] ?? '').toString();
+      _handledByController.text = (d['handledBy'] ?? '').toString();
+      _oldTagController.text = (d['oldTag'] ?? '').toString();
+      _newTagController.text = (d['newTag'] ?? '').toString();
+      _reasonController.text = (d['reason'] ?? '').toString();
+      _feedNameController.text =
+          (d['feed'] ?? d['feedName'] ?? '').toString();
+      _rationController.text = (d['ration'] ?? '').toString();
+      _frequencyController.text = (d['frequency'] ?? '').toString();
+      _feedReasonController.text = (d['reason'] ?? '').toString();
+      // Food type id from template is ignored here; selection happens in referentials screen.
+      final String? nextDue = d['nextDueDate'] as String?;
+      _nextDueDate = nextDue == null ? null : DateTime.tryParse(nextDue);
+    });
   }
 
   Future<void> _pickDate() async {
@@ -655,6 +737,27 @@ class _AddEventScreenState extends State<AddEventScreen> {
                     });
                   },
                 ),
+                if (_templates.isNotEmpty) ...<Widget>[
+                  DropdownMenu<int>(
+                    label: const Text('Appliquer un modele (referentiels)'),
+                    hintText: 'Choisir un modele',
+                    dropdownMenuEntries: _templates
+                        .map(
+                          (EventTemplate tpl) => DropdownMenuEntry<int>(
+                            value: tpl.id,
+                            label: tpl.templateName,
+                          ),
+                        )
+                        .toList(),
+                    onSelected: (int? id) {
+                      if (id == null) return;
+                      final EventTemplate tpl =
+                          _templates.firstWhere((EventTemplate t) => t.id == id);
+                      _applyTemplateFromModel(tpl);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 if (_savedTemplates.isNotEmpty) ...<Widget>[
                   DropdownMenu<String>(
                     initialSelection: _selectedTemplateName,

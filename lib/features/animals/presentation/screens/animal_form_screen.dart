@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../data/models/animal.dart';
+import '../../../../data/models/species_config.dart';
+import '../../../../data/repositories/species_repository.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/animal_cubit.dart';
 
 class AnimalFormScreen extends StatefulWidget {
@@ -31,6 +34,11 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
   String? _damId;
   XFile? _imageFile;
 
+  // Referentials
+  List<SpeciesConfig> _species = <SpeciesConfig>[];
+  int? _selectedSpeciesId;
+  bool _loadingSpecies = false;
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +58,8 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
     _sireId = initial?.sireId;
     _damId = initial?.damId;
     _imageFile = initial?.imageUrl != null ? XFile(initial!.imageUrl!) : null;
+    _selectedSpeciesId = initial?.speciesId;
+    _loadSpecies();
   }
 
   @override
@@ -59,6 +69,30 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
     _cageController.dispose();
     _originController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSpecies() async {
+    setState(() => _loadingSpecies = true);
+    try {
+      final AuthState auth = context.read<AuthCubit>().state;
+      final String? profileId = auth.profile?.id ?? auth.session?.user.id;
+      if (profileId == null) {
+        setState(() => _loadingSpecies = false);
+        return;
+      }
+      final SpeciesRepository repo = context.read<SpeciesRepository>();
+      final List<SpeciesConfig> all = await repo.fetchSpecies(profileId);
+      all.sort((SpeciesConfig a, SpeciesConfig b) => a.speciesName.compareTo(b.speciesName));
+      setState(() {
+        _species = all;
+        if (_selectedSpeciesId == null && _species.isNotEmpty) {
+          _selectedSpeciesId = _species.first.id;
+        }
+        _loadingSpecies = false;
+      });
+    } catch (_) {
+      setState(() => _loadingSpecies = false);
+    }
   }
 
   Future<void> _pickImage() async {
@@ -99,6 +133,13 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
       return null;
     }
 
+    if (_selectedSpeciesId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez choisir une espèce.')),
+      );
+      return null;
+    }
+
     // --- Date Validation ---
     if (_entryDate!.isBefore(_birthDate!)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -118,11 +159,15 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
       return null;
     }
 
+    final AuthState auth = context.read<AuthCubit>().state;
+    final String profileId =
+        auth.profile?.id ?? auth.session?.user.id ?? 'demo-profile';
+
     final Animal baseAnimal = widget.animal ??
         Animal(
           id: 'animal-${DateTime.now().millisecondsSinceEpoch}',
-          profileId: 'demo-profile', // This should be dynamic in a real app
-          speciesId: 1, // Default to rabbit for now
+          profileId: profileId,
+          speciesId: _selectedSpeciesId!,
           tagId: '',
           birthDate: _birthDate!,
           sex: _selectedSex,
@@ -257,6 +302,37 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
               ),
             ),
             const SizedBox(height: 16),
+
+            // --- Section Espèce ---
+            Text('Espèce', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: DropdownButtonFormField<int>(
+                  initialValue: _selectedSpeciesId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Sélectionner une espèce'),
+                  items: _species
+                      .map(
+                        (SpeciesConfig s) => DropdownMenuItem<int>(
+                          value: s.id,
+                          child: Text(s.speciesName),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _loadingSpecies
+                      ? null
+                      : (int? value) {
+                          setState(() {
+                            _selectedSpeciesId = value;
+                          });
+                        },
+                  validator: (int? v) => v == null ? 'Sélection obligatoire' : null,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
 
             // --- Section Identification ---
             Text('Identification', style: theme.textTheme.titleLarge),
