@@ -160,12 +160,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
       final AuthState auth = context.read<AuthCubit>().state;
       final String? profileId = auth.profile?.id ?? auth.session?.user.id;
       if (profileId != null) {
-        final EventTemplateRepository tplRepo =
-            context.read<EventTemplateRepository>();
-        final List<EventTemplate> templates =
-            await tplRepo.fetchTemplates(profileId);
-        templates.sort(
-            (EventTemplate a, EventTemplate b) => a.templateName.compareTo(b.templateName));
+        final EventTemplateRepository tplRepo = context.read<EventTemplateRepository>();
+        final List<EventTemplate> templates = await tplRepo.fetchTemplates(profileId);
+        templates.sort((EventTemplate a, EventTemplate b) => a.templateName.compareTo(b.templateName));
         setState(() {
           _templates = templates;
         });

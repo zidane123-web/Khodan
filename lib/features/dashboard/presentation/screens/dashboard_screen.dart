@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
+import '../../../../data/repositories/food_inventory_repository.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../animals/presentation/models/animal_quick_filter.dart';
 import '../cubit/dashboard_cubit.dart';
 import '../widgets/alerts_list.dart';
@@ -282,13 +284,7 @@ class _DashboardModuleGrid extends StatelessWidget {
               'Planifiez les traitements et vaccinations pour recevoir des rappels automatiques.',
         );
       case DashboardModuleType.feedInventory:
-        return _buildInfoCard(
-          theme,
-          title: 'Inventaire des aliments',
-          icon: Icons.inventory_2_outlined,
-          message:
-              'Suivez vos stocks d’aliments et anticipez les réapprovisionnements.',
-        );
+        return const _FeedInventoryCard();
     }
   }
 
@@ -313,6 +309,128 @@ class _DashboardModuleGrid extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(message, style: theme.textTheme.bodyMedium),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeedInventoryCard extends StatelessWidget {
+  const _FeedInventoryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AuthCubit authCubit = context.read<AuthCubit>();
+    final String? profileId =
+        authCubit.state.profile?.id ?? authCubit.state.session?.user.id;
+    if (profileId == null) {
+      return _placeholder(theme);
+    }
+
+    final FoodInventoryRepository repo =
+        context.read<FoodInventoryRepository>();
+    return FutureBuilder<InventorySummary>(
+      future: repo.computeSummary(profileId),
+      builder: (BuildContext context, AsyncSnapshot<InventorySummary> snap) {
+        if (!snap.hasData) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: const <Widget>[
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 12),
+                  Text('Chargement de l\'inventaire...'),
+                ],
+              ),
+            ),
+          );
+        }
+        final InventorySummary s = snap.data!;
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Icon(Icons.inventory_2_outlined,
+                        color: theme.colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Inventaire des aliments',
+                        style: theme.textTheme.titleLarge,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    _metricChip(theme, 'Quantité (kg)',
+                        s.totalQuantityKg.toStringAsFixed(1)),
+                    _metricChip(theme, 'Coût total',
+                        '${s.totalCost.toStringAsFixed(2)} €'),
+                    _metricChip(theme, 'Conso/mois (kg)',
+                        s.estimatedMonthlyConsumptionKg.toStringAsFixed(1)),
+                    _metricChip(theme, 'Entrées', s.entriesCount.toString()),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _metricChip(ThemeData theme, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(label,
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 4),
+        Text(value, style: theme.textTheme.titleLarge),
+      ],
+    );
+  }
+
+  Widget _placeholder(ThemeData theme) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Icon(Icons.inventory_2_outlined, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Inventaire des aliments',
+                    style: theme.textTheme.titleLarge,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Connectez-vous pour consulter le résumé de votre inventaire.',
+              style: theme.textTheme.bodyMedium,
+            ),
           ],
         ),
       ),
@@ -781,3 +899,4 @@ String _formatAverage(double? value) {
   }
   return value.toStringAsFixed(1);
 }
+
