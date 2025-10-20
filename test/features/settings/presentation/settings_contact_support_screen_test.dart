@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +12,7 @@ import 'package:khodan/data/repositories/auth_repository.dart';
 import 'package:khodan/data/repositories/support_repository.dart';
 import 'package:khodan/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:khodan/features/settings/presentation/screens/settings_contact_support_screen.dart';
+import 'package:khodan/l10n/app_localizations.dart';
 
 class _MockSupportRepository extends Mock implements SupportRepository {}
 
@@ -72,8 +74,16 @@ void main() {
         value: repository,
         child: BlocProvider<AuthCubit>.value(
           value: _TestAuthCubit(authState),
-          child: const MaterialApp(
-            home: SettingsContactSupportScreen(),
+          child: MaterialApp(
+            locale: const Locale('fr'),
+            localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const SettingsContactSupportScreen(),
           ),
         ),
       ),
@@ -81,9 +91,13 @@ void main() {
 
     await tester.pumpAndSettle();
 
+    final BuildContext context =
+        tester.element(find.byType(SettingsContactSupportScreen));
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
     await tester.enterText(
-      find.bySemanticsLabel('Sujet'),
-      'Besoin d’aide',
+      find.bySemanticsLabel(l10n.contactSupportSubjectLabel),
+      'Besoin d\'aide',
     );
     await tester.enterText(
       find.byType(TextFormField).last,
@@ -91,10 +105,13 @@ void main() {
     );
 
     await tester.tap(
-      find.widgetWithText(DropdownButtonFormField<String>, 'Normale'),
+      find.widgetWithText(
+        DropdownButtonFormField<String>,
+        l10n.contactSupportPriorityNormal,
+      ),
     );
     await tester.pump();
-    await tester.tap(find.text('Urgente').last);
+    await tester.tap(find.text(l10n.contactSupportPriorityUrgent).last);
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.byIcon(Icons.send_outlined));
@@ -114,7 +131,7 @@ void main() {
         any(
           that: predicate<SupportRequest>(
             (SupportRequest request) =>
-                request.subject == 'Besoin d’aide' &&
+                request.subject == 'Besoin d\'aide' &&
                 request.priority == 'urgent' &&
                 request.profileId == profile.id,
           ),

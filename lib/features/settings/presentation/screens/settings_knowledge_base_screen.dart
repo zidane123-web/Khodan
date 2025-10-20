@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../data/models/knowledge_article.dart';
 import '../../../../data/repositories/knowledge_base_repository.dart';
 import '../../../../data/services/offline_sync_manager.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../cubit/knowledge_base_cubit.dart';
 
 class SettingsKnowledgeBaseScreen extends StatelessWidget {
@@ -13,8 +14,8 @@ class SettingsKnowledgeBaseScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final KnowledgeBaseRepository repository =
-        context.read<KnowledgeBaseRepository>();
+    final KnowledgeBaseRepository repository = context
+        .read<KnowledgeBaseRepository>();
     return BlocProvider<KnowledgeBaseCubit>(
       create: (BuildContext context) => KnowledgeBaseCubit(
         repository: repository,
@@ -35,13 +36,6 @@ class _KnowledgeBaseView extends StatefulWidget {
 class _KnowledgeBaseViewState extends State<_KnowledgeBaseView> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  late final DateFormat _dateFormat;
-
-  @override
-  void initState() {
-    super.initState();
-    _dateFormat = DateFormat.yMMMMd('fr_FR').add_Hm();
-  }
 
   @override
   void dispose() {
@@ -50,14 +44,21 @@ class _KnowledgeBaseViewState extends State<_KnowledgeBaseView> {
     super.dispose();
   }
 
+  DateFormat _buildDateFormat(BuildContext context) {
+    final Locale locale = Localizations.localeOf(context);
+    return DateFormat.yMMMMd(locale.toLanguageTag()).add_Hm();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final DateFormat dateFormat = _buildDateFormat(context);
     return BlocConsumer<KnowledgeBaseCubit, KnowledgeBaseState>(
       listener: (BuildContext context, KnowledgeBaseState state) {
         if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage!)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
           context.read<KnowledgeBaseCubit>().acknowledgeError();
         }
         if (state.selectedArticle != null) {
@@ -70,10 +71,10 @@ class _KnowledgeBaseViewState extends State<_KnowledgeBaseView> {
             state.loading && state.articles.isEmpty && !state.refreshing;
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Base de connaissances'),
+            title: Text(l10n.knowledgeBaseTitle),
             actions: <Widget>[
               IconButton(
-                tooltip: 'Rafraîchir',
+                tooltip: l10n.knowledgeBaseRefresh,
                 onPressed: state.refreshing
                     ? null
                     : () => context.read<KnowledgeBaseCubit>().refresh(),
@@ -91,14 +92,18 @@ class _KnowledgeBaseViewState extends State<_KnowledgeBaseView> {
               ? const Center(child: CircularProgressIndicator())
               : Column(
                   children: <Widget>[
-                    if (state.offlineMode)
-                      const _OfflineBanner(),
-                    _buildHeader(context, state),
+                    if (state.offlineMode) const _OfflineBanner(),
+                    _buildHeader(context, state, l10n, dateFormat),
                     Expanded(
                       child: RefreshIndicator(
                         onRefresh: () =>
                             context.read<KnowledgeBaseCubit>().refresh(),
-                        child: _buildArticleList(state),
+                        child: _buildArticleList(
+                          context,
+                          state,
+                          l10n,
+                          dateFormat,
+                        ),
                       ),
                     ),
                   ],
@@ -108,7 +113,13 @@ class _KnowledgeBaseViewState extends State<_KnowledgeBaseView> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, KnowledgeBaseState state) {
+  Widget _buildHeader(
+    BuildContext context,
+    KnowledgeBaseState state,
+    AppLocalizations l10n,
+    DateFormat dateFormat,
+  ) {
+    final ThemeData theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Column(
@@ -120,11 +131,11 @@ class _KnowledgeBaseViewState extends State<_KnowledgeBaseView> {
             onChanged: context.read<KnowledgeBaseCubit>().updateSearch,
             decoration: InputDecoration(
               prefixIcon: const Icon(Icons.search),
-              hintText: 'Rechercher dans les guides, FAQ, mots-clés...',
+              hintText: l10n.knowledgeBaseSearchHint,
               suffixIcon: state.searchQuery.isEmpty
                   ? null
                   : IconButton(
-                      tooltip: 'Effacer',
+                      tooltip: l10n.commonClear,
                       onPressed: () {
                         _searchController.clear();
                         context.read<KnowledgeBaseCubit>().updateSearch('');
@@ -139,19 +150,18 @@ class _KnowledgeBaseViewState extends State<_KnowledgeBaseView> {
             children: <Widget>[
               Expanded(
                 child: Text(
-                  state.filteredArticles.isEmpty
-                      ? 'Aucun article trouvé'
-                      : '${state.filteredArticles.length} article(s)',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  l10n.knowledgeBaseCount(state.filteredArticles.length),
+                  style: theme.textTheme.bodyMedium,
                 ),
               ),
               if (state.lastUpdated != null)
                 Text(
-                  'Mis à jour ${_dateFormat.format(state.lastUpdated!.toLocal())}',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Theme.of(context).hintColor),
+                  l10n.knowledgeBaseUpdatedAt(
+                    dateFormat.format(state.lastUpdated!.toLocal()),
+                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
             ],
           ),
@@ -160,23 +170,36 @@ class _KnowledgeBaseViewState extends State<_KnowledgeBaseView> {
     );
   }
 
-  Widget _buildArticleList(KnowledgeBaseState state) {
+  Widget _buildArticleList(
+    BuildContext context,
+    KnowledgeBaseState state,
+    AppLocalizations l10n,
+    DateFormat dateFormat,
+  ) {
     if (state.filteredArticles.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        children: const <Widget>[
-          SizedBox(height: 96),
-          Center(
-            child: Icon(Icons.menu_book_outlined, size: 48, color: Colors.grey),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: <Widget>[
+          const SizedBox(height: 96),
+          Icon(
+            Icons.menu_book_outlined,
+            size: 48,
+            color: Theme.of(context).colorScheme.outlineVariant,
           ),
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Nous n’avons trouvé aucun article pour votre recherche.\n'
-              'Essayez avec d’autres mots-clés ou contactez le support.',
-              textAlign: TextAlign.center,
-            ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.knowledgeBaseEmpty,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium,
           ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.knowledgeBaseEmptyHelp,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 32),
         ],
       );
     }
@@ -188,8 +211,10 @@ class _KnowledgeBaseViewState extends State<_KnowledgeBaseView> {
         final KnowledgeArticle article = state.filteredArticles[index];
         return _KnowledgeArticleTile(
           article: article,
-          onTap: () => context.read<KnowledgeBaseCubit>().selectArticle(article),
-          dateFormat: _dateFormat,
+          onTap: () =>
+              context.read<KnowledgeBaseCubit>().selectArticle(article),
+          dateFormat: dateFormat,
+          l10n: l10n,
         );
       },
     );
@@ -199,6 +224,8 @@ class _KnowledgeBaseViewState extends State<_KnowledgeBaseView> {
     BuildContext context,
     KnowledgeArticle article,
   ) async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final DateFormat dateFormat = _buildDateFormat(context);
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -208,19 +235,22 @@ class _KnowledgeBaseViewState extends State<_KnowledgeBaseView> {
           initialChildSize: 0.9,
           minChildSize: 0.5,
           builder: (BuildContext context, ScrollController controller) {
+            final ThemeData theme = Theme.of(context);
             return Column(
               children: <Widget>[
                 ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  title: Text(
-                    article.title,
-                    style: Theme.of(context).textTheme.titleLarge,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
+                  title: Text(article.title, style: theme.textTheme.titleLarge),
                   subtitle: Text(
-                    _dateFormat.format(article.updatedAt.toLocal()),
+                    l10n.knowledgeBaseLastUpdate(
+                      dateFormat.format(article.updatedAt.toLocal()),
+                    ),
                   ),
                   trailing: IconButton(
+                    tooltip: MaterialLocalizations.of(context).closeButtonLabel,
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
@@ -231,9 +261,7 @@ class _KnowledgeBaseViewState extends State<_KnowledgeBaseView> {
                     controller: controller,
                     data: article.content,
                     padding: const EdgeInsets.all(16),
-                    styleSheet: MarkdownStyleSheet.fromTheme(
-                      Theme.of(context),
-                    ),
+                    styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
                   ),
                 ),
               ],
@@ -250,19 +278,16 @@ class _OfflineBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       padding: const EdgeInsets.all(12),
       child: Row(
-        children: const <Widget>[
-          Icon(Icons.cloud_off_outlined),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Mode hors-ligne actif : les articles affichés proviennent du cache local.',
-            ),
-          ),
+        children: <Widget>[
+          const Icon(Icons.cloud_off_outlined),
+          const SizedBox(width: 12),
+          Expanded(child: Text(l10n.knowledgeBaseOfflineBanner)),
         ],
       ),
     );
@@ -274,11 +299,13 @@ class _KnowledgeArticleTile extends StatelessWidget {
     required this.article,
     required this.onTap,
     required this.dateFormat,
+    required this.l10n,
   });
 
   final KnowledgeArticle article;
   final VoidCallback onTap;
   final DateFormat dateFormat;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -294,10 +321,7 @@ class _KnowledgeArticleTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                article.title,
-                style: theme.textTheme.titleMedium,
-              ),
+              Text(article.title, style: theme.textTheme.titleMedium),
               const SizedBox(height: 8),
               Text(
                 article.summary,
@@ -327,7 +351,9 @@ class _KnowledgeArticleTile extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Dernière mise à jour : ${dateFormat.format(article.updatedAt.toLocal())}',
+                l10n.knowledgeBaseLastUpdate(
+                  dateFormat.format(article.updatedAt.toLocal()),
+                ),
                 style: theme.textTheme.labelMedium,
               ),
             ],

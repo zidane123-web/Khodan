@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../app/core/constants.dart';
 import '../../../../data/models/support_request.dart';
 import '../../../../data/repositories/support_repository.dart';
 import '../../../../data/services/offline_sync_manager.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/support_cubit.dart';
 
@@ -43,15 +45,14 @@ class _MissingSessionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Contact support'),
-      ),
-      body: const Center(
+      appBar: AppBar(title: Text(l10n.contactSupportTitle)),
+      body: Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: Text(
-            'Vous devez être connecté pour contacter le support.',
+            l10n.contactSupportMissingSession,
             textAlign: TextAlign.center,
           ),
         ),
@@ -83,22 +84,21 @@ class _SupportViewState extends State<_SupportView> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Contacter le support'),
-      ),
+      appBar: AppBar(title: Text(l10n.contactSupportTitle)),
       body: BlocConsumer<SupportCubit, SupportState>(
         listener: (BuildContext context, SupportState state) {
           if (state.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.errorMessage!)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
             context.read<SupportCubit>().acknowledgeError();
           }
           if (state.successMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.successMessage!)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.successMessage!)));
             context.read<SupportCubit>().acknowledgeSuccess();
             _subjectController.clear();
             _messageController.clear();
@@ -110,11 +110,7 @@ class _SupportViewState extends State<_SupportView> {
         builder: (BuildContext context, SupportState state) {
           return ValueListenableBuilder<bool>(
             valueListenable: OfflineSyncManager.instance.isOffline,
-            builder: (
-              BuildContext context,
-              bool isOffline,
-              Widget? child,
-            ) {
+            builder: (BuildContext context, bool isOffline, Widget? child) {
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -123,19 +119,15 @@ class _SupportViewState extends State<_SupportView> {
                     if (isOffline)
                       Card(
                         color: theme.colorScheme.surfaceContainerHighest,
-                        child: const ListTile(
-                          leading: Icon(Icons.cloud_off_outlined),
-                          title: Text('Mode hors connexion'),
-                          subtitle: Text(
-                            'Votre message sera envoyé automatiquement dès le retour du réseau.',
-                          ),
+                        child: ListTile(
+                          leading: const Icon(Icons.cloud_off_outlined),
+                          title: Text(l10n.contactSupportOfflineNotice),
+                          subtitle: Text(l10n.contactSupportOfflineDetails),
                         ),
                       ),
-                    _buildQuickActions(theme),
-                    const SizedBox(height: 16),
-                    _buildFormCard(context, state),
+                    _buildForm(context, state, l10n),
                     const SizedBox(height: 24),
-                    _buildRecentRequests(theme, state),
+                    _buildRecentRequests(theme, state, l10n),
                   ],
                 ),
               );
@@ -146,153 +138,112 @@ class _SupportViewState extends State<_SupportView> {
     );
   }
 
-  Widget _buildQuickActions(ThemeData theme) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
+  Widget _buildForm(
+    BuildContext context,
+    SupportState state,
+    AppLocalizations l10n,
+  ) {
+    return Form(
+      key: _formKey,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          ListTile(
-            leading: const Icon(Icons.email_outlined),
-            title: const Text('support@khodan.app'),
-            subtitle: const Text('Réponse sous 24h ouvrées.'),
-            trailing: IconButton(
-              icon: const Icon(Icons.copy_all_outlined),
-              onPressed: () {
-                Clipboard.setData(
-                  const ClipboardData(text: AppConstants.supportEmail),
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Adresse support copiée')),
-                );
-              },
+          TextFormField(
+            controller: _subjectController,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: l10n.contactSupportSubjectLabel,
+              prefixIcon: const Icon(Icons.topic_outlined),
             ),
-          ),
-          const Divider(height: 0),
-          ListTile(
-            leading: const Icon(Icons.forum_outlined),
-            title: const Text('Base de connaissances'),
-            subtitle: const Text(
-              'Consultez les guides d’utilisation et FAQ.',
-            ),
-            onTap: () {
-              Navigator.of(context).pushNamed('/settings/support/knowledge');
+            inputFormatters: <TextInputFormatter>[
+              LengthLimitingTextInputFormatter(AppConstants.supportSubjectMaxLength),
+            ],
+            validator: (String? value) {
+              if (value == null || value.trim().isEmpty) {
+                return l10n.contactSupportSubjectValidation;
+              }
+              return null;
             },
-            trailing: const Icon(Icons.open_in_new_outlined),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            key: ValueKey<String>('support-priority-$_priority'),
+            initialValue: _priority,
+            decoration: InputDecoration(
+              labelText: l10n.contactSupportPriorityLabel,
+              prefixIcon: const Icon(Icons.whatshot_outlined),
+            ),
+            items: <DropdownMenuItem<String>>[
+              DropdownMenuItem<String>(
+                value: 'normal',
+                child: Text(l10n.contactSupportPriorityNormal),
+              ),
+              DropdownMenuItem<String>(
+                value: 'urgent',
+                child: Text(l10n.contactSupportPriorityUrgent),
+              ),
+            ],
+            onChanged: state.submitting
+                ? null
+                : (String? value) {
+                    if (value != null) {
+                      setState(() {
+                        _priority = value;
+                      });
+                    }
+                  },
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _messageController,
+            decoration: InputDecoration(
+              labelText: l10n.contactSupportMessageLabel,
+              alignLabelWithHint: true,
+              hintText: l10n.contactSupportMessageHint,
+              border: const OutlineInputBorder(),
+            ),
+            maxLines: 6,
+            validator: (String? value) {
+              if (value == null || value.trim().length < 10) {
+                return l10n.contactSupportMessageValidation;
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: state.submitting ? null : () => _submit(context, state),
+            icon: state.submitting
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.send_outlined),
+            label: Text(
+              state.submitting
+                  ? l10n.contactSupportSubmitting
+                  : l10n.contactSupportSubmit,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFormCard(BuildContext context, SupportState state) {
-    final ThemeData theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                'Envoyer un message',
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _subjectController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Sujet',
-                  prefixIcon: Icon(Icons.subject_outlined),
-                ),
-                validator: (String? value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Veuillez préciser le sujet.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                key: ValueKey<String>('support-priority-$_priority'),
-                initialValue: _priority,
-                decoration: const InputDecoration(
-                  labelText: 'Priorité',
-                  prefixIcon: Icon(Icons.whatshot_outlined),
-                ),
-                items: const <DropdownMenuItem<String>>[
-                  DropdownMenuItem<String>(
-                    value: 'normal',
-                    child: Text('Normale'),
-                  ),
-                  DropdownMenuItem<String>(
-                    value: 'urgent',
-                    child: Text('Urgente'),
-                  ),
-                ],
-                onChanged: state.submitting
-                    ? null
-                    : (String? value) {
-                        if (value != null) {
-                          setState(() {
-                            _priority = value;
-                          });
-                        }
-                      },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _messageController,
-                decoration: const InputDecoration(
-                  labelText: 'Message',
-                  alignLabelWithHint: true,
-                  hintText:
-                      'Décrivez votre question ou le problème rencontré en fournissant le plus de détails possible.',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 6,
-                validator: (String? value) {
-                  if (value == null || value.trim().length < 10) {
-                    return 'Merci de détailler votre demande (au moins 10 caractères).';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed:
-                    state.submitting ? null : () => _submit(context, state),
-                icon: state.submitting
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.send_outlined),
-                label: Text(
-                  state.submitting ? 'Envoi en cours...' : 'Envoyer au support',
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentRequests(ThemeData theme, SupportState state) {
+  Widget _buildRecentRequests(
+    ThemeData theme,
+    SupportState state,
+    AppLocalizations l10n,
+  ) {
     final List<SupportRequest> entries = state.recentRequests;
     if (entries.isEmpty) {
       return const SizedBox.shrink();
     }
+    final Locale locale = WidgetsBinding.instance.platformDispatcher.locale;
+    final DateFormat formatter = DateFormat.yMd(
+      locale.toLanguageTag(),
+    ).add_Hm();
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -304,11 +255,13 @@ class _SupportViewState extends State<_SupportView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              'Derniers tickets',
+              l10n.contactSupportRecentTitle,
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            ...entries.take(5).map(
+            ...entries
+                .take(5)
+                .map(
                   (SupportRequest request) => ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(
@@ -318,7 +271,7 @@ class _SupportViewState extends State<_SupportView> {
                     ),
                     title: Text(request.subject),
                     subtitle: Text(
-                      request.createdAt.toLocal().toString(),
+                      formatter.format(request.createdAt.toLocal()),
                     ),
                   ),
                 ),
@@ -334,9 +287,9 @@ class _SupportViewState extends State<_SupportView> {
     }
     FocusScope.of(context).unfocus();
     context.read<SupportCubit>().submit(
-          subject: _subjectController.text.trim(),
-          message: _messageController.text.trim(),
-          priority: _priority,
-        );
+      subject: _subjectController.text.trim(),
+      message: _messageController.text.trim(),
+      priority: _priority,
+    );
   }
 }

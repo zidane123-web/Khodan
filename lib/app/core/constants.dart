@@ -15,4 +15,6 @@ class AppConstants {
     'Mise Bas',
     'Sevrage',
   ];
+
+  static const int supportSubjectMaxLength = 120;
 }

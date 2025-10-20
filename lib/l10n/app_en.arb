@@ -1,0 +1,144 @@
+﻿{
+  "@@locale": "en",
+  "appTitle": "Khodan",
+  "navDashboard": "Dashboard",
+  "navAnimals": "Animals",
+  "navEvents": "Events",
+  "navReports": "Reports",
+  "navSettings": "Settings",
+  "settingsSupportSection": "Support and Diagnostics",
+  "settingsKnowledgeBase": "Knowledge Base",
+  "settingsContactSupport": "Contact Support",
+  "settingsLogs": "Logs and Diagnostics",
+  "settingsOfflineSection": "Offline Mode",
+  "settingsOfflineToggle": "Enable offline mode",
+  "settingsSupportDescription": "Browse guides, reach the team, and export diagnostics logs.",
+  "settingsTitle": "Settings",
+  "settingsOfflineSummaryPending": "Pending sync: {count} action(s).",
+  "@settingsOfflineSummaryPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsOfflineSummaryReady": "Automatically synchronises as soon as the network is back.",
+  "settingsOfflineQueueTitle": "Pending actions",
+  "settingsOfflineQueueSubtitle": "Your changes will be sent as soon as a connection is available.",
+  "settingsOfflineQueueButton": "Synchronise",
+  "settingsOfflineStatusOffline": "Offline mode enabled",
+  "settingsOfflineStatusOnline": "Online mode",
+  "settingsOfflineStatusOfflineDetails": "Actions are stored locally until the app reconnects.",
+  "settingsOfflineStatusOnlineDetails": "Data is synchronised in real time.",
+  "settingsProfileTitle": "Farm profile",
+  "settingsProfileSubtitle": "Update your contact details and legal preferences.",
+  "settingsSpeciesTitle": "Species management",
+  "settingsSpeciesSubtitle": "Configure gestation and weaning durations.",
+  "settingsAboutTitle": "About",
+  "settingsAboutSubtitle": "Version, licences, and legal notices.",
+  "settingsSignOut": "Sign out",
+  "knowledgeBaseTitle": "Knowledge Base",
+  "knowledgeBaseRefresh": "Refresh",
+  "knowledgeBaseSearchHint": "Search guides, FAQ, keywords…",
+  "knowledgeBaseOfflineBanner": "Offline mode: the articles shown are loaded from your local cache.",
+  "knowledgeBaseLastUpdate": "Last updated: {date}",
+  "@knowledgeBaseLastUpdate": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "knowledgeBaseUpdatedAt": "Updated {date}",
+  "@knowledgeBaseUpdatedAt": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "knowledgeBaseEmpty": "No article matches your search.",
+  "knowledgeBaseRetry": "Retry",
+  "knowledgeBaseLastSync": "Last synchronisation: {date}",
+  "@knowledgeBaseLastSync": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "knowledgeBaseEmptyHelp": "We could not find an article for your search.\nTry different keywords or reach out to support.",
+  "knowledgeBaseCount": "{count, plural, =0 {No article found} one {1 article} other {{count} articles}}",
+  "@knowledgeBaseCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commonClear": "Clear",
+  "logsTitle": "Logs and Diagnostics",
+  "logsRefresh": "Refresh diagnostics",
+  "logsOfflineToggle": "Detailed logging",
+  "logsExport": "Export",
+  "logsShare": "Share",
+  "logsClear": "Clear history",
+  "logsShareError": "Unable to share: {error}",
+  "@logsShareError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "logsShareUnavailable": "File sharing is not available on the web.",
+  "logsFileGenerated": "Log file generated.",
+  "logsHistoryEmpty": "No logs to display.",
+  "logsHistoryDescription": "Sync actions and errors will show up here.",
+  "logsLoadingTitle": "Collecting system information…",
+  "logsLoadingSubtitle": "Please wait a few seconds.",
+  "logsDeviceInfoTitle": "Device and environment",
+  "logsDevicePlatform": "Platform",
+  "logsDeviceVersion": "App version",
+  "logsDeviceLanguage": "Language",
+  "logsDeviceOffline": "Offline mode",
+  "logsDeviceOfflineActive": "Enabled",
+  "logsDeviceOfflineInactive": "Disabled",
+  "logsDevicePendingActions": "Pending actions",
+  "logsDeviceRefreshedAt": "Last updated: {date}",
+  "@logsDeviceRefreshedAt": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "logsOfflineToggleHint": "Captures verbose logs (may include sensitive data).",
+  "logsHistoryCount": "{count, plural, =0 {History} one {History (1)} other {History ({count})}}",
+  "@logsHistoryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "logsEntryMetadata": "{source} – {timestamp}",
+  "@logsEntryMetadata": {
+    "placeholders": {
+      "source": {},
+      "timestamp": {}
+    }
+  },
+  "logsShareSubject": "Khodan logs",
+  "logsShareText": "Khodan diagnostic logs generated on {date}.",
+  "@logsShareText": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "contactSupportTitle": "Contact support",
+  "contactSupportSubmit": "Send to support",
+  "contactSupportSubjectLabel": "Subject",
+  "contactSupportMessageLabel": "Message",
+  "contactSupportPriorityLabel": "Priority",
+  "contactSupportOfflineNotice": "Offline mode",
+  "contactSupportOfflineDetails": "Your request will be sent as soon as the connection is restored.",
+  "contactSupportMissingSession": "You must be signed in to contact support.",
+  "contactSupportSubjectValidation": "Please provide a subject.",
+  "contactSupportPriorityNormal": "Normal",
+  "contactSupportPriorityUrgent": "Urgent",
+  "contactSupportMessageHint": "Describe your question or the issue with as many details as possible.",
+  "contactSupportMessageValidation": "Please add more details (minimum 10 characters).",
+  "contactSupportSubmitting": "Sending…",
+  "contactSupportRecentTitle": "Latest tickets"
+}

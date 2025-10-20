@@ -1,4 +1,5 @@
 # Khodan
+[![CI](https://github.com/your-org/Khodan/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/Khodan/actions/workflows/ci.yml)
 
 Flutter application for livestock management powered by Supabase.
 
@@ -37,6 +38,12 @@ flutter build apk \
   --dart-define APP_ENV=prod
 ```
 
+## Qualité & internationalisation
+
+- Les chaînes utilisateur sont gérées via `lib/l10n/*.arb` et générées avec `flutter gen-l10n`. L’application expose `AppLocalizations` dans `MaterialApp.router`.
+- Un script de contrôle qualité est disponible : `tool/check_quality.sh` (macOS/Linux) ou `pwsh tool/check_quality.ps1` (Windows). Il exécute `flutter format`, `flutter analyze` et `flutter test`.
+- Le processus de publication est détaillé dans [`RELEASE.md`](RELEASE.md).
+
 ### Rotating Supabase keys
 
 1. Generate the new anon key from the Supabase dashboard.
@@ -45,7 +52,7 @@ flutter build apk \
 
 ## Continuous integration
 
-A sample GitHub Actions workflow (`.github/workflows/flutter_ci.yml`) installs Flutter, restores packages, injects Supabase secrets from repository settings, and runs `flutter analyze` plus the test suite with staging variables.
+Le workflow GitHub Actions [`ci.yml`](.github/workflows/ci.yml) exécute `flutter analyze`, la suite de tests et une compilation Android (`flutter build apk --debug`) sur chaque push/PR. Ajoutez vos secrets Supabase au besoin si vous ciblez d’autres environnements.
 
 ## Project structure
 

@@ -1,0 +1,144 @@
+﻿{
+  "@@locale": "fr",
+  "appTitle": "Khodan",
+  "navDashboard": "Tableau de bord",
+  "navAnimals": "Animaux",
+  "navEvents": "Événements",
+  "navReports": "Rapports",
+  "navSettings": "Paramètres",
+  "settingsSupportSection": "Support et diagnostics",
+  "settingsKnowledgeBase": "Base de connaissances",
+  "settingsContactSupport": "Contacter le support",
+  "settingsLogs": "Journaux et diagnostics",
+  "settingsOfflineSection": "Mode hors connexion",
+  "settingsOfflineToggle": "Activer le mode hors connexion",
+  "settingsSupportDescription": "Retrouvez nos guides, contactez l'équipe et exportez les journaux.",
+  "settingsTitle": "Paramètres",
+  "settingsOfflineSummaryPending": "Synchronisation en attente : {count} action(s).",
+  "@settingsOfflineSummaryPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsOfflineSummaryReady": "Synchronise automatiquement dès le retour du réseau.",
+  "settingsOfflineQueueTitle": "Actions en file d'attente",
+  "settingsOfflineQueueSubtitle": "Vos modifications seront envoyées dès que la connexion sera disponible.",
+  "settingsOfflineQueueButton": "Synchroniser",
+  "settingsOfflineStatusOffline": "Mode hors-ligne actif",
+  "settingsOfflineStatusOnline": "Mode en ligne",
+  "settingsOfflineStatusOfflineDetails": "Les actions sont enregistrées en local jusqu'à la reconnexion.",
+  "settingsOfflineStatusOnlineDetails": "Les données sont synchronisées en temps réel.",
+  "settingsProfileTitle": "Profil de l'élevage",
+  "settingsProfileSubtitle": "Mettre à jour les coordonnées et préférences légales.",
+  "settingsSpeciesTitle": "Gestion des espèces",
+  "settingsSpeciesSubtitle": "Configurer les durées de gestation et sevrage.",
+  "settingsAboutTitle": "À propos",
+  "settingsAboutSubtitle": "Version, licences et mentions légales.",
+  "settingsSignOut": "Déconnexion",
+  "knowledgeBaseTitle": "Base de connaissances",
+  "knowledgeBaseRefresh": "Rafraîchir",
+  "knowledgeBaseSearchHint": "Rechercher dans les guides, FAQ, mots-clés…",
+  "knowledgeBaseOfflineBanner": "Mode hors-ligne actif : les articles affichés proviennent du cache local.",
+  "knowledgeBaseLastUpdate": "Dernière mise à jour : {date}",
+  "@knowledgeBaseLastUpdate": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "knowledgeBaseUpdatedAt": "Mis à jour {date}",
+  "@knowledgeBaseUpdatedAt": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "knowledgeBaseEmpty": "Aucun article ne correspond à votre recherche.",
+  "knowledgeBaseRetry": "Réessayer",
+  "knowledgeBaseLastSync": "Dernière synchronisation : {date}",
+  "@knowledgeBaseLastSync": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "knowledgeBaseEmptyHelp": "Nous n’avons trouvé aucun article pour votre recherche.\nEssayez avec d’autres mots-clés ou contactez le support.",
+  "knowledgeBaseCount": "{count, plural, =0 {Aucun article trouvé} one {1 article} other {{count} articles}}",
+  "@knowledgeBaseCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commonClear": "Effacer",
+  "logsTitle": "Journaux et diagnostics",
+  "logsRefresh": "Actualiser le diagnostic",
+  "logsOfflineToggle": "Journalisation détaillée",
+  "logsExport": "Exporter",
+  "logsShare": "Partager",
+  "logsClear": "Vider l'historique",
+  "logsShareError": "Partage impossible : {error}",
+  "@logsShareError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "logsShareUnavailable": "Le partage de fichier n'est pas disponible sur le web.",
+  "logsFileGenerated": "Fichier de logs généré.",
+  "logsHistoryEmpty": "Aucun journal à afficher.",
+  "logsHistoryDescription": "Les actions de synchronisation et erreurs seront listées ici.",
+  "logsLoadingTitle": "Collecte des informations système…",
+  "logsLoadingSubtitle": "Veuillez patienter quelques secondes.",
+  "logsDeviceInfoTitle": "Appareil et environnement",
+  "logsDevicePlatform": "Plateforme",
+  "logsDeviceVersion": "Version app",
+  "logsDeviceLanguage": "Langue",
+  "logsDeviceOffline": "Mode hors-ligne",
+  "logsDeviceOfflineActive": "Activé",
+  "logsDeviceOfflineInactive": "Désactivé",
+  "logsDevicePendingActions": "Actions en attente",
+  "logsDeviceRefreshedAt": "Dernière mise à jour : {date}",
+  "@logsDeviceRefreshedAt": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "logsOfflineToggleHint": "Collecte les logs détaillés (peut inclure des données sensibles).",
+  "logsHistoryCount": "{count, plural, =0 {Historique} one {Historique (1)} other {Historique ({count})}}",
+  "@logsHistoryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "logsEntryMetadata": "{source} – {timestamp}",
+  "@logsEntryMetadata": {
+    "placeholders": {
+      "source": {},
+      "timestamp": {}
+    }
+  },
+  "logsShareSubject": "Journaux Khodan",
+  "logsShareText": "Logs de diagnostic Khodan générés le {date}.",
+  "@logsShareText": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "contactSupportTitle": "Contacter le support",
+  "contactSupportSubmit": "Envoyer au support",
+  "contactSupportSubjectLabel": "Sujet",
+  "contactSupportMessageLabel": "Message",
+  "contactSupportPriorityLabel": "Priorité",
+  "contactSupportOfflineNotice": "Mode hors connexion",
+  "contactSupportOfflineDetails": "Votre demande sera envoyée dès que la connexion sera rétablie.",
+  "contactSupportMissingSession": "Vous devez être connecté pour contacter le support.",
+  "contactSupportSubjectValidation": "Veuillez préciser le sujet.",
+  "contactSupportPriorityNormal": "Normale",
+  "contactSupportPriorityUrgent": "Urgente",
+  "contactSupportMessageHint": "Décrivez votre question ou le problème rencontré en fournissant le plus de détails possible.",
+  "contactSupportMessageValidation": "Merci de détailler votre demande (au moins 10 caractères).",
+  "contactSupportSubmitting": "Envoi en cours…",
+  "contactSupportRecentTitle": "Derniers tickets"
+}

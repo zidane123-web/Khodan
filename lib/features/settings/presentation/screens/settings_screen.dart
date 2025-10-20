@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/config/router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/offline_cubit.dart';
 import '../cubit/sync_history_cubit.dart';
@@ -18,9 +19,9 @@ class SettingsScreen extends StatelessWidget {
           create: (BuildContext context) => SyncHistoryCubit()..initialize(),
         ),
         BlocProvider<OfflineCubit>(
-          create: (BuildContext context) => OfflineCubit(
-            historyCubit: context.read<SyncHistoryCubit>(),
-          )..initialize(),
+          create: (BuildContext context) =>
+              OfflineCubit(historyCubit: context.read<SyncHistoryCubit>())
+                ..initialize(),
         ),
       ],
       child: const _SettingsView(),
@@ -33,25 +34,23 @@ class _SettingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return BlocConsumer<OfflineCubit, OfflineState>(
       listener: (BuildContext context, OfflineState state) {
         if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage!)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
         }
       },
       builder: (BuildContext context, OfflineState state) {
         final OfflineCubit cubit = context.read<OfflineCubit>();
         final ThemeData theme = Theme.of(context);
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Paramètres'),
-          ),
+          appBar: AppBar(title: Text(l10n.settingsTitle)),
           body: Column(
             children: <Widget>[
-              if (state.loading)
-                const LinearProgressIndicator(minHeight: 2),
+              if (state.loading) const LinearProgressIndicator(minHeight: 2),
               Expanded(
                 child: ListView(
                   children: <Widget>[
@@ -67,11 +66,13 @@ class _SettingsView extends StatelessWidget {
                                   ? Icons.cloud_off_outlined
                                   : Icons.cloud_sync_outlined,
                             ),
-                      title: const Text('Mode hors-ligne'),
+                      title: Text(l10n.settingsOfflineSection),
                       subtitle: Text(
                         state.pendingActions > 0
-                            ? 'Synchronisation en attente : ${state.pendingActions} action(s).'
-                            : 'Synchronise automatiquement dès le retour du réseau.',
+                            ? l10n.settingsOfflineSummaryPending(
+                                state.pendingActions,
+                              )
+                            : l10n.settingsOfflineSummaryReady,
                       ),
                       value: state.enabled,
                       onChanged: state.loading
@@ -81,13 +82,14 @@ class _SettingsView extends StatelessWidget {
                     if (state.pendingActions > 0)
                       ListTile(
                         leading: const Icon(Icons.sync_problem_outlined),
-                        title: const Text('Actions en file d’attente'),
-                        subtitle: const Text(
-                            'Vos modifications seront envoyées dès que la connexion sera disponible.'),
+                        title: Text(l10n.settingsOfflineQueueTitle),
+                        subtitle: Text(l10n.settingsOfflineQueueSubtitle),
                         trailing: FilledButton.tonalIcon(
-                          onPressed: state.loading ? null : cubit.synchronizeNow,
+                          onPressed: state.loading
+                              ? null
+                              : cubit.synchronizeNow,
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Synchroniser'),
+                          label: Text(l10n.settingsOfflineQueueButton),
                         ),
                       ),
                     const Divider(height: 1),
@@ -97,19 +99,21 @@ class _SettingsView extends StatelessWidget {
                         color: theme.colorScheme.primary,
                       ),
                       title: Text(
-                        state.enabled ? 'Mode hors-ligne actif' : 'Mode en ligne',
+                        state.enabled
+                            ? l10n.settingsOfflineStatusOffline
+                            : l10n.settingsOfflineStatusOnline,
                       ),
                       subtitle: Text(
                         state.enabled
-                            ? 'Les actions sont enregistrées en local jusqu’à la reconnexion.'
-                            : 'Les données sont synchronisées en temps réel.',
+                            ? l10n.settingsOfflineStatusOfflineDetails
+                            : l10n.settingsOfflineStatusOnlineDetails,
                       ),
                     ),
                     const Divider(height: 1),
                     ListTile(
                       leading: const Icon(Icons.badge_outlined),
-                      title: const Text('Profil de l\'élevage'),
-                      subtitle: const Text('Mettre à jour les coordonnées et préférences légales.'),
+                      title: Text(l10n.settingsProfileTitle),
+                      subtitle: Text(l10n.settingsProfileSubtitle),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         context.push(const SettingsProfileRoute().location);
@@ -117,25 +121,31 @@ class _SettingsView extends StatelessWidget {
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      title: const Text('Gestion des espèces'),
-                      subtitle: const Text('Configurer les durées de gestation et sevrage.'),
+                      leading: const Icon(Icons.pets_outlined),
+                      title: Text(l10n.settingsSpeciesTitle),
+                      subtitle: Text(l10n.settingsSpeciesSubtitle),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () {},
+                      onTap: () {
+                        // TODO: Navigate to species management when available.
+                      },
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      title: const Text('Assistance'),
-                      subtitle: const Text('Consulter la base de connaissances et contacter le support.'),
-                      trailing: const Icon(Icons.help_outline),
+                      leading: const Icon(Icons.support_agent_outlined),
+                      title: Text(l10n.settingsSupportSection),
+                      subtitle: Text(l10n.settingsSupportDescription),
+                      trailing: const Icon(Icons.chevron_right),
                       onTap: () {
-                        context.push(const SettingsContactSupportRoute().location);
+                        context.push(
+                          const SettingsContactSupportRoute().location,
+                        );
                       },
                     ),
                     const Divider(height: 1),
                     ListTile(
                       leading: const Icon(Icons.info_outline),
-                      title: const Text('À propos'),
-                      subtitle: const Text('Version, licences et mentions légales.'),
+                      title: Text(l10n.settingsAboutTitle),
+                      subtitle: Text(l10n.settingsAboutSubtitle),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         context.push(const SettingsAboutRoute().location);
@@ -143,9 +153,9 @@ class _SettingsView extends StatelessWidget {
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      title: const Text(
-                        'Déconnexion',
-                        style: TextStyle(color: Colors.red),
+                      title: Text(
+                        l10n.settingsSignOut,
+                        style: const TextStyle(color: Colors.red),
                       ),
                       leading: const Icon(Icons.logout, color: Colors.red),
                       onTap: () async {

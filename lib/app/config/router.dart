@@ -25,6 +25,7 @@ import '../../features/settings/presentation/screens/settings_profile_screen.dar
 import '../../features/settings/presentation/screens/settings_referentials_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../data/models/animal.dart';
+import '../../l10n/app_localizations.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'rootNavigator',
@@ -338,44 +339,46 @@ class KhodanNavigationShell extends StatelessWidget {
 
   final StatefulNavigationShell navigationShell;
 
-  static const List<NavigationDestination> _destinations =
-      <NavigationDestination>[
-        NavigationDestination(
-          icon: Icon(Icons.dashboard_outlined),
-          selectedIcon: Icon(Icons.dashboard),
-          label: 'Tableau de Bord',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.pets_outlined),
-          selectedIcon: Icon(Icons.pets),
-          label: 'Animaux',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.event_note_outlined),
-          selectedIcon: Icon(Icons.event_note),
-          label: 'Événements',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.bar_chart_outlined),
-          selectedIcon: Icon(Icons.bar_chart),
-          label: 'Rapports',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.settings_outlined),
-          selectedIcon: Icon(Icons.settings),
-          label: 'Paramètres',
-        ),
-      ];
-
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
-        destinations: _destinations,
+        destinations: _buildDestinations(l10n),
         onDestinationSelected: navigationShell.goBranch,
       ),
     );
+  }
+
+  List<NavigationDestination> _buildDestinations(AppLocalizations l10n) {
+    return <NavigationDestination>[
+      NavigationDestination(
+        icon: const Icon(Icons.dashboard_outlined),
+        selectedIcon: const Icon(Icons.dashboard),
+        label: l10n.navDashboard,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.pets_outlined),
+        selectedIcon: const Icon(Icons.pets),
+        label: l10n.navAnimals,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.event_note_outlined),
+        selectedIcon: const Icon(Icons.event_note),
+        label: l10n.navEvents,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.bar_chart_outlined),
+        selectedIcon: const Icon(Icons.bar_chart),
+        label: l10n.navReports,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.settings_outlined),
+        selectedIcon: const Icon(Icons.settings),
+        label: l10n.navSettings,
+      ),
+    ];
   }
 }

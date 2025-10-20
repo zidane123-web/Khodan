@@ -64,26 +64,26 @@ class KnowledgeBaseState extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        loading,
-        refreshing,
-        offlineMode,
-        searchQuery,
-        articles,
-        filteredArticles,
-        lastUpdated,
-        errorMessage,
-        selectedArticle,
-        source,
-      ];
+    loading,
+    refreshing,
+    offlineMode,
+    searchQuery,
+    articles,
+    filteredArticles,
+    lastUpdated,
+    errorMessage,
+    selectedArticle,
+    source,
+  ];
 }
 
 class KnowledgeBaseCubit extends Cubit<KnowledgeBaseState> {
   KnowledgeBaseCubit({
     required KnowledgeBaseRepository repository,
     OfflineSyncManager? offlineManager,
-  })  : _repository = repository,
-        _offlineManager = offlineManager ?? OfflineSyncManager.instance,
-        super(const KnowledgeBaseState());
+  }) : _repository = repository,
+       _offlineManager = offlineManager ?? OfflineSyncManager.instance,
+       super(const KnowledgeBaseState());
 
   final KnowledgeBaseRepository _repository;
   final OfflineSyncManager _offlineManager;
@@ -111,10 +111,7 @@ class KnowledgeBaseCubit extends Cubit<KnowledgeBaseState> {
           loading: false,
           refreshing: !_offlineManager.isOffline.value,
           articles: cached.articles,
-          filteredArticles: _filterArticles(
-            cached.articles,
-            state.searchQuery,
-          ),
+          filteredArticles: _filterArticles(cached.articles, state.searchQuery),
           lastUpdated: cached.cachedAt,
           source: KnowledgeBaseSource.cache,
         ),
@@ -142,24 +139,17 @@ class KnowledgeBaseCubit extends Cubit<KnowledgeBaseState> {
       return;
     }
     emit(
-      state.copyWith(
-        refreshing: true,
-        offlineMode: false,
-        clearError: true,
-      ),
+      state.copyWith(refreshing: true, offlineMode: false, clearError: true),
     );
     try {
-      final KnowledgeBaseFetchResult result =
-          await _repository.fetchRemoteArticles();
+      final KnowledgeBaseFetchResult result = await _repository
+          .fetchRemoteArticles();
       emit(
         state.copyWith(
           loading: false,
           refreshing: false,
           articles: result.articles,
-          filteredArticles: _filterArticles(
-            result.articles,
-            state.searchQuery,
-          ),
+          filteredArticles: _filterArticles(result.articles, state.searchQuery),
           lastUpdated: result.fetchedAt,
           source: result.source,
         ),
@@ -213,11 +203,7 @@ class KnowledgeBaseCubit extends Cubit<KnowledgeBaseState> {
 
   void _listenToOfflineChanges() {
     _offlineListener ??= () {
-      emit(
-        state.copyWith(
-          offlineMode: _offlineManager.isOffline.value,
-        ),
-      );
+      emit(state.copyWith(offlineMode: _offlineManager.isOffline.value));
     };
     _offlineManager.isOffline.addListener(_offlineListener!);
   }

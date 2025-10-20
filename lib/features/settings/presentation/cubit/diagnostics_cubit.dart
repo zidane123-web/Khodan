@@ -1,4 +1,4 @@
-﻿import 'package:equatable/equatable.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -53,15 +53,15 @@ class DeviceDiagnostics extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        platform,
-        osVersion,
-        appVersion,
-        buildNumber,
-        locale,
-        offlineMode,
-        pendingActions,
-        generatedAt,
-      ];
+    platform,
+    osVersion,
+    appVersion,
+    buildNumber,
+    locale,
+    offlineMode,
+    pendingActions,
+    generatedAt,
+  ];
 }
 
 class DiagnosticsState extends Equatable {
@@ -111,24 +111,24 @@ class DiagnosticsState extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        loading,
-        exporting,
-        detailedLogging,
-        entries,
-        deviceDiagnostics,
-        errorMessage,
-        infoMessage,
-        exportPath,
-      ];
+    loading,
+    exporting,
+    detailedLogging,
+    entries,
+    deviceDiagnostics,
+    errorMessage,
+    infoMessage,
+    exportPath,
+  ];
 }
 
 class DiagnosticsCubit extends Cubit<DiagnosticsState> {
   DiagnosticsCubit({
     required DiagnosticsService service,
     OfflineSyncManager? offlineManager,
-  })  : _service = service,
-        _offlineManager = offlineManager ?? OfflineSyncManager.instance,
-        super(const DiagnosticsState());
+  }) : _service = service,
+       _offlineManager = offlineManager ?? OfflineSyncManager.instance,
+       super(const DiagnosticsState());
 
   final DiagnosticsService _service;
   final OfflineSyncManager _offlineManager;
@@ -159,12 +159,7 @@ class DiagnosticsCubit extends Cubit<DiagnosticsState> {
   Future<void> refreshDeviceSnapshot() async {
     emit(state.copyWith(loading: true));
     final DeviceDiagnostics device = await _collectDiagnostics();
-    emit(
-      state.copyWith(
-        loading: false,
-        deviceDiagnostics: device,
-      ),
-    );
+    emit(state.copyWith(loading: false, deviceDiagnostics: device));
   }
 
   Future<void> toggleDetailedLogging(bool enabled) async {
@@ -181,13 +176,7 @@ class DiagnosticsCubit extends Cubit<DiagnosticsState> {
   }
 
   Future<String?> exportLogs() async {
-    emit(
-      state.copyWith(
-        exporting: true,
-        clearError: true,
-        clearInfo: true,
-      ),
-    );
+    emit(state.copyWith(exporting: true, clearError: true, clearInfo: true));
     try {
       final List<String> header = _buildHeaderLines();
       final String path = await _service.exportToFile(headerLines: header);
@@ -200,12 +189,7 @@ class DiagnosticsCubit extends Cubit<DiagnosticsState> {
       );
       return path;
     } catch (error) {
-      emit(
-        state.copyWith(
-          exporting: false,
-          errorMessage: error.toString(),
-        ),
-      );
+      emit(state.copyWith(exporting: false, errorMessage: error.toString()));
       return null;
     }
   }
@@ -244,7 +228,9 @@ class DiagnosticsCubit extends Cubit<DiagnosticsState> {
         ..add('Plateforme : ${device.platform} (${device.osVersion})')
         ..add('Version app : ${device.appVersion}+${device.buildNumber}')
         ..add('Locale active : ${device.locale}')
-        ..add('Mode hors-ligne : ${device.offlineMode ? 'active' : 'desactive'}')
+        ..add(
+          'Mode hors-ligne : ${device.offlineMode ? 'active' : 'desactive'}',
+        )
         ..add('Actions en attente : ${device.pendingActions}')
         ..add('Diagnostic rafraichi : ${formatter.format(device.generatedAt)}');
     }
@@ -274,11 +260,7 @@ class DiagnosticsCubit extends Cubit<DiagnosticsState> {
 
   void _listenToChanges() {
     _entriesListener ??= () {
-      emit(
-        state.copyWith(
-          entries: _service.entries,
-        ),
-      );
+      emit(state.copyWith(entries: _service.entries));
     };
     _service.entriesListenable.addListener(_entriesListener!);
 
@@ -327,10 +309,3 @@ class DiagnosticsCubit extends Cubit<DiagnosticsState> {
     return super.close();
   }
 }
-
-
-
-
-
-
-

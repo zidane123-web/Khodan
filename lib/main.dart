@@ -11,6 +11,7 @@ import 'app/config/router.dart';
 import 'app/config/theme.dart';
 import 'app/core/constants.dart';
 import 'app/core/logging/diagnostics_service.dart';
+import 'l10n/app_localizations.dart';
 import 'data/local/local_data_sources.dart';
 import 'data/local/local_database.dart';
 import 'data/repositories/animal_repository.dart';
@@ -32,38 +33,41 @@ import 'data/services/reporting_service.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 
 void main() {
-  runZonedGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    await DiagnosticsService.instance.initialize();
-    FlutterError.onError = (FlutterErrorDetails details) {
-      DiagnosticsService.instance.logError(
-        details.exceptionAsString(),
-        source: 'flutter',
-        error: details.exception,
-        stackTrace: details.stack,
-      );
-      FlutterError.presentError(details);
-    };
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      await DiagnosticsService.instance.initialize();
+      FlutterError.onError = (FlutterErrorDetails details) {
+        DiagnosticsService.instance.logError(
+          details.exceptionAsString(),
+          source: 'flutter',
+          error: details.exception,
+          stackTrace: details.stack,
+        );
+        FlutterError.presentError(details);
+      };
 
-    final AppEnv env = await AppEnv.load();
-    if (kDebugMode) {
-      debugPrint('App environment: ${env.label}');
-    }
-    await _initializeSupabase(env);
-    if (env.useInMemoryRepositories) {
-      _resetInMemoryRepositories();
-    }
-    runApp(KhodanApp(env: env));
-  }, (Object error, StackTrace stackTrace) {
-    unawaited(
-      DiagnosticsService.instance.logError(
-        'Erreur zone non interceptée',
-        source: 'zone',
-        error: error,
-        stackTrace: stackTrace,
-      ),
-    );
-  });
+      final AppEnv env = await AppEnv.load();
+      if (kDebugMode) {
+        debugPrint('App environment: ${env.label}');
+      }
+      await _initializeSupabase(env);
+      if (env.useInMemoryRepositories) {
+        _resetInMemoryRepositories();
+      }
+      runApp(KhodanApp(env: env));
+    },
+    (Object error, StackTrace stackTrace) {
+      unawaited(
+        DiagnosticsService.instance.logError(
+          'Erreur zone non interceptée',
+          source: 'zone',
+          error: error,
+          stackTrace: stackTrace,
+        ),
+      );
+    },
+  );
 }
 
 void _resetInMemoryRepositories() {
@@ -106,7 +110,7 @@ class _KhodanAppState extends State<KhodanApp> {
   late final LocalFoodStockDataSource _localFoodStockDataSource;
   late final LocalProfileDataSource _localProfileDataSource;
   late final LocalDashboardPreferencesDataSource
-      _localDashboardPreferencesDataSource;
+  _localDashboardPreferencesDataSource;
   late final LocalSyncQueueDataSource _localQueueDataSource;
   late final KhodanRouter _router;
   ConnectivityWatcher? _connectivityWatcher;
@@ -124,12 +128,14 @@ class _KhodanAppState extends State<KhodanApp> {
     _localFoodTypeDataSource = LocalFoodTypeDataSource(_localDb);
     _localFoodStockDataSource = LocalFoodStockDataSource(_localDb);
     _localProfileDataSource = LocalProfileDataSource(_localDb);
-    _localDashboardPreferencesDataSource =
-        LocalDashboardPreferencesDataSource(_localDb);
+    _localDashboardPreferencesDataSource = LocalDashboardPreferencesDataSource(
+      _localDb,
+    );
     _localQueueDataSource = LocalSyncQueueDataSource(_localDb);
     OfflineSyncManager.instance.attachQueue(_localQueueDataSource);
-    OfflineSyncManager.instance
-        .setHistoryLogger(DiagnosticsService.instance.logSync);
+    OfflineSyncManager.instance.setHistoryLogger(
+      DiagnosticsService.instance.logSync,
+    );
     _router = KhodanRouter(
       enableAuth:
           widget.env.hasSupabaseCredentials &&
@@ -174,18 +180,18 @@ class _KhodanAppState extends State<KhodanApp> {
         )..listenAuthChanges(),
         child: MaterialApp.router(
           title: AppConstants.appName,
+          onGenerateTitle: (BuildContext context) =>
+              AppLocalizations.of(context).appTitle,
           theme: buildKhodanTheme(),
           routerConfig: _router.router,
           debugShowCheckedModeBanner: false,
           localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+            AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const <Locale>[
-            Locale('fr'),
-            // Add more locales here if needed.
-          ],
+          supportedLocales: AppLocalizations.supportedLocales,
         ),
       ),
     );
@@ -232,27 +238,27 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<BreedingRepository>(
         create: (_) => InMemoryBreedingRepository(),
       ),
-        RepositoryProvider<EventRepository>(
-          create: (_) => InMemoryEventRepository(),
-        ),
-        RepositoryProvider<SpeciesRepository>(
-          create: (_) => SyncedSpeciesRepository(
+      RepositoryProvider<EventRepository>(
+        create: (_) => InMemoryEventRepository(),
+      ),
+      RepositoryProvider<SpeciesRepository>(
+        create: (_) => SyncedSpeciesRepository(
           remote: SupabaseSpeciesRepository(
             apiClient: _apiClient ??= ApiClient(),
           ),
           local: _localSpeciesDataSource,
-            offlineManager: OfflineSyncManager.instance,
-          ),
+          offlineManager: OfflineSyncManager.instance,
         ),
-        RepositoryProvider<EventTemplateRepository>(
-          create: (_) => SyncedEventTemplateRepository(
-            remote: SupabaseEventTemplateRepository(
-              apiClient: _apiClient ??= ApiClient(),
-            ),
-            local: _localEventTemplateDataSource,
-            offlineManager: OfflineSyncManager.instance,
+      ),
+      RepositoryProvider<EventTemplateRepository>(
+        create: (_) => SyncedEventTemplateRepository(
+          remote: SupabaseEventTemplateRepository(
+            apiClient: _apiClient ??= ApiClient(),
           ),
+          local: _localEventTemplateDataSource,
+          offlineManager: OfflineSyncManager.instance,
         ),
+      ),
       RepositoryProvider<FoodInventoryRepository>(
         create: (_) => SyncedFoodInventoryRepository(
           remote: SupabaseFoodInventoryRepository(
@@ -269,9 +275,9 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<KnowledgeBaseRepository>(
         create: (_) => InMemoryKnowledgeBaseRepository(),
       ),
-        RepositoryProvider<SupportRepository>(
-          create: (_) => InMemorySupportRepository(),
-        ),
+      RepositoryProvider<SupportRepository>(
+        create: (_) => InMemorySupportRepository(),
+      ),
       RepositoryProvider<DashboardRepository>(
         create: (_) => InMemoryDashboardRepository(),
       ),
@@ -302,17 +308,17 @@ class _KhodanAppState extends State<KhodanApp> {
     final SupabaseMediaRepository remoteMedia = SupabaseMediaRepository(
       apiClient: apiClient,
     );
-      final SpeciesRepository remoteSpecies = SupabaseSpeciesRepository(
-        apiClient: apiClient,
-      );
-      final ProfileRepository remoteProfile = SupabaseProfileRepository(
-        apiClient: apiClient,
-      );
-      final SupportRepository remoteSupport = SupabaseSupportRepository(
-        apiClient: apiClient,
-      );
-      final KnowledgeBaseRepository remoteKnowledgeBase =
-          SupabaseKnowledgeBaseRepository(apiClient: apiClient);
+    final SpeciesRepository remoteSpecies = SupabaseSpeciesRepository(
+      apiClient: apiClient,
+    );
+    final ProfileRepository remoteProfile = SupabaseProfileRepository(
+      apiClient: apiClient,
+    );
+    final SupportRepository remoteSupport = SupabaseSupportRepository(
+      apiClient: apiClient,
+    );
+    final KnowledgeBaseRepository remoteKnowledgeBase =
+        SupabaseKnowledgeBaseRepository(apiClient: apiClient);
     final EventTemplateRepository remoteTemplate =
         SupabaseEventTemplateRepository(apiClient: apiClient);
     final FoodInventoryRepository remoteInventory =
@@ -338,35 +344,34 @@ class _KhodanAppState extends State<KhodanApp> {
       local: _localAnimalMediaDataSource,
       offlineManager: offlineManager,
     );
-      final SpeciesRepository syncedSpecies = SyncedSpeciesRepository(
-        remote: remoteSpecies,
-        local: _localSpeciesDataSource,
-        offlineManager: offlineManager,
-      );
-      final ProfileRepository syncedProfile = SyncedProfileRepository(
-        remote: remoteProfile,
-        local: _localProfileDataSource,
-        offlineManager: offlineManager,
-      );
-      final SupportRepository syncedSupport = SyncedSupportRepository(
-        remote: remoteSupport,
-        offlineManager: offlineManager,
-      );
+    final SpeciesRepository syncedSpecies = SyncedSpeciesRepository(
+      remote: remoteSpecies,
+      local: _localSpeciesDataSource,
+      offlineManager: offlineManager,
+    );
+    final ProfileRepository syncedProfile = SyncedProfileRepository(
+      remote: remoteProfile,
+      local: _localProfileDataSource,
+      offlineManager: offlineManager,
+    );
+    final SupportRepository syncedSupport = SyncedSupportRepository(
+      remote: remoteSupport,
+      offlineManager: offlineManager,
+    );
     final EventTemplateRepository syncedTemplate =
         SyncedEventTemplateRepository(
-      remote: remoteTemplate,
-      local: _localEventTemplateDataSource,
-      offlineManager: offlineManager,
-    );
+          remote: remoteTemplate,
+          local: _localEventTemplateDataSource,
+          offlineManager: offlineManager,
+        );
     final FoodInventoryRepository syncedInventory =
         SyncedFoodInventoryRepository(
-      remote: remoteInventory,
-      localTypes: _localFoodTypeDataSource,
-      localStock: _localFoodStockDataSource,
-      offlineManager: offlineManager,
-    );
-    final DashboardRepository dashboardRepository =
-        SupabaseDashboardRepository(
+          remote: remoteInventory,
+          localTypes: _localFoodTypeDataSource,
+          localStock: _localFoodStockDataSource,
+          offlineManager: offlineManager,
+        );
+    final DashboardRepository dashboardRepository = SupabaseDashboardRepository(
       localPreferences: _localDashboardPreferencesDataSource,
       apiClient: apiClient,
     );
