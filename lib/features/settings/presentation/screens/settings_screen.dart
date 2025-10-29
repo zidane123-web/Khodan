@@ -126,19 +126,43 @@ class _SettingsView extends StatelessWidget {
                       subtitle: Text(l10n.settingsSpeciesSubtitle),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
-                        // TODO: Navigate to species management when available.
+                        context.push(
+                          const SettingsReferentialsRoute().location,
+                        );
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.library_books_outlined),
+                      title: Text(l10n.settingsKnowledgeBase),
+                      subtitle: Text(l10n.settingsSupportDescription),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        context.push(
+                          const SettingsKnowledgeBaseRoute().location,
+                        );
                       },
                     ),
                     const Divider(height: 1),
                     ListTile(
                       leading: const Icon(Icons.support_agent_outlined),
-                      title: Text(l10n.settingsSupportSection),
+                      title: Text(l10n.settingsContactSupport),
                       subtitle: Text(l10n.settingsSupportDescription),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         context.push(
                           const SettingsContactSupportRoute().location,
                         );
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.subject_outlined),
+                      title: Text(l10n.settingsLogs),
+                      subtitle: Text(l10n.settingsSupportDescription),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        context.push(const SettingsLogsRoute().location);
                       },
                     ),
                     const Divider(height: 1),

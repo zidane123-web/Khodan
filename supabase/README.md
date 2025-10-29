@@ -55,3 +55,13 @@ Two helpers power the Flutter `DashboardCubit` with a single RPC call:
   ```
 
 Both RPCs enforce `auth.uid()` checks (unless called with the `service_role` key) and return the affected record (`upsert_breeding_metrics`) or queue identifier (`sync_payload`).
+
+## Knowledge base & support checks
+- `knowledge_articles` stores the articles displayed in the in-app knowledge base.  
+  Run `SELECT id, title, published FROM public.knowledge_articles LIMIT 5;` to ensure the table is reachable in read-only mode for authenticated clients.
+- `support_requests`, `event_templates`, `food_types`, and `food_stock` enforce `FORCE ROW LEVEL SECURITY` with `updated_at` triggers so that only the owner (or the service role) can mutate the data.  
+  Validate with `supabase db remote commit --dry-run` or manual role switching (`SET ROLE authenticated;` followed by `SET ROLE service_role;`).
+
+## Synchronization log
+- 2025-10-21 (project `rmtkvalfhbhhqczwvtoz` - dev): attempts blocked because the Supabase CLI is not linked to the project. A valid `SUPABASE_ACCESS_TOKEN` or database password is required to run `npx supabase login`, `npx supabase link -project-ref rmtkvalfhbhhqczwvtoz`, and `npx supabase db push`.
+- 2025-10-29 : migrations appliquées manuellement via Supabase SQL Editor (Tâche 16)

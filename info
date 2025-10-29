@@ -26,3 +26,22 @@ Passe à l'exécution de la tache 13.N'oublie pas de faires les tests pour t'ass
 Déplace cette tâche une fois terminée dans le sous dossier done et cré un commite en lui donnant le nom "Tache 13".
 
 Passe à l'exécution de la tache 9 mais en sa partie 09C avec les mêmes instructions que la parte 09a (remplir uniquement cette tâche,de sorte à ne pas créer de problème, faire des tests de vérifications pour s'assurer que tout est en ordre et de créer un commite à la fin). N'oublie pas les mêmes tests puis de corriger les problèmes éventuels (compliation, avertissement, affichage,et autres) qui pourraient intervenir ou qui sont déjà là afin de s'assurer que tout fonctionne bien avant de m'informer
+
+
+
+Ce que tu dois faire côté Supabase (PowerShell Windows)
+
+npx supabase login (ou supabase login si le CLI est installé globalement).
+
+npx supabase link --project-ref rmtkvalfhbhhqczwvtoz --password <mot_de_passe_BDD>
+(ou --token <ACCESS_TOKEN> si tu utilises un jeton API).
+
+Depuis E:\Mes traveaux\Agri\Khodan, exécute npx supabase db push et garde la sortie pour ton journal.
+
+Optionnel mais conseillé : npx supabase db remote commit --dry-run pour vérifier les tables (knowledge_articles, support_requests, event_templates, food_types, food_stock).
+
+Quand tout est valide, remplace dans supabase/README.md la ligne “en attente” par la date de synchronisation réelle.
+
+Déplace plan/task-16-supabase-sync.md vers plan/done/ et crée ton commit Tache 16
+
+Mot de passe de la base : 3AOXgGHVXX47cOKj
