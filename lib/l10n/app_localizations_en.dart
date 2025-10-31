@@ -17,16 +17,60 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navDashboard => 'Dashboard';
 
   @override
-  String get navAnimals => 'Animals';
+  String get navAnimals => 'Breeders';
 
   @override
-  String get navEvents => 'Events';
+  String get navEvents => 'Litters & Cages';
 
   @override
   String get navReports => 'Reports';
 
   @override
   String get navSettings => 'Settings';
+
+  @override
+  String get navPlanning => 'Schedule';
+
+  @override
+  String get navPlanningDescription =>
+      'Plan breeding tasks and review the agenda.';
+
+  @override
+  String get navNotifications => 'Notifications';
+
+  @override
+  String get navNotificationsDescription =>
+      'Track critical alerts and upcoming reminders.';
+
+  @override
+  String get navHelpCenter => 'Help Center';
+
+  @override
+  String get navHelpCenterDescription => 'Access guides and support articles.';
+
+  @override
+  String get navMore => 'More';
+
+  @override
+  String get placeholderPlanningTitle => 'Schedule coming soon';
+
+  @override
+  String get placeholderPlanningMessage =>
+      'The planning module will arrive soon. The calendar and tasks will live here.';
+
+  @override
+  String get placeholderNotificationsTitle => 'Notifications coming soon';
+
+  @override
+  String get placeholderNotificationsMessage =>
+      'Alerts and reminders will appear here once the module is enabled.';
+
+  @override
+  String get placeholderFabLabel => 'Quick action';
+
+  @override
+  String get placeholderFabMessage =>
+      'This shortcut will become available when the feature is ready.';
 
   @override
   String get settingsSupportSection => 'Support and Diagnostics';

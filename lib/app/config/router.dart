@@ -26,6 +26,8 @@ import '../../features/settings/presentation/screens/settings_referentials_scree
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../data/models/animal.dart';
 import '../../l10n/app_localizations.dart';
+import '../core/widgets/khodan_placeholder_screen.dart';
+import '../presentation/shell/khodan_shell.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'rootNavigator',
@@ -72,8 +74,56 @@ class KhodanRouter {
                   GoRouterState state,
                   StatefulNavigationShell navigationShell,
                 ) {
-                  return KhodanNavigationShell(
+                  final AppLocalizations l10n = AppLocalizations.of(context);
+                  return KhodanShell(
                     navigationShell: navigationShell,
+                    destinations: <KhodanShellDestination>[
+                      KhodanShellDestination(
+                        label: l10n.navDashboard,
+                        icon: Icons.dashboard_outlined,
+                        selectedIcon: Icons.dashboard,
+                      ),
+                      KhodanShellDestination(
+                        label: l10n.navAnimals,
+                        icon: Icons.pets_outlined,
+                        selectedIcon: Icons.pets,
+                      ),
+                      KhodanShellDestination(
+                        label: l10n.navEvents,
+                        icon: Icons.volunteer_activism_outlined,
+                        selectedIcon: Icons.volunteer_activism,
+                      ),
+                      KhodanShellDestination(
+                        label: l10n.navReports,
+                        icon: Icons.bar_chart_outlined,
+                        selectedIcon: Icons.bar_chart,
+                      ),
+                      KhodanShellDestination(
+                        label: l10n.navSettings,
+                        icon: Icons.settings_outlined,
+                        selectedIcon: Icons.settings,
+                      ),
+                    ],
+                    moreDestinations: <KhodanShellExtraDestination>[
+                      KhodanShellExtraDestination(
+                        route: const PlanningRoute().location,
+                        label: l10n.navPlanning,
+                        description: l10n.navPlanningDescription,
+                        icon: Icons.event_note_outlined,
+                      ),
+                      KhodanShellExtraDestination(
+                        route: const NotificationsRoute().location,
+                        label: l10n.navNotifications,
+                        description: l10n.navNotificationsDescription,
+                        icon: Icons.notifications_none_outlined,
+                      ),
+                      KhodanShellExtraDestination(
+                        route: const SettingsKnowledgeBaseRoute().location,
+                        label: l10n.navHelpCenter,
+                        description: l10n.navHelpCenterDescription,
+                        icon: Icons.help_outline,
+                      ),
+                    ],
                   );
                 },
             branches: <StatefulShellBranch>[
@@ -217,6 +267,28 @@ class KhodanRouter {
               ),
             ],
           ),
+          GoRoute(
+            path: const PlanningRoute().path,
+            builder: (BuildContext context, GoRouterState state) {
+              final AppLocalizations l10n = AppLocalizations.of(context);
+              return KhodanPlaceholderScreen(
+                title: l10n.placeholderPlanningTitle,
+                message: l10n.placeholderPlanningMessage,
+                icon: Icons.event_note,
+              );
+            },
+          ),
+          GoRoute(
+            path: const NotificationsRoute().path,
+            builder: (BuildContext context, GoRouterState state) {
+              final AppLocalizations l10n = AppLocalizations.of(context);
+              return KhodanPlaceholderScreen(
+                title: l10n.placeholderNotificationsTitle,
+                message: l10n.placeholderNotificationsMessage,
+                icon: Icons.notifications,
+              );
+            },
+          ),
         ],
         redirect: enableAuth ? _redirectWithAuth : null,
       );
@@ -334,51 +406,10 @@ class SettingsAboutRoute extends KhodanRoute {
   const SettingsAboutRoute() : super('/settings/support/about');
 }
 
-class KhodanNavigationShell extends StatelessWidget {
-  const KhodanNavigationShell({required this.navigationShell, super.key});
+class PlanningRoute extends KhodanRoute {
+  const PlanningRoute() : super('/planning');
+}
 
-  final StatefulNavigationShell navigationShell;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        destinations: _buildDestinations(l10n),
-        onDestinationSelected: navigationShell.goBranch,
-      ),
-    );
-  }
-
-  List<NavigationDestination> _buildDestinations(AppLocalizations l10n) {
-    return <NavigationDestination>[
-      NavigationDestination(
-        icon: const Icon(Icons.dashboard_outlined),
-        selectedIcon: const Icon(Icons.dashboard),
-        label: l10n.navDashboard,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.pets_outlined),
-        selectedIcon: const Icon(Icons.pets),
-        label: l10n.navAnimals,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.event_note_outlined),
-        selectedIcon: const Icon(Icons.event_note),
-        label: l10n.navEvents,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.bar_chart_outlined),
-        selectedIcon: const Icon(Icons.bar_chart),
-        label: l10n.navReports,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.settings_outlined),
-        selectedIcon: const Icon(Icons.settings),
-        label: l10n.navSettings,
-      ),
-    ];
-  }
+class NotificationsRoute extends KhodanRoute {
+  const NotificationsRoute() : super('/notifications');
 }

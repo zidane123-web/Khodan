@@ -17,16 +17,61 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navDashboard => 'Tableau de bord';
 
   @override
-  String get navAnimals => 'Animaux';
+  String get navAnimals => 'Éleveurs';
 
   @override
-  String get navEvents => 'Événements';
+  String get navEvents => 'Portées & cages';
 
   @override
   String get navReports => 'Rapports';
 
   @override
   String get navSettings => 'Paramètres';
+
+  @override
+  String get navPlanning => 'Planning';
+
+  @override
+  String get navPlanningDescription =>
+      'Planifie les tâches d\'élevage et visualise le calendrier.';
+
+  @override
+  String get navNotifications => 'Notifications';
+
+  @override
+  String get navNotificationsDescription =>
+      'Suis les alertes critiques et rappels importants.';
+
+  @override
+  String get navHelpCenter => 'Centre d\'aide';
+
+  @override
+  String get navHelpCenterDescription =>
+      'Accède aux guides et articles de support.';
+
+  @override
+  String get navMore => 'Plus';
+
+  @override
+  String get placeholderPlanningTitle => 'Planning en préparation';
+
+  @override
+  String get placeholderPlanningMessage =>
+      'Le module Planning sera bientôt disponible. Vous y retrouverez l\'agenda des tâches et rappels.';
+
+  @override
+  String get placeholderNotificationsTitle => 'Notifications en préparation';
+
+  @override
+  String get placeholderNotificationsMessage =>
+      'Les alertes et rappels seront affichées ici dès l\'activation du module.';
+
+  @override
+  String get placeholderFabLabel => 'Action rapide';
+
+  @override
+  String get placeholderFabMessage =>
+      'Cette action sera disponible dès que la fonctionnalité sera prête.';
 
   @override
   String get settingsSupportSection => 'Support et diagnostics';

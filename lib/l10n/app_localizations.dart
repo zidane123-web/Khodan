@@ -114,13 +114,13 @@ abstract class AppLocalizations {
   /// No description provided for @navAnimals.
   ///
   /// In fr, this message translates to:
-  /// **'Animaux'**
+  /// **'Éleveurs'**
   String get navAnimals;
 
   /// No description provided for @navEvents.
   ///
   /// In fr, this message translates to:
-  /// **'Événements'**
+  /// **'Portées & cages'**
   String get navEvents;
 
   /// No description provided for @navReports.
@@ -134,6 +134,84 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Paramètres'**
   String get navSettings;
+
+  /// No description provided for @navPlanning.
+  ///
+  /// In fr, this message translates to:
+  /// **'Planning'**
+  String get navPlanning;
+
+  /// No description provided for @navPlanningDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Planifie les tâches d\'élevage et visualise le calendrier.'**
+  String get navPlanningDescription;
+
+  /// No description provided for @navNotifications.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications'**
+  String get navNotifications;
+
+  /// No description provided for @navNotificationsDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suis les alertes critiques et rappels importants.'**
+  String get navNotificationsDescription;
+
+  /// No description provided for @navHelpCenter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Centre d\'aide'**
+  String get navHelpCenter;
+
+  /// No description provided for @navHelpCenterDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accède aux guides et articles de support.'**
+  String get navHelpCenterDescription;
+
+  /// No description provided for @navMore.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus'**
+  String get navMore;
+
+  /// No description provided for @placeholderPlanningTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Planning en préparation'**
+  String get placeholderPlanningTitle;
+
+  /// No description provided for @placeholderPlanningMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le module Planning sera bientôt disponible. Vous y retrouverez l\'agenda des tâches et rappels.'**
+  String get placeholderPlanningMessage;
+
+  /// No description provided for @placeholderNotificationsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications en préparation'**
+  String get placeholderNotificationsTitle;
+
+  /// No description provided for @placeholderNotificationsMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les alertes et rappels seront affichées ici dès l\'activation du module.'**
+  String get placeholderNotificationsMessage;
+
+  /// No description provided for @placeholderFabLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Action rapide'**
+  String get placeholderFabLabel;
+
+  /// No description provided for @placeholderFabMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette action sera disponible dès que la fonctionnalité sera prête.'**
+  String get placeholderFabMessage;
 
   /// No description provided for @settingsSupportSection.
   ///
