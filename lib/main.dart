@@ -26,6 +26,8 @@ import 'data/repositories/knowledge_base_repository.dart';
 import 'data/repositories/profile_repository.dart';
 import 'data/repositories/support_repository.dart';
 import 'data/repositories/species_repository.dart';
+import 'data/repositories/litter_repository.dart';
+import 'data/repositories/hutch_repository.dart';
 import 'data/services/api_client.dart';
 import 'data/services/connectivity_watcher.dart';
 import 'data/services/offline_sync_manager.dart';
@@ -74,6 +76,8 @@ void _resetInMemoryRepositories() {
   InMemoryAnimalRepository.reset();
   InMemoryBreedingRepository.reset();
   InMemoryEventRepository.reset();
+  InMemoryLitterRepository.reset();
+  InMemoryHutchRepository.reset();
 }
 
 Future<void> _initializeSupabase(AppEnv env) async {
@@ -241,6 +245,12 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<EventRepository>(
         create: (_) => InMemoryEventRepository(),
       ),
+      RepositoryProvider<LitterRepository>(
+        create: (_) => InMemoryLitterRepository(),
+      ),
+      RepositoryProvider<HutchRepository>(
+        create: (_) => InMemoryHutchRepository(),
+      ),
       RepositoryProvider<SpeciesRepository>(
         create: (_) => SyncedSpeciesRepository(
           remote: SupabaseSpeciesRepository(
@@ -375,6 +385,8 @@ class _KhodanAppState extends State<KhodanApp> {
       localPreferences: _localDashboardPreferencesDataSource,
       apiClient: apiClient,
     );
+    final LitterRepository litterRepository = InMemoryLitterRepository();
+    final HutchRepository hutchRepository = InMemoryHutchRepository();
 
     return <RepositoryProvider<dynamic>>[
       RepositoryProvider<ApiExecutor>.value(value: apiClient),
@@ -411,6 +423,8 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<AnimalRepository>(create: (_) => syncedAnimal),
       RepositoryProvider<BreedingRepository>(create: (_) => syncedBreeding),
       RepositoryProvider<EventRepository>(create: (_) => syncedEvent),
+      RepositoryProvider<LitterRepository>(create: (_) => litterRepository),
+      RepositoryProvider<HutchRepository>(create: (_) => hutchRepository),
       RepositoryProvider<SpeciesRepository>(create: (_) => syncedSpecies),
       RepositoryProvider<ProfileRepository>(create: (_) => syncedProfile),
       RepositoryProvider<EventTemplateRepository>(

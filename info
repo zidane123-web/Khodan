@@ -9,6 +9,7 @@ adb connect
 flutter run --dart-define=SUPABASE_URL=https://rmtkvalfhbhhqczwvtoz.supabase.co --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtdGt2YWxmaGJoaHFjend2dG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMjc3MjAsImV4cCI6MjA3MzcwMzcyMH0.iCunOEha0B-Lxz4y2I94tzqNs3UqlQdNMUa7mM7fsHE
 
 flutter run --dart-define-from-file=.env (lien plus court)
+flutter run -d chrome
 
 flutter pub get
 
@@ -47,3 +48,6 @@ Quand tout est valide, remplace dans supabase/README.md la ligne “en attente�
 Déplace plan/task-16-supabase-sync.md vers plan/done/ et crée ton commit Tache 16
 
 Mot de passe de la base : 3AOXgGHVXX47cOKj
+
+
+Codex, merci d’attaquer la tâche 05 (Plan2/task-05-tableau-de-bord.md) : lis bien la fiche, la roadmap (Plan2/roadmap-khodan.md) et le dossier Info-de référence/ (captures, PDF, vidéo) pour caler le tableau de bord sur l’expérience Everbreed; rédige docs/dashboard-spec.md en listant les sections (message d’accueil, actions rapides, menu « + », indicateurs, planning), les textes français simples et les valeurs temporaires; mets à jour lib/features/dashboard/presentation/screens/dashboard_screen.dart (ou fichiers associés) pour introduire un layout responsive avec boutons d’actions (Saillie, Mise bas, Pesée, Abattage), un menu « + » (bottom sheet), des cartes indicateurs placeholder et une section planning (mock si besoin), en laissant des fonctions stub (onCreateBreeding()…) pour la suite; assure-toi que flutter analyze et flutter test passent, ajoute un test widget minimal vérifiant la présence des sections; ajoute les commandes de test dans la doc; à la fin déplace Plan2/task-05-tableau-de-bord.md dans Plan2/done/, crée un commit clair résumant le travail, et indique-moi ce qu’il reste à faire manuellement (par exemple brancher Supabase réel).

@@ -11,7 +11,7 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/email_confirmation_screen.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
-import '../../features/events/presentation/screens/events_hub_screen.dart';
+import '../../features/litters/presentation/screens/litters_and_hutches_screen.dart';
 import '../../features/events/presentation/screens/add_breeding_record_screen.dart';
 import '../../features/events/presentation/screens/add_event_screen.dart';
 import '../../features/events/presentation/cubit/breeding_cubit.dart';
@@ -152,7 +152,7 @@ class KhodanRouter {
                   GoRoute(
                     path: const EventsRoute().path,
                     builder: (BuildContext context, GoRouterState state) =>
-                        const EventsHubScreen(),
+                        const LittersAndHutchesScreen(),
                     routes: <RouteBase>[
                       GoRoute(
                         path: 'add-breeding',
