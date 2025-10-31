@@ -680,6 +680,204 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Derniers tickets'**
   String get contactSupportRecentTitle;
+
+  /// No description provided for @planningTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Planning'**
+  String get planningTitle;
+
+  /// No description provided for @planningSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher taches, animaux, notes...'**
+  String get planningSearchHint;
+
+  /// No description provided for @planningTabList.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste'**
+  String get planningTabList;
+
+  /// No description provided for @planningTabCalendar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calendrier'**
+  String get planningTabCalendar;
+
+  /// No description provided for @planningTabChain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaine'**
+  String get planningTabChain;
+
+  /// No description provided for @planningFilterStatus.
+  ///
+  /// In fr, this message translates to:
+  /// **'Statut'**
+  String get planningFilterStatus;
+
+  /// No description provided for @planningFilterPeriod.
+  ///
+  /// In fr, this message translates to:
+  /// **'Periode'**
+  String get planningFilterPeriod;
+
+  /// No description provided for @planningFilterType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type'**
+  String get planningFilterType;
+
+  /// No description provided for @planningFilterReset.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reinitialiser'**
+  String get planningFilterReset;
+
+  /// No description provided for @planningStatusPlanned.
+  ///
+  /// In fr, this message translates to:
+  /// **'A faire'**
+  String get planningStatusPlanned;
+
+  /// No description provided for @planningStatusCompleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminees'**
+  String get planningStatusCompleted;
+
+  /// No description provided for @planningStatusOverdue.
+  ///
+  /// In fr, this message translates to:
+  /// **'En retard'**
+  String get planningStatusOverdue;
+
+  /// No description provided for @planningStatusSkipped.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ignorees'**
+  String get planningStatusSkipped;
+
+  /// No description provided for @planningPeriodAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes'**
+  String get planningPeriodAll;
+
+  /// No description provided for @planningPeriodToday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aujourd\'hui'**
+  String get planningPeriodToday;
+
+  /// No description provided for @planningPeriodWeek.
+  ///
+  /// In fr, this message translates to:
+  /// **'7 jours'**
+  String get planningPeriodWeek;
+
+  /// No description provided for @planningPeriodMonth.
+  ///
+  /// In fr, this message translates to:
+  /// **'30 jours'**
+  String get planningPeriodMonth;
+
+  /// No description provided for @planningEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune tache ne correspond aux filtres.'**
+  String get planningEmpty;
+
+  /// No description provided for @planningOfflinePending.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} action(s) hors ligne en attente'**
+  String planningOfflinePending(int count);
+
+  /// No description provided for @planningOfflineViewQueue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir la file'**
+  String get planningOfflineViewQueue;
+
+  /// No description provided for @planningMarkDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer fait'**
+  String get planningMarkDone;
+
+  /// No description provided for @planningReschedule.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reprogrammer'**
+  String get planningReschedule;
+
+  /// No description provided for @planningDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get planningDelete;
+
+  /// No description provided for @planningExportCsv.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exporter CSV'**
+  String get planningExportCsv;
+
+  /// No description provided for @planningExportIcalDisabled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Export iCal (bientot)'**
+  String get planningExportIcalDisabled;
+
+  /// No description provided for @planningCalendarMonth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mois'**
+  String get planningCalendarMonth;
+
+  /// No description provided for @planningCalendarWeek.
+  ///
+  /// In fr, this message translates to:
+  /// **'Semaine'**
+  String get planningCalendarWeek;
+
+  /// No description provided for @planningChainSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaines de reproduction'**
+  String get planningChainSection;
+
+  /// No description provided for @planningChainEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune chaine de reproduction a afficher.'**
+  String get planningChainEmpty;
+
+  /// No description provided for @planningSelectionCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} selectionnee(s)'**
+  String planningSelectionCount(int count);
+
+  /// No description provided for @planningBulkComplete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminer la selection'**
+  String get planningBulkComplete;
+
+  /// No description provided for @planningBulkExport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exporter la selection'**
+  String get planningBulkExport;
+
+  /// No description provided for @planningCsvExported.
+  ///
+  /// In fr, this message translates to:
+  /// **'CSV genere'**
+  String get planningCsvExported;
 }
 
 class _AppLocalizationsDelegate

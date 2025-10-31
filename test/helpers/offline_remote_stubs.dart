@@ -69,6 +69,16 @@ class RecordingEventRepository implements EventRepository {
   }
 
   @override
+  Future<LivestockEvent> updateEvent(LivestockEvent event) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteEvent(String id) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<List<LivestockEvent>> fetchEvents({
     DateTime? start,
     DateTime? end,

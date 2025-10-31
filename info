@@ -51,3 +51,13 @@ Mot de passe de la base : 3AOXgGHVXX47cOKj
 
 
 Codex, merci d’attaquer la tâche 05 (Plan2/task-05-tableau-de-bord.md) : lis bien la fiche, la roadmap (Plan2/roadmap-khodan.md) et le dossier Info-de référence/ (captures, PDF, vidéo) pour caler le tableau de bord sur l’expérience Everbreed; rédige docs/dashboard-spec.md en listant les sections (message d’accueil, actions rapides, menu « + », indicateurs, planning), les textes français simples et les valeurs temporaires; mets à jour lib/features/dashboard/presentation/screens/dashboard_screen.dart (ou fichiers associés) pour introduire un layout responsive avec boutons d’actions (Saillie, Mise bas, Pesée, Abattage), un menu « + » (bottom sheet), des cartes indicateurs placeholder et une section planning (mock si besoin), en laissant des fonctions stub (onCreateBreeding()…) pour la suite; assure-toi que flutter analyze et flutter test passent, ajoute un test widget minimal vérifiant la présence des sections; ajoute les commandes de test dans la doc; à la fin déplace Plan2/task-05-tableau-de-bord.md dans Plan2/done/, crée un commit clair résumant le travail, et indique-moi ce qu’il reste à faire manuellement (par exemple brancher Supabase réel).
+
+
+Remplacer les dépôts “InMemory” par des dépôts réels
+Pour l’instant, les portées/clapiers s’appuient sur InMemoryLitterRepository et InMemoryHutchRepository. Quand les tables Supabase et la synchro Drift seront prêtes, il faudra les échanger contre de vraies implémentations (Supabase pour le cloud + Drift pour l’offline) et enregistrer tout cela dans OfflineSyncManager.
+
+Brancher les callbacks sur le domaine
+Les boutons “Enregistrer le poids”, “Mise à jour groupée”, etc. appellent encore des stubs. Il faudra les connecter aux actions métier (services/repositories), et permettre d’ouvrir ces écrans depuis les autres modules (planning, animaux) une fois que ceux-ci auront leur logique.
+
+Compléter les tests
+Dès que les données réelles seront branchées, il faudra enrichir les tests (intégration/widget) pour couvrir les dialogues et la grille des clapiers.

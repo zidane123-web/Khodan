@@ -16,6 +16,10 @@ abstract class EventRepository {
     LivestockEvent event, {
     List<AnimalEventLink> links,
   });
+
+  Future<LivestockEvent> updateEvent(LivestockEvent event);
+
+  Future<void> deleteEvent(String id);
 }
 
 class InMemoryEventRepository implements EventRepository {
@@ -160,6 +164,24 @@ class InMemoryEventRepository implements EventRepository {
     }
     return created;
   }
+
+  @override
+  Future<LivestockEvent> updateEvent(LivestockEvent event) async {
+    final int index = _events.indexWhere(
+      (LivestockEvent existing) => existing.id == event.id,
+    );
+    if (index == -1) {
+      throw StateError('Event ${event.id} not found');
+    }
+    _events[index] = event;
+    return event;
+  }
+
+  @override
+  Future<void> deleteEvent(String id) async {
+    _events.removeWhere((LivestockEvent event) => event.id == id);
+    _links.removeWhere((AnimalEventLink link) => link.eventId == id);
+  }
 }
 
 class SupabaseEventRepository implements EventRepository {
@@ -226,6 +248,36 @@ class SupabaseEventRepository implements EventRepository {
 
       return createdEvent;
     }, label: 'events.create');
+  }
+
+  @override
+  Future<LivestockEvent> updateEvent(LivestockEvent event) async {
+    return _api.run<LivestockEvent>((SupabaseClient client) async {
+      final List<dynamic> response = await client
+          .from('events')
+          .update(event.toJson())
+          .eq('id', event.id)
+          .select();
+      if (response.isEmpty) {
+        throw PostgrestException(
+          message: 'Event ${event.id} not found',
+          code: 'PGRST116',
+          details: null,
+          hint: null,
+        );
+      }
+      return LivestockEvent.fromJson(
+        response.first as Map<String, dynamic>,
+      );
+    }, label: 'events.update');
+  }
+
+  @override
+  Future<void> deleteEvent(String id) async {
+    await _api.run<void>((SupabaseClient client) async {
+      await client.from('animal_events').delete().eq('event_id', id);
+      await client.from('events').delete().eq('id', id);
+    }, label: 'events.delete');
   }
 }
 
@@ -347,6 +399,88 @@ class SyncedEventRepository implements EventRepository {
     return created;
   }
 
+  @override
+  Future<LivestockEvent> updateEvent(LivestockEvent event) async {
+    final List<AnimalEventLink> links =
+        await _local.fetchLinksForEvent(event.id);
+    if (_offlineManager.isOffline.value) {
+      final LivestockEvent? previous = await _local.fetchEventById(event.id);
+      await _local.upsertEvent(
+        event,
+        links: links,
+        syncState: kSyncStatePending,
+      );
+      await _offlineManager.enqueueAction(
+        SyncActionRequest(
+          type: SyncActionType.updateEvent,
+          rollbackType: previous == null
+              ? SyncActionType.deleteEvent
+              : SyncActionType.updateEvent,
+          description: 'Mettre a jour evenement ${event.eventType}',
+          payload: <String, dynamic>{
+            'event': event.toJson(),
+            'links': <Map<String, dynamic>>[
+              for (final AnimalEventLink link in links) link.toJson(),
+            ],
+          },
+          rollbackPayload: previous == null
+              ? <String, dynamic>{'event_id': event.id}
+              : <String, dynamic>{
+                  'event': previous.toJson(),
+                  'links': <Map<String, dynamic>>[
+                    for (final AnimalEventLink link in links) link.toJson(),
+                  ],
+                },
+          priority: 70,
+          execute: () async {
+            final LivestockEvent updated = await _remote.updateEvent(event);
+            await _local.upsertEvent(updated, links: links);
+          },
+        ),
+      );
+      return event;
+    }
+
+    final LivestockEvent updated = await _remote.updateEvent(event);
+    await _local.upsertEvent(updated, links: links);
+    return updated;
+  }
+
+  @override
+  Future<void> deleteEvent(String id) async {
+    final LivestockEvent? snapshot = await _local.fetchEventById(id);
+    final List<AnimalEventLink> links = await _local.fetchLinksForEvent(id);
+    if (_offlineManager.isOffline.value) {
+      await _local.deleteEvent(id);
+      await _offlineManager.enqueueAction(
+        SyncActionRequest(
+          type: SyncActionType.deleteEvent,
+          rollbackType:
+              snapshot == null ? null : SyncActionType.createEvent,
+          description: 'Supprimer evenement $id',
+          payload: <String, dynamic>{'event_id': id},
+          rollbackPayload: snapshot == null
+              ? null
+              : <String, dynamic>{
+                  'event': snapshot.toJson(),
+                  'links': <Map<String, dynamic>>[
+                    for (final AnimalEventLink link in links) link.toJson(),
+                  ],
+                },
+          priority: 60,
+          execute: () async {
+            await _remote.deleteEvent(id);
+            await _local.deleteEvent(id);
+          },
+        ),
+      );
+      return;
+    }
+
+    await _remote.deleteEvent(id);
+    await _local.deleteEvent(id);
+  }
+
   void _registerHandlers() {
     if (_handlersRegistered) {
       return;
@@ -375,6 +509,66 @@ class SyncedEventRepository implements EventRepository {
         final String? eventId = action.rollbackPayload?['event_id'] as String?;
         if (eventId != null) {
           await _local.deleteEvent(eventId);
+        }
+      },
+    );
+
+    _offlineManager.registerHandler(
+      SyncActionType.updateEvent,
+      (QueuedSyncAction action) async {
+        final Map<String, dynamic> rawEvent =
+            action.payload['event'] as Map<String, dynamic>;
+        final List<dynamic> rawLinks =
+            action.payload['links'] as List<dynamic>? ?? <dynamic>[];
+        final LivestockEvent event = LivestockEvent.fromJson(rawEvent);
+        final List<AnimalEventLink> links = <AnimalEventLink>[
+          for (final dynamic item in rawLinks)
+            AnimalEventLink.fromJson(item as Map<String, dynamic>),
+        ];
+        final LivestockEvent updated = await _remote.updateEvent(event);
+        await _local.upsertEvent(updated, links: links);
+      },
+      rollback: (QueuedSyncAction action, Object _) async {
+        final Map<String, dynamic>? rawEvent =
+            action.rollbackPayload?['event'] as Map<String, dynamic>?;
+        final List<dynamic> rawLinks =
+            action.rollbackPayload?['links'] as List<dynamic>? ?? <dynamic>[];
+        if (rawEvent != null) {
+          final LivestockEvent previous = LivestockEvent.fromJson(rawEvent);
+          final List<AnimalEventLink> links = <AnimalEventLink>[
+            for (final dynamic item in rawLinks)
+              AnimalEventLink.fromJson(item as Map<String, dynamic>),
+          ];
+          await _local.upsertEvent(previous, links: links);
+        } else {
+          final String? eventId =
+              action.rollbackPayload?['event_id'] as String?;
+          if (eventId != null) {
+            await _local.deleteEvent(eventId);
+          }
+        }
+      },
+    );
+
+    _offlineManager.registerHandler(
+      SyncActionType.deleteEvent,
+      (QueuedSyncAction action) async {
+        final String eventId = action.payload['event_id'] as String;
+        await _remote.deleteEvent(eventId);
+        await _local.deleteEvent(eventId);
+      },
+      rollback: (QueuedSyncAction action, Object _) async {
+        final Map<String, dynamic>? rawEvent =
+            action.rollbackPayload?['event'] as Map<String, dynamic>?;
+        final List<dynamic> rawLinks =
+            action.rollbackPayload?['links'] as List<dynamic>? ?? <dynamic>[];
+        if (rawEvent != null) {
+          final LivestockEvent event = LivestockEvent.fromJson(rawEvent);
+          final List<AnimalEventLink> links = <AnimalEventLink>[
+            for (final dynamic item in rawLinks)
+              AnimalEventLink.fromJson(item as Map<String, dynamic>),
+          ];
+          await _local.upsertEvent(event, links: links);
         }
       },
     );

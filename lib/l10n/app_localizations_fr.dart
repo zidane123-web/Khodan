@@ -358,4 +358,107 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get contactSupportRecentTitle => 'Derniers tickets';
+
+  @override
+  String get planningTitle => 'Planning';
+
+  @override
+  String get planningSearchHint => 'Rechercher taches, animaux, notes...';
+
+  @override
+  String get planningTabList => 'Liste';
+
+  @override
+  String get planningTabCalendar => 'Calendrier';
+
+  @override
+  String get planningTabChain => 'Chaine';
+
+  @override
+  String get planningFilterStatus => 'Statut';
+
+  @override
+  String get planningFilterPeriod => 'Periode';
+
+  @override
+  String get planningFilterType => 'Type';
+
+  @override
+  String get planningFilterReset => 'Reinitialiser';
+
+  @override
+  String get planningStatusPlanned => 'A faire';
+
+  @override
+  String get planningStatusCompleted => 'Terminees';
+
+  @override
+  String get planningStatusOverdue => 'En retard';
+
+  @override
+  String get planningStatusSkipped => 'Ignorees';
+
+  @override
+  String get planningPeriodAll => 'Toutes';
+
+  @override
+  String get planningPeriodToday => 'Aujourd\'hui';
+
+  @override
+  String get planningPeriodWeek => '7 jours';
+
+  @override
+  String get planningPeriodMonth => '30 jours';
+
+  @override
+  String get planningEmpty => 'Aucune tache ne correspond aux filtres.';
+
+  @override
+  String planningOfflinePending(int count) {
+    return '$count action(s) hors ligne en attente';
+  }
+
+  @override
+  String get planningOfflineViewQueue => 'Voir la file';
+
+  @override
+  String get planningMarkDone => 'Marquer fait';
+
+  @override
+  String get planningReschedule => 'Reprogrammer';
+
+  @override
+  String get planningDelete => 'Supprimer';
+
+  @override
+  String get planningExportCsv => 'Exporter CSV';
+
+  @override
+  String get planningExportIcalDisabled => 'Export iCal (bientot)';
+
+  @override
+  String get planningCalendarMonth => 'Mois';
+
+  @override
+  String get planningCalendarWeek => 'Semaine';
+
+  @override
+  String get planningChainSection => 'Chaines de reproduction';
+
+  @override
+  String get planningChainEmpty => 'Aucune chaine de reproduction a afficher.';
+
+  @override
+  String planningSelectionCount(int count) {
+    return '$count selectionnee(s)';
+  }
+
+  @override
+  String get planningBulkComplete => 'Terminer la selection';
+
+  @override
+  String get planningBulkExport => 'Exporter la selection';
+
+  @override
+  String get planningCsvExported => 'CSV genere';
 }

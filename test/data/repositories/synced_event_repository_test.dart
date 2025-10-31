@@ -17,7 +17,10 @@ class _FakeRemoteEventRepository implements EventRepository {
   int fetchLinksCount = 0;
 
   @override
-  Future<List<LivestockEvent>> fetchEvents({DateTime? start, DateTime? end}) async {
+  Future<List<LivestockEvent>> fetchEvents({
+    DateTime? start,
+    DateTime? end,
+  }) async {
     fetchCount += 1;
     return _events;
   }
@@ -36,6 +39,20 @@ class _FakeRemoteEventRepository implements EventRepository {
     _events = <LivestockEvent>[event];
     _links = links;
     return event;
+  }
+
+  @override
+  Future<LivestockEvent> updateEvent(LivestockEvent event) async {
+    _events = <LivestockEvent>[event];
+    return event;
+  }
+
+  @override
+  Future<void> deleteEvent(String id) async {
+    _events = _events.where((LivestockEvent e) => e.id != id).toList();
+    _links = _links
+        .where((AnimalEventLink link) => link.eventId != id)
+        .toList();
   }
 }
 
@@ -82,9 +99,15 @@ void main() {
 
   test('fetchEvents pulls from cache when offline', () async {
     OfflineSyncManager.instance.setOffline(true, flushWhenOnline: false);
-    when(() => local.fetchEvents(start: any(named: 'start'), end: any(named: 'end')))
-        .thenAnswer((_) async => <LivestockEvent>[sampleEvent]);
-    when(() => local.fetchLinks()).thenAnswer((_) async => <AnimalEventLink>[sampleLink]);
+    when(
+      () => local.fetchEvents(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer((_) async => <LivestockEvent>[sampleEvent]);
+    when(
+      () => local.fetchLinks(),
+    ).thenAnswer((_) async => <AnimalEventLink>[sampleLink]);
 
     final List<LivestockEvent> events = await repository.fetchEvents();
     final List<AnimalEventLink> links = await repository.fetchEventLinks();
@@ -97,8 +120,9 @@ void main() {
 
   test('fetchEvents refreshes cache when online', () async {
     when(() => local.fetchLinks()).thenAnswer((_) async => <AnimalEventLink>[]);
-    when(() => local.replaceEvents(any(), links: any(named: 'links')))
-        .thenAnswer((_) async {});
+    when(
+      () => local.replaceEvents(any(), links: any(named: 'links')),
+    ).thenAnswer((_) async {});
     when(() => local.replaceLinks(any())).thenAnswer((_) async {});
 
     final List<LivestockEvent> events = await repository.fetchEvents();
@@ -108,8 +132,11 @@ void main() {
     expect(remote.fetchLinksCount, equals(1));
     expect(events, <LivestockEvent>[sampleEvent]);
     expect(links, <AnimalEventLink>[sampleLink]);
-    verify(() => local.replaceEvents(<LivestockEvent>[sampleEvent], links: any(named: 'links')))
-        .called(1);
+    verify(
+      () => local.replaceEvents(<LivestockEvent>[
+        sampleEvent,
+      ], links: any(named: 'links')),
+    ).called(1);
     verify(() => local.replaceLinks(<AnimalEventLink>[sampleLink])).called(1);
   });
 }

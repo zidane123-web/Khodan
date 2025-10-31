@@ -15,6 +15,53 @@
   "navMore": "More",
   "placeholderPlanningTitle": "Schedule coming soon",
   "placeholderPlanningMessage": "The planning module will arrive soon. The calendar and tasks will live here.",
+  "planningTitle": "Schedule",
+  "planningSearchHint": "Search tasks, animals, notes…",
+  "planningTabList": "List",
+  "planningTabCalendar": "Calendar",
+  "planningTabChain": "Chain",
+  "planningFilterStatus": "Status",
+  "planningFilterPeriod": "Period",
+  "planningFilterType": "Type",
+  "planningFilterReset": "Reset",
+  "planningStatusPlanned": "To do",
+  "planningStatusCompleted": "Done",
+  "planningStatusOverdue": "Overdue",
+  "planningStatusSkipped": "Skipped",
+  "planningPeriodAll": "All",
+  "planningPeriodToday": "Today",
+  "planningPeriodWeek": "7 days",
+  "planningPeriodMonth": "30 days",
+  "planningEmpty": "No task matches your filters.",
+  "planningOfflinePending": "{count} offline action(s) pending",
+  "@planningOfflinePending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "planningOfflineViewQueue": "View queue",
+  "planningMarkDone": "Mark done",
+  "planningReschedule": "Reschedule",
+  "planningDelete": "Delete",
+  "planningExportCsv": "Export CSV",
+  "planningExportIcalDisabled": "Export iCal (coming soon)",
+  "planningCalendarMonth": "Month",
+  "planningCalendarWeek": "Week",
+  "planningChainSection": "Reproduction chains",
+  "planningChainEmpty": "No reproduction chain to display.",
+  "planningSelectionCount": "{count} selected",
+  "@planningSelectionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "planningBulkComplete": "Complete selected",
+  "planningBulkExport": "Export selection",
+  "planningCsvExported": "CSV generated",
   "placeholderNotificationsTitle": "Notifications coming soon",
   "placeholderNotificationsMessage": "Alerts and reminders will appear here once the module is enabled.",
   "placeholderFabLabel": "Quick action",

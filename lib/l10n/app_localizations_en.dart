@@ -355,4 +355,107 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contactSupportRecentTitle => 'Latest tickets';
+
+  @override
+  String get planningTitle => 'Schedule';
+
+  @override
+  String get planningSearchHint => 'Search tasks, animals, notes…';
+
+  @override
+  String get planningTabList => 'List';
+
+  @override
+  String get planningTabCalendar => 'Calendar';
+
+  @override
+  String get planningTabChain => 'Chain';
+
+  @override
+  String get planningFilterStatus => 'Status';
+
+  @override
+  String get planningFilterPeriod => 'Period';
+
+  @override
+  String get planningFilterType => 'Type';
+
+  @override
+  String get planningFilterReset => 'Reset';
+
+  @override
+  String get planningStatusPlanned => 'To do';
+
+  @override
+  String get planningStatusCompleted => 'Done';
+
+  @override
+  String get planningStatusOverdue => 'Overdue';
+
+  @override
+  String get planningStatusSkipped => 'Skipped';
+
+  @override
+  String get planningPeriodAll => 'All';
+
+  @override
+  String get planningPeriodToday => 'Today';
+
+  @override
+  String get planningPeriodWeek => '7 days';
+
+  @override
+  String get planningPeriodMonth => '30 days';
+
+  @override
+  String get planningEmpty => 'No task matches your filters.';
+
+  @override
+  String planningOfflinePending(int count) {
+    return '$count offline action(s) pending';
+  }
+
+  @override
+  String get planningOfflineViewQueue => 'View queue';
+
+  @override
+  String get planningMarkDone => 'Mark done';
+
+  @override
+  String get planningReschedule => 'Reschedule';
+
+  @override
+  String get planningDelete => 'Delete';
+
+  @override
+  String get planningExportCsv => 'Export CSV';
+
+  @override
+  String get planningExportIcalDisabled => 'Export iCal (coming soon)';
+
+  @override
+  String get planningCalendarMonth => 'Month';
+
+  @override
+  String get planningCalendarWeek => 'Week';
+
+  @override
+  String get planningChainSection => 'Reproduction chains';
+
+  @override
+  String get planningChainEmpty => 'No reproduction chain to display.';
+
+  @override
+  String planningSelectionCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get planningBulkComplete => 'Complete selected';
+
+  @override
+  String get planningBulkExport => 'Export selection';
+
+  @override
+  String get planningCsvExported => 'CSV generated';
 }

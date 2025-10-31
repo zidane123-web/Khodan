@@ -153,5 +153,52 @@
   "contactSupportMessageHint": "Décrivez votre question ou le problème rencontré en fournissant le plus de détails possible.",
   "contactSupportMessageValidation": "Merci de détailler votre demande (au moins 10 caractères).",
   "contactSupportSubmitting": "Envoi en cours…",
-  "contactSupportRecentTitle": "Derniers tickets"
+  "contactSupportRecentTitle": "Derniers tickets",
+  "planningTitle": "Planning",
+  "planningSearchHint": "Rechercher taches, animaux, notes...",
+  "planningTabList": "Liste",
+  "planningTabCalendar": "Calendrier",
+  "planningTabChain": "Chaine",
+  "planningFilterStatus": "Statut",
+  "planningFilterPeriod": "Periode",
+  "planningFilterType": "Type",
+  "planningFilterReset": "Reinitialiser",
+  "planningStatusPlanned": "A faire",
+  "planningStatusCompleted": "Terminees",
+  "planningStatusOverdue": "En retard",
+  "planningStatusSkipped": "Ignorees",
+  "planningPeriodAll": "Toutes",
+  "planningPeriodToday": "Aujourd'hui",
+  "planningPeriodWeek": "7 jours",
+  "planningPeriodMonth": "30 jours",
+  "planningEmpty": "Aucune tache ne correspond aux filtres.",
+  "planningOfflinePending": "{count} action(s) hors ligne en attente",
+  "@planningOfflinePending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "planningOfflineViewQueue": "Voir la file",
+  "planningMarkDone": "Marquer fait",
+  "planningReschedule": "Reprogrammer",
+  "planningDelete": "Supprimer",
+  "planningExportCsv": "Exporter CSV",
+  "planningExportIcalDisabled": "Export iCal (bientot)",
+  "planningCalendarMonth": "Mois",
+  "planningCalendarWeek": "Semaine",
+  "planningChainSection": "Chaines de reproduction",
+  "planningChainEmpty": "Aucune chaine de reproduction a afficher.",
+  "planningSelectionCount": "{count} selectionnee(s)",
+  "@planningSelectionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "planningBulkComplete": "Terminer la selection",
+  "planningBulkExport": "Exporter la selection",
+  "planningCsvExported": "CSV genere"
 }

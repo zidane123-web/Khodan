@@ -15,6 +15,7 @@ import '../../features/litters/presentation/screens/litters_and_hutches_screen.d
 import '../../features/events/presentation/screens/add_breeding_record_screen.dart';
 import '../../features/events/presentation/screens/add_event_screen.dart';
 import '../../features/events/presentation/cubit/breeding_cubit.dart';
+import '../../features/planning/presentation/screens/planning_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
 import '../../features/settings/presentation/screens/settings_about_screen.dart';
 import '../../features/settings/presentation/screens/settings_contact_support_screen.dart';
@@ -270,12 +271,7 @@ class KhodanRouter {
           GoRoute(
             path: const PlanningRoute().path,
             builder: (BuildContext context, GoRouterState state) {
-              final AppLocalizations l10n = AppLocalizations.of(context);
-              return KhodanPlaceholderScreen(
-                title: l10n.placeholderPlanningTitle,
-                message: l10n.placeholderPlanningMessage,
-                icon: Icons.event_note,
-              );
+              return const PlanningScreen();
             },
           ),
           GoRoute(
