@@ -131,6 +131,13 @@ class _SettingsView extends StatelessWidget {
                         );
                       },
                     ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                      child: Text(
+                        l10n.settingsSupportSection,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
                     const Divider(height: 1),
                     ListTile(
                       leading: const Icon(Icons.library_books_outlined),

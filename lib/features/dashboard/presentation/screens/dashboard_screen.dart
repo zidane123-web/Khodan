@@ -1,320 +1,136 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../data/repositories/animal_repository.dart';
-import '../../../../data/repositories/breeding_repository.dart';
-import '../../../../data/repositories/event_repository.dart';
-import '../../../../data/repositories/food_inventory_repository.dart';
-import '../../../../data/repositories/dashboard_repository.dart';
-import '../../../auth/presentation/cubit/auth_cubit.dart';
-import '../../../animals/presentation/models/animal_quick_filter.dart';
-import 'package:khodan/features/dashboard/presentation/cubit/dashboard_cubit.dart';
-import '../widgets/alerts_list.dart';
-import '../widgets/breeding_performance_card.dart';
-import '../widgets/dashboard_calendar.dart';
-import '../widgets/kpi_card.dart';
-import '../widgets/tasks_list.dart';
-import '../../../../app/config/router.dart';
-
+/// Écran principal du tableau de bord Khodan.
+///
+/// Contient :
+/// - message d'accueil,
+/// - actions rapides,
+/// - menu + ouvrant un bottom sheet,
+/// - cartes d'indicateurs avec valeurs temporaires,
+/// - section planning mockée.
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<DashboardCubit>(
-      create: (BuildContext context) {
-        final AuthState authState = context.read<AuthCubit>().state;
-        final String? profileId =
-            authState.profile?.id ?? authState.session?.user.id;
-        return DashboardCubit(
-          context.read<AnimalRepository>(),
-          context.read<BreedingRepository>(),
-          context.read<EventRepository>(),
-          context.read<DashboardRepository>(),
-          context.read<FoodInventoryRepository>(),
-          profileId: profileId,
-        )..loadDashboard();
-      },
-      child: const _DashboardView(),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tableau de bord'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showQuickAddMenu(context),
+        tooltip: 'Ajouts rapides',
+        child: const Icon(Icons.add),
+      ),
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool isWide = constraints.maxWidth >= 900;
+          final EdgeInsetsGeometry padding = EdgeInsets.symmetric(
+            horizontal: isWide ? 32 : 16,
+            vertical: isWide ? 24 : 16,
+          );
+
+          final Widget content = _DashboardContent(
+            isWide: isWide,
+          );
+
+          return SafeArea(
+            child: Padding(
+              padding: padding,
+              child: isWide
+                  ? Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1200),
+                        child: content,
+                      ),
+                    )
+                  : content,
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
-class _DashboardView extends StatelessWidget {
-  const _DashboardView();
+class _DashboardContent extends StatelessWidget {
+  const _DashboardContent({
+    required this.isWide,
+  });
 
-  Future<void> _openCustomization(
-    BuildContext context,
-    DashboardState state,
-  ) async {
-    final DashboardCubit cubit = context.read<DashboardCubit>();
-    final List<DashboardKpiType> initialOrder = List<DashboardKpiType>.from(
-      state.kpiOrder,
-    );
-    for (final DashboardKpiType type in DashboardKpiType.values) {
-      if (!initialOrder.contains(type)) {
-        initialOrder.add(type);
-      }
-    }
-
-    final _DashboardCustomizationResult? result =
-        await showModalBottomSheet<_DashboardCustomizationResult>(
-          context: context,
-          isScrollControlled: true,
-          builder: (BuildContext context) => _DashboardCustomizationSheet(
-            initialOrder: initialOrder,
-            state: state,
-          ),
-        );
-
-    if (result != null) {
-      cubit
-        ..updateKpiOrder(result.kpiOrder)
-        ..updateModulePreferences(
-          order: result.moduleOrder,
-          hidden: result.hiddenModules,
-        );
-    }
-  }
+  final bool isWide;
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DashboardCubit, DashboardState>(
-      builder: (BuildContext context, DashboardState state) {
-        Widget body;
-        switch (state.status) {
-          case DashboardStatus.initial:
-          case DashboardStatus.loading:
-            body = const Center(child: CircularProgressIndicator());
-            break;
-          case DashboardStatus.failure:
-            body = Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  state.errorMessage ??
-                      'Impossible de charger les statistiques.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-            break;
-          case DashboardStatus.success:
-            body = RefreshIndicator(
-              onRefresh: () => context.read<DashboardCubit>().loadDashboard(),
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: <Widget>[
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 16,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: _DashboardModuleGrid(state: state),
-                    ),
-                  ),
-                ],
-              ),
-            );
-            break;
-        }
+    final List<Widget> leftColumnChildren = <Widget>[
+      const _WelcomeMessage(),
+      const SizedBox(height: 24),
+      _QuickActions(isWide: isWide),
+      const SizedBox(height: 24),
+      _IndicatorsGrid(isWide: isWide),
+    ];
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Ma journée'),
-            actions: <Widget>[
-              IconButton(
-                icon: const Icon(Icons.tune),
-                tooltip: 'Personnaliser le tableau de bord',
-                onPressed: () => _openCustomization(context, state),
-              ),
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {},
-              ),
-            ],
+    if (isWide) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: leftColumnChildren,
+            ),
           ),
-          body: body,
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => context.go('/events'),
-            icon: const Icon(Icons.add),
-            label: const Text('Nouvel événement'),
+          const SizedBox(width: 32),
+          Flexible(
+            flex: 2,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: _PlanningSection(isWide: isWide),
+            ),
           ),
-        );
-      },
-    );
-  }
-}
-
-class _DashboardKpiGrid extends StatelessWidget {
-  const _DashboardKpiGrid({required this.state});
-
-  final DashboardState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final Map<DashboardKpiType, _KpiPresentation> presentations =
-        _buildAllKpiPresentations(state);
-    final List<DashboardKpiType> order = <DashboardKpiType>[...state.kpiOrder];
-    for (final DashboardKpiType type in DashboardKpiType.values) {
-      if (!order.contains(type)) {
-        order.add(type);
-      }
-    }
-
-    final Map<DashboardKpiType, DashboardKpiFilter> filters = state.kpiFilters;
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: order.take(4).map((DashboardKpiType type) {
-        final _KpiPresentation presentation = presentations[type]!;
-        final DashboardKpiFilter? filter = filters[type];
-        return KpiCard(
-          title: presentation.title,
-          value: presentation.value,
-          subtitle: presentation.subtitle,
-          icon: presentation.icon,
-          onTap: filter == null
-              ? null
-              : () {
-                  context.go(
-                    const AnimalsRoute().location,
-                    extra: AnimalQuickFilter(
-                      label: filter.label,
-                      sex: filter.sex,
-                      statusQuery: filter.statusQuery,
-                      includeIds: filter.includeIds == null
-                          ? null
-                          : Set<String>.from(filter.includeIds!),
-                    ),
-                  );
-                },
-        );
-      }).toList(),
-    );
-  }
-}
-
-class _DashboardModuleGrid extends StatelessWidget {
-  const _DashboardModuleGrid({required this.state});
-
-  final DashboardState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final List<DashboardModuleType> modules = state.moduleOrder
-        .where(
-          (DashboardModuleType type) => !state.hiddenModules.contains(type),
-        )
-        .toList();
-
-    if (modules.isEmpty) {
-      return _buildInfoCard(
-        theme,
-        title: 'Aucun widget sélectionné',
-        icon: Icons.dashboard_customize,
-        message:
-            'Activez des widgets depuis le menu de personnalisation pour composer votre tableau de bord.',
+        ],
       );
     }
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final double width = constraints.maxWidth;
-        final int columns = width >= 1100
-            ? 3
-            : width >= 760
-            ? 2
-            : 1;
-        final double spacing = 12;
-        final double itemWidth = columns == 1
-            ? width
-            : (width - spacing * (columns - 1)) / columns;
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: modules.map((DashboardModuleType type) {
-            final Widget module = _buildModule(theme, type);
-            return SizedBox(
-              width: columns == 1 ? width : itemWidth,
-              child: module,
-            );
-          }).toList(),
-        );
-      },
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          ...leftColumnChildren,
+          const SizedBox(height: 24),
+          _PlanningSection(isWide: isWide),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildModule(ThemeData theme, DashboardModuleType type) {
-    switch (type) {
-      case DashboardModuleType.kpis:
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Indicateurs clés', style: theme.textTheme.titleLarge),
-                const SizedBox(height: 12),
-                _DashboardKpiGrid(state: state),
-              ],
-            ),
-          ),
-        );
-      case DashboardModuleType.alerts:
-        return AlertsList(alerts: state.alerts);
-      case DashboardModuleType.calendar:
-        return DashboardCalendar(events: state.calendarEvents);
-      case DashboardModuleType.tasksToday:
-        return TasksList(title: 'Aujourd’hui', tasks: state.todayTasks);
-      case DashboardModuleType.tasksUpcoming:
-        return TasksList(title: 'À venir', tasks: state.upcomingTasks);
-      case DashboardModuleType.performance:
-        return BreedingPerformanceCard(stats: state.performance);
-      case DashboardModuleType.weightTracking:
-        return _buildInfoCard(
-          theme,
-          title: 'Suivi des poids',
-          icon: Icons.monitor_weight,
-          message:
-              'Ajoutez des évènements de pesée à vos animaux pour visualiser leur évolution directement ici.',
-        );
-      case DashboardModuleType.healthAlerts:
-        return AlertsList(
-          alerts: state.healthAlerts,
-          title: 'Alertes sante',
-        );
-      case DashboardModuleType.feedInventory:
-        return _FeedInventoryCard(summary: state.inventorySummary);
-    }
-  }
+class _WelcomeMessage extends StatelessWidget {
+  const _WelcomeMessage();
 
-  Widget _buildInfoCard(
-    ThemeData theme, {
-    required String title,
-    required IconData icon,
-    required String message,
-  }) {
+  @override
+  Widget build(BuildContext context) {
     return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.primaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(icon, color: theme.colorScheme.primary),
-                const SizedBox(width: 12),
-                Expanded(child: Text(title, style: theme.textTheme.titleLarge)),
-              ],
+          children: const <Widget>[
+            Text(
+              'Bienvenue sur Khodan',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            const SizedBox(height: 12),
-            Text(message, style: theme.textTheme.bodyMedium),
+            SizedBox(height: 8),
+            Text(
+              'Retrouvez vos elevages, vos actions rapides et les prochains evenements en un coup d\'oeil.',
+            ),
           ],
         ),
       ),
@@ -322,113 +138,171 @@ class _DashboardModuleGrid extends StatelessWidget {
   }
 }
 
-class _FeedInventoryCard extends StatelessWidget {
-  const _FeedInventoryCard({required this.summary});
+class _QuickActions extends StatelessWidget {
+  const _QuickActions({
+    required this.isWide,
+  });
 
-  final InventorySummary? summary;
+  final bool isWide;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    if (summary == null) {
-      return _placeholder(theme);
-    }
-    final InventorySummary s = summary!;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(
-                  Icons.inventory_2_outlined,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Inventaire des aliments',
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: <Widget>[
-                _metricChip(
-                  theme,
-                  'Quantite (kg)',
-                  s.totalQuantityKg.toStringAsFixed(1),
-                ),
-                _metricChip(
-                  theme,
-                  'Cout total',
-                  '${s.totalCost.toStringAsFixed(2)} EUR',
-                ),
-                _metricChip(
-                  theme,
-                  'Conso/mois (kg)',
-                  s.estimatedMonthlyConsumptionKg.toStringAsFixed(1),
-                ),
-                _metricChip(
-                  theme,
-                  'Entrees',
-                  s.entriesCount.toString(),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    final SliverGridDelegateWithFixedCrossAxisCount gridDelegate =
+        isWide ? _desktopDelegate : _mobileDelegate;
 
-  Widget _metricChip(ThemeData theme, String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          label,
-          style: theme.textTheme.bodySmall
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        const Text(
+          'Actions rapides',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        const SizedBox(height: 4),
-        Text(value, style: theme.textTheme.titleLarge),
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: gridDelegate,
+          itemCount: _DashboardMockData.quickActions.length,
+          itemBuilder: (BuildContext context, int index) {
+            final _DashboardAction action =
+                _DashboardMockData.quickActions[index];
+            return _QuickActionButton(action: action);
+          },
+        ),
       ],
     );
   }
 
-  Widget _placeholder(ThemeData theme) {
+  static const SliverGridDelegateWithFixedCrossAxisCount _mobileDelegate =
+      SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: 2,
+    mainAxisSpacing: 12,
+    crossAxisSpacing: 12,
+    childAspectRatio: 1.8,
+  );
+
+  static const SliverGridDelegateWithFixedCrossAxisCount _desktopDelegate =
+      SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: 4,
+    mainAxisSpacing: 12,
+    crossAxisSpacing: 12,
+    childAspectRatio: 2.2,
+  );
+}
+
+class _QuickActionButton extends StatelessWidget {
+  const _QuickActionButton({
+    required this.action,
+  });
+
+  final _DashboardAction action;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        alignment: Alignment.centerLeft,
+      ),
+      onPressed: action.onTap,
+      icon: Icon(action.icon),
+      label: Text(action.label),
+    );
+  }
+}
+
+class _IndicatorsGrid extends StatelessWidget {
+  const _IndicatorsGrid({
+    required this.isWide,
+  });
+
+  final bool isWide;
+
+  @override
+  Widget build(BuildContext context) {
+    final int crossAxisCount = isWide ? 2 : 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const Text(
+          'Indicateurs',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: isWide ? 2.4 : 2.2,
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          children: _DashboardMockData.indicators
+              .map((DashboardIndicator indicator) {
+            return _IndicatorCard(indicator: indicator);
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _IndicatorCard extends StatelessWidget {
+  const _IndicatorCard({
+    required this.indicator,
+  });
+
+  final DashboardIndicator indicator;
+
+  @override
+  Widget build(BuildContext context) {
     return Card(
+      elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Icon(
-                  Icons.inventory_2_outlined,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Inventaire des aliments',
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-              ],
+            CircleAvatar(
+              backgroundColor: Theme.of(context)
+                  .colorScheme
+                  .primary
+                  .withAlpha((255 * 0.15).round()),
+              child: Icon(
+                indicator.icon,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Connectez-vous pour consulter le resume de votre inventaire.',
-              style: theme.textTheme.bodyMedium,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(
+                    indicator.title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    indicator.value,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    indicator.helper,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -437,466 +311,272 @@ class _FeedInventoryCard extends StatelessWidget {
   }
 }
 
-
-class _DashboardCustomizationResult {
-  const _DashboardCustomizationResult({
-    required this.kpiOrder,
-    required this.moduleOrder,
-    required this.hiddenModules,
+class _PlanningSection extends StatelessWidget {
+  const _PlanningSection({
+    required this.isWide,
   });
 
-  final List<DashboardKpiType> kpiOrder;
-  final List<DashboardModuleType> moduleOrder;
-  final Set<DashboardModuleType> hiddenModules;
-}
-
-class _DashboardCustomizationSheet extends StatefulWidget {
-  const _DashboardCustomizationSheet({
-    required this.initialOrder,
-    required this.state,
-  });
-
-  final List<DashboardKpiType> initialOrder;
-  final DashboardState state;
-
-  @override
-  State<_DashboardCustomizationSheet> createState() =>
-      _DashboardCustomizationSheetState();
-}
-
-class _DashboardCustomizationSheetState
-    extends State<_DashboardCustomizationSheet> {
-  late List<DashboardKpiType> _order;
-  late List<DashboardModuleType> _moduleOrder;
-  late Set<DashboardModuleType> _hiddenModules;
-
-  @override
-  void initState() {
-    super.initState();
-    _order = List<DashboardKpiType>.from(widget.initialOrder);
-    for (final DashboardKpiType type in DashboardKpiType.values) {
-      if (!_order.contains(type)) {
-        _order.add(type);
-      }
-    }
-    _moduleOrder = List<DashboardModuleType>.from(widget.state.moduleOrder);
-    for (final DashboardModuleType type in DashboardModuleType.values) {
-      if (!_moduleOrder.contains(type)) {
-        _moduleOrder.add(type);
-      }
-    }
-    _hiddenModules = Set<DashboardModuleType>.from(widget.state.hiddenModules);
-  }
-
-  void _onReorder(int oldIndex, int newIndex) {
-    setState(() {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
-      }
-      final DashboardKpiType item = _order.removeAt(oldIndex);
-      _order.insert(newIndex, item);
-    });
-  }
-
-  void _onModuleReorder(int oldIndex, int newIndex) {
-    setState(() {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
-      }
-      final DashboardModuleType item = _moduleOrder.removeAt(oldIndex);
-      _moduleOrder.insert(newIndex, item);
-    });
-  }
-
-  void _reset() {
-    setState(() {
-      _order = List<DashboardKpiType>.from(const DashboardState().kpiOrder);
-      for (final DashboardKpiType type in DashboardKpiType.values) {
-        if (!_order.contains(type)) {
-          _order.add(type);
-        }
-      }
-      _moduleOrder = List<DashboardModuleType>.from(
-        const DashboardState().moduleOrder,
-      );
-      for (final DashboardModuleType type in DashboardModuleType.values) {
-        if (!_moduleOrder.contains(type)) {
-          _moduleOrder.add(type);
-        }
-      }
-      _hiddenModules = Set<DashboardModuleType>.from(
-        const DashboardState().hiddenModules,
-      );
-    });
-  }
-
-  String _moduleLabel(DashboardModuleType type) {
-    switch (type) {
-      case DashboardModuleType.kpis:
-        return 'Indicateurs cles';
-      case DashboardModuleType.alerts:
-        return 'Alertes generales';
-      case DashboardModuleType.calendar:
-        return 'Calendrier';
-      case DashboardModuleType.tasksToday:
-        return 'Taches du jour';
-      case DashboardModuleType.tasksUpcoming:
-        return 'Taches a venir';
-      case DashboardModuleType.performance:
-        return 'Performances repro';
-      case DashboardModuleType.weightTracking:
-        return 'Suivi des poids';
-      case DashboardModuleType.healthAlerts:
-        return 'Alertes sante';
-      case DashboardModuleType.feedInventory:
-        return 'Inventaire des aliments';
-    }
-  }
-
-  String _moduleDescription(DashboardModuleType type) {
-    switch (type) {
-      case DashboardModuleType.kpis:
-        return 'Resume rapide des metriques cles.';
-      case DashboardModuleType.alerts:
-        return 'Notifications importantes et rappels critiques.';
-      case DashboardModuleType.calendar:
-        return 'Vue condensee des evenements a venir.';
-      case DashboardModuleType.tasksToday:
-        return 'Actions a realiser dans la journee.';
-      case DashboardModuleType.tasksUpcoming:
-        return 'Preparez les taches des prochains jours.';
-      case DashboardModuleType.performance:
-        return 'Statistiques globales de reproduction.';
-      case DashboardModuleType.weightTracking:
-        return 'Suivi des poids et tendances.';
-      case DashboardModuleType.healthAlerts:
-        return 'Suivi des traitements, controles et soins planifies.';
-      case DashboardModuleType.feedInventory:
-        return 'Gestion des stocks daliments et consommation.';
-    }
-  }
+  final bool isWide;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final Map<DashboardKpiType, _KpiPresentation> presentations =
-        _buildAllKpiPresentations(widget.state);
+    final List<PlanningItem> items = _DashboardMockData.planning;
 
-    return FractionallySizedBox(
-      heightFactor: 0.9,
-      child: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 12,
-            bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Center(
-                child: Container(
-                  width: 48,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.dividerColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Text(
+              'Planning des 7 prochains jours',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 16),
-              Text('Indicateurs favoris', style: theme.textTheme.titleLarge),
-              const SizedBox(height: 8),
-              Text(
-                'Réorganisez la liste ci-dessous. Les 4 premiers seront affichés sur votre tableau de bord.',
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _order.take(4).map((DashboardKpiType type) {
-                  return Chip(
-                    label: Text(presentations[type]!.title),
-                    avatar: const Icon(Icons.push_pin, size: 16),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: ReorderableListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: _order.length,
-                  onReorder: _onReorder,
-                  buildDefaultDragHandles: false,
-                  itemBuilder: (BuildContext context, int index) {
-                    final DashboardKpiType type = _order[index];
-                    final _KpiPresentation presentation = presentations[type]!;
-                    final bool isHighlighted = index < 4;
-                    return Card(
-                      key: ValueKey<DashboardKpiType>(type),
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      color: isHighlighted
-                          ? theme.colorScheme.primaryContainer.withAlpha(
-                              (255 * 0.3).round(),
-                            )
-                          : null,
-                      child: ListTile(
-                        leading: Icon(presentation.icon),
-                        title: Text(presentation.title),
-                        subtitle: presentation.description != null
-                            ? Text(presentation.description!)
-                            : null,
-                        trailing: ReorderableDragStartListener(
-                          index: index,
-                          child: const Icon(Icons.drag_indicator),
+            ),
+            const SizedBox(height: 16),
+            if (items.isEmpty)
+              const Text('Aucune tâche à venir pour le moment.')
+            else
+              ...items.map((PlanningItem item) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Icon(
+                        Icons.event_note,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              item.date,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(item.label),
+                          ],
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Widgets du tableau de bord',
-                style: theme.textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 280,
-                child: ReorderableListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  itemCount: _moduleOrder.length,
-                  onReorder: _onModuleReorder,
-                  buildDefaultDragHandles: false,
-                  itemBuilder: (BuildContext context, int index) {
-                    final DashboardModuleType type = _moduleOrder[index];
-                    final bool isEnabled = !_hiddenModules.contains(type);
-                    return Card(
-                      key: ValueKey<DashboardModuleType>(type),
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      child: SwitchListTile(
-                        contentPadding: const EdgeInsets.only(
-                          left: 56,
-                          right: 16,
-                        ),
-                        title: Text(_moduleLabel(type)),
-                        subtitle: Text(_moduleDescription(type)),
-                        value: isEnabled,
-                        onChanged: (bool value) {
-                          setState(() {
-                            if (value) {
-                              _hiddenModules.remove(type);
-                            } else {
-                              _hiddenModules.add(type);
-                            }
-                          });
-                        },
-                        secondary: ReorderableDragStartListener(
-                          index: index,
-                          child: const Icon(Icons.drag_indicator),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: <Widget>[
-                  TextButton(
-                    onPressed: _reset,
-                    child: const Text('Réinitialiser'),
+                    ],
                   ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Annuler'),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: () => Navigator.of(context).pop(
-                      _DashboardCustomizationResult(
-                        kpiOrder: List<DashboardKpiType>.from(_order),
-                        moduleOrder: List<DashboardModuleType>.from(
-                          _moduleOrder,
-                        ),
-                        hiddenModules: Set<DashboardModuleType>.from(
-                          _hiddenModules,
-                        ),
-                      ),
-                    ),
-                    child: const Text('Enregistrer'),
-                  ),
-                ],
+                );
+              }),
+            const SizedBox(height: 12),
+            Align(
+              alignment: isWide ? Alignment.centerLeft : Alignment.center,
+              child: OutlinedButton(
+                onPressed: onOpenPlanning,
+                child: const Text('Voir tout le planning'),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _KpiPresentation {
-  const _KpiPresentation({
+class DashboardIndicator {
+  const DashboardIndicator({
     required this.title,
     required this.value,
+    required this.helper,
     required this.icon,
-    this.subtitle,
-    this.description,
   });
 
   final String title;
   final String value;
+  final String helper;
   final IconData icon;
-  final String? subtitle;
-  final String? description;
 }
 
-Map<DashboardKpiType, _KpiPresentation> _buildAllKpiPresentations(
-  DashboardState state,
-) {
-  final Map<DashboardKpiType, _KpiPresentation> map =
-      <DashboardKpiType, _KpiPresentation>{};
-  final List<DashboardTask> allTasks = <DashboardTask>[
-    ...state.todayTasks,
-    ...state.upcomingTasks,
+class PlanningItem {
+  const PlanningItem({
+    required this.date,
+    required this.label,
+  });
+
+  final String date;
+  final String label;
+}
+
+class _DashboardAction {
+  const _DashboardAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+}
+
+class _DashboardMockData {
+  static final List<_DashboardAction> quickActions = <_DashboardAction>[
+    _DashboardAction(
+      label: 'Saillie',
+      icon: Icons.favorite,
+      onTap: onCreateBreeding,
+    ),
+    _DashboardAction(
+      label: 'Mise bas',
+      icon: Icons.cruelty_free,
+      onTap: onCreateKindling,
+    ),
+    _DashboardAction(
+      label: 'Pesée',
+      icon: Icons.monitor_weight,
+      onTap: onCreateWeighing,
+    ),
+    _DashboardAction(
+      label: 'Abattage',
+      icon: Icons.restaurant,
+      onTap: onCreateHarvest,
+    ),
   ];
-  final int plannedWithinWeek = allTasks
-      .where((DashboardTask task) => task.kind == DashboardTaskKind.mating)
-      .length;
 
-  for (final DashboardKpiType type in DashboardKpiType.values) {
-    map[type] = _buildKpiPresentation(type, state, plannedWithinWeek);
-  }
-  return map;
+  static final List<DashboardIndicator> indicators = <DashboardIndicator>[
+    DashboardIndicator(
+      title: 'Lapines actives',
+      value: '12',
+      helper: 'Données à connecter à Supabase.',
+      icon: Icons.pets,
+    ),
+    DashboardIndicator(
+      title: 'Lapins prêts pour la vente',
+      value: '8',
+      helper: 'Données à connecter à Supabase.',
+      icon: Icons.shopping_basket,
+    ),
+    DashboardIndicator(
+      title: 'Portées en cours',
+      value: '5',
+      helper: 'Données à connecter à Supabase.',
+      icon: Icons.home,
+    ),
+    DashboardIndicator(
+      title: 'Tâches en retard',
+      value: '2',
+      helper: 'Données à connecter à Supabase.',
+      icon: Icons.warning_amber,
+    ),
+  ];
+
+  static final List<PlanningItem> planning = <PlanningItem>[
+    PlanningItem(
+      date: '02/11',
+      label: 'Palpation lapine #K-24',
+    ),
+    PlanningItem(
+      date: '03/11',
+      label: 'Préparer nid portée #P-18',
+    ),
+    PlanningItem(
+      date: '05/11',
+      label: 'Pesée portée #P-11',
+    ),
+  ];
 }
 
-_KpiPresentation _buildKpiPresentation(
-  DashboardKpiType type,
-  DashboardState state,
-  int plannedWithinWeek,
-) {
-  switch (type) {
-    case DashboardKpiType.totalAnimals:
-      final String subtitle = state.activeAnimals == state.totalAnimals
-          ? 'Tous les animaux sont actifs'
-          : '${state.activeAnimals} actifs';
-      return _KpiPresentation(
-        title: 'Lapins enregistrés',
-        value: state.totalAnimals.toString(),
-        subtitle: subtitle,
-        description: 'Nombre total d’animaux enregistrés.',
-        icon: Icons.pets,
-      );
-    case DashboardKpiType.activeAnimals:
-      final int inactive = state.totalAnimals - state.activeAnimals;
-      final String subtitle = state.totalAnimals == 0
-          ? 'Aucun animal enregistré'
-          : inactive > 0
-          ? '$inactive inactifs'
-          : 'Tous sont actifs';
-      return _KpiPresentation(
-        title: 'Animaux actifs',
-        value: state.activeAnimals.toString(),
-        subtitle: subtitle,
-        description: 'Animaux actuellement présents et actifs.',
-        icon: Icons.pets_outlined,
-      );
-    case DashboardKpiType.gestatingDoes:
-      final String subtitle = state.activeLitters > 0
-          ? '${state.activeLitters} portées en cours'
-          : 'Aucune portée active';
-      return _KpiPresentation(
-        title: 'Lapines en gestation',
-        value: state.doesInGestation.toString(),
-        subtitle: subtitle,
-        description: 'Femelles avec une gestation confirmée ou présumée.',
-        icon: Icons.favorite_outline,
-      );
-    case DashboardKpiType.plannedBreedings:
-      final String subtitle;
-      if (state.plannedBreedings == 0) {
-        subtitle = 'Aucune saillie programmée';
-      } else if (plannedWithinWeek > 0) {
-        subtitle = '$plannedWithinWeek dans les 7 jours';
-      } else {
-        subtitle = 'Prévisions au-delà de 7 jours';
-      }
-      return _KpiPresentation(
-        title: 'Saillies prévues',
-        value: state.plannedBreedings.toString(),
-        subtitle: subtitle,
-        description: 'Saillies programmées dans votre planning.',
-        icon: Icons.event_available_outlined,
-      );
-    case DashboardKpiType.activeLitters:
-      final String subtitle = state.activeLitters == 0
-          ? 'Aucune portée à surveiller'
-          : 'Portées en allaitement';
-      return _KpiPresentation(
-        title: 'Portées actives',
-        value: state.activeLitters.toString(),
-        subtitle: subtitle,
-        description: 'Portées encore en cours avant sevrage.',
-        icon: Icons.home_outlined,
-      );
-    case DashboardKpiType.breedingSuccessRate:
-      final String value = state.breedingSuccessRate == null
-          ? '--'
-          : '${(state.breedingSuccessRate! * 100).toStringAsFixed(0)}%';
-      final String subtitle = state.breedingEvaluatedCount == 0
-          ? 'Pas assez de données'
-          : '${state.breedingEvaluatedCount} saillies évaluées';
-      return _KpiPresentation(
-        title: 'Taux de réussite repro',
-        value: value,
-        subtitle: subtitle,
-        description: 'Proportion de saillies confirmées gestantes.',
-        icon: Icons.trending_up,
-      );
-    case DashboardKpiType.averageKitsBornAlive:
-      final String subtitle = state.performance.totalLitters == 0
-          ? 'Pas encore de portée'
-          : '${state.performance.totalLitters} portées analysées';
-      return _KpiPresentation(
-        title: 'Moy. nés vivants',
-        value: _formatAverage(state.performance.averageKitsBornAlive),
-        subtitle: subtitle,
-        description: 'Nombre moyen de lapereaux nés vivants par portée.',
-        icon: Icons.child_care,
-      );
-    case DashboardKpiType.averageKitsWeaned:
-      final String subtitle = state.performance.totalLitters == 0
-          ? 'Pas encore de sevrage'
-          : '${state.performance.totalLitters} portées analysées';
-      return _KpiPresentation(
-        title: 'Moy. sevrés',
-        value: _formatAverage(state.performance.averageKitsWeaned),
-        subtitle: subtitle,
-        description: 'Nombre moyen de lapereaux sevrés par portée.',
-        icon: Icons.monitor_weight,
-      );
-    case DashboardKpiType.totalKitsWeaned:
-      final String subtitle = state.performance.totalLitters == 0
-          ? 'En attente des premières portées'
-          : 'Depuis ${state.performance.totalLitters} portées';
-      return _KpiPresentation(
-        title: 'Lapereaux sevrés',
-        value: state.performance.totalKitsWeaned.toString(),
-        subtitle: subtitle,
-        description: 'Total de lapereaux sevrés sur la période.',
-        icon: Icons.groups,
-      );
-  }
+// Les fonctions suivantes sont des stubs destinés à être branchés sur Supabase.
+void onCreateBreeding() {
+  debugPrint('TODO: implémenter la création de saillie.');
 }
 
-String _formatAverage(double? value) {
-  if (value == null) {
-    return '--';
-  }
-  return value.toStringAsFixed(1);
+void onCreateKindling() {
+  debugPrint('TODO: implémenter la déclaration de mise bas.');
 }
 
+void onCreateWeighing() {
+  debugPrint('TODO: implémenter la saisie de pesée.');
+}
+
+void onCreateHarvest() {
+  debugPrint('TODO: implémenter l\'enregistrement d\'abattage.');
+}
+
+void onQuickAddBreeder() {
+  debugPrint('TODO: implémenter l\'ajout d\'un éleveur.');
+}
+
+void onQuickAddBreeding() {
+  debugPrint('TODO: implémenter la planification d\'une saillie.');
+}
+
+void onQuickAddTask() {
+  debugPrint('TODO: implémenter la création d\'une tâche.');
+}
+
+void onQuickAddLoss() {
+  debugPrint('TODO: implémenter l\'enregistrement d\'une perte.');
+}
+
+void onOpenPlanning() {
+  debugPrint('TODO: ouvrir l\'agenda complet.');
+}
+
+void _showQuickAddMenu(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    builder: (BuildContext context) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.person_add),
+              title: const Text('Ajouter un éleveur'),
+              onTap: () {
+                Navigator.of(context).pop();
+                onQuickAddBreeder();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.favorite),
+              title: const Text('Planifier une saillie'),
+              onTap: () {
+                Navigator.of(context).pop();
+                onQuickAddBreeding();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.check_circle_outline),
+              title: const Text('Créer une tâche'),
+              onTap: () {
+                Navigator.of(context).pop();
+                onQuickAddTask();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.warning),
+              title: const Text('Enregistrer une perte'),
+              onTap: () {
+                Navigator.of(context).pop();
+                onQuickAddLoss();
+              },
+            ),
+            const SizedBox(height: 8),
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: Text(
+                'Plus d\'actions bientot.',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
