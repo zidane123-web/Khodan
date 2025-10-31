@@ -1,9 +1,6 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+
+import 'database_executor.dart';
 
 part 'local_database.g.dart';
 
@@ -184,17 +181,9 @@ class QueuedActionsTable extends Table {
 class LocalDatabase extends _$LocalDatabase {
   LocalDatabase._(super.executor);
 
-  factory LocalDatabase() => LocalDatabase._(_openConnection());
+  factory LocalDatabase() => LocalDatabase._(createLocalDatabaseExecutor());
 
   LocalDatabase.forTesting(super.executor);
-
-  static LazyDatabase _openConnection() {
-    return LazyDatabase(() async {
-      final Directory dir = await getApplicationDocumentsDirectory();
-      final String path = p.join(dir.path, 'khodan_local.db');
-      return NativeDatabase(File(path));
-    });
-  }
 
   @override
   int get schemaVersion => 6;

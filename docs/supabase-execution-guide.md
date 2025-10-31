@@ -60,12 +60,27 @@ SELECT table_name
 FROM information_schema.tables
 WHERE table_schema = 'public'
 ORDER BY table_name;
+```
+**Résultat le 31/10/2025**  
+Tables `breeding_records` et `breeding_metrics` absentes. Leur création devra être planifiée (méthode B recommandée tant que la CLI est instable).
 
 -- Triggers actifs
 SELECT event_object_table, trigger_name
 FROM information_schema.triggers
 WHERE event_object_schema = 'public'
 ORDER BY event_object_table, trigger_name;
+```
+**Résultat le 31/10/2025**
+```text
+event_object_table | trigger_name
+-------------------|--------------------------------
+event_templates    | trg_event_templates_updated_at
+food_stock         | trg_food_stock_updated_at
+food_types         | trg_food_types_updated_at
+knowledge_articles | trg_knowledge_articles_updated_at
+support_requests   | trg_support_requests_updated_at
+```
+→ Les triggers `trg_*_updated_at` sont bien présents sur les tables critiques pour mettre à jour `updated_at`.
 
 -- Policies RLS
 SELECT schemaname, tablename, policyname
@@ -73,6 +88,33 @@ FROM pg_policies
 WHERE schemaname = 'public'
 ORDER BY tablename, policyname;
 ```
+**Résultat le 31/10/2025**
+```text
+schemaname | tablename        | policyname
+-----------|------------------|---------------------------------------------
+public     | animal_events    | Les utilisateurs peuvent gérer leurs propres liens animal_events
+public     | animal_images    | Les utilisateurs peuvent insérer des images pour leurs propres animaux
+public     | animal_images    | Les utilisateurs peuvent voir leurs propres images d’animaux
+public     | animaux          | Les utilisateurs peuvent gérer leurs propres animaux
+public     | event_templates  | event_templates_owner_all
+public     | épreuves         | Les utilisateurs peuvent gérer leurs propres événements
+public     | food_stock       | food_stock_owner_all
+public     | food_types       | food_types_owner_all
+public     | knowledge_articles | knowledge_articles_manage_service_role
+public     | knowledge_articles | knowledge_articles_read_authenticated
+public     | profils          | Les utilisateurs peuvent créer leur propre profil
+public     | profils          | Les utilisateurs peuvent modifier leur propre profil
+public     | profils          | Les utilisateurs peuvent voir leur propre profil
+public     | species_config   | Les utilisateurs peuvent gérer leurs propres configurations
+public     | support_requests | support_requests_delete_service_role
+public     | support_requests | support_requests_insert_owner
+public     | support_requests | support_requests_select_owner
+public     | support_requests | support_requests_update_service_role
+public     | user_preferences | Les utilisateurs peuvent gérer leurs propres préférences
+```
+→ Toutes les tables sensibles restent protégées par des policies RLS actives.
+
+Comptes `codex-agent+…@example.com` supprimés le 30/10/2025 (Auth > Users).
 
 ## Creation rapide d'un jeton `authenticated` pour tests API
 ```powershell
@@ -84,6 +126,13 @@ $session = Invoke-RestMethod -Uri 'https://rmtkvalfhbhhqczwvtoz.supabase.co/auth
 $session.access_token
 ```
 Utiliser le jeton renvoye dans l'en-tete `Authorization: Bearer <token>` pour tester les endpoints PostgREST qui sont proteges par RLS.
+
+## Lancement Flutter (web)
+Depuis l'activation de Drift sur IndexedDB, la version web peut etre testee directement :
+```bash
+flutter run -d chrome
+```
+> Note : lors du premier lancement, Chrome peut afficher un log `Opening web database khodan_local for the first time`. Ce message est attendu et n'indique pas d'erreur.
 
 ## Migrations futures a planifier
 - **Finances** : tables `transactions`, `transaction_items`, `contacts`, vues de synthese.
