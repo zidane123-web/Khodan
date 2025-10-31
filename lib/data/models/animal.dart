@@ -17,6 +17,11 @@ class Animal extends Equatable {
     this.origin,
     this.entryDate,
     this.firstBreedingDate,
+    this.breed,
+    this.category,
+    this.lastLitterDate,
+    this.nextTaskDate,
+    this.notes,
   });
 
   final String id;
@@ -34,6 +39,11 @@ class Animal extends Equatable {
   final String? origin;
   final DateTime? entryDate;
   final DateTime? firstBreedingDate;
+  final String? breed;
+  final String? category;
+  final DateTime? lastLitterDate;
+  final DateTime? nextTaskDate;
+  final String? notes;
 
   int get ageInDays => DateTime.now().difference(birthDate).inDays;
 
@@ -53,6 +63,11 @@ class Animal extends Equatable {
     String? origin,
     DateTime? entryDate,
     DateTime? firstBreedingDate,
+    String? breed,
+    String? category,
+    DateTime? lastLitterDate,
+    DateTime? nextTaskDate,
+    String? notes,
   }) {
     return Animal(
       id: id ?? this.id,
@@ -70,6 +85,11 @@ class Animal extends Equatable {
       origin: origin ?? this.origin,
       entryDate: entryDate ?? this.entryDate,
       firstBreedingDate: firstBreedingDate ?? this.firstBreedingDate,
+      breed: breed ?? this.breed,
+      category: category ?? this.category,
+      lastLitterDate: lastLitterDate ?? this.lastLitterDate,
+      nextTaskDate: nextTaskDate ?? this.nextTaskDate,
+      notes: notes ?? this.notes,
     );
   }
 
@@ -94,6 +114,15 @@ class Animal extends Equatable {
       firstBreedingDate: json['first_breeding_date'] != null
           ? DateTime.parse(json['first_breeding_date'] as String)
           : null,
+      breed: json['breed'] as String?,
+      category: json['category'] as String?,
+      lastLitterDate: json['last_litter_date'] != null
+          ? DateTime.parse(json['last_litter_date'] as String)
+          : null,
+      nextTaskDate: json['next_task_date'] != null
+          ? DateTime.parse(json['next_task_date'] as String)
+          : null,
+      notes: json['notes'] as String?,
     );
   }
 
@@ -114,6 +143,11 @@ class Animal extends Equatable {
       'origin': origin,
       'entry_date': entryDate?.toIso8601String(),
       'first_breeding_date': firstBreedingDate?.toIso8601String(),
+      'breed': breed,
+      'category': category,
+      'last_litter_date': lastLitterDate?.toIso8601String(),
+      'next_task_date': nextTaskDate?.toIso8601String(),
+      'notes': notes,
     };
   }
 
@@ -134,5 +168,10 @@ class Animal extends Equatable {
         origin,
         entryDate,
         firstBreedingDate,
+        breed,
+        category,
+        lastLitterDate,
+        nextTaskDate,
+        notes,
       ];
 }

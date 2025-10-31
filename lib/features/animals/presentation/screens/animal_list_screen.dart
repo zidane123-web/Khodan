@@ -1,10 +1,12 @@
 // lib/features/animals/presentation/screens/animal_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../../../data/models/animal.dart';
 import '../../../../data/models/breeding_record.dart';
 import '../../../../data/models/event.dart';
+import '../../../../data/services/breeder_import_service.dart';
 import '../../../../data/local/local_data_sources.dart';
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
@@ -43,6 +45,7 @@ class _AnimalListViewState extends State<_AnimalListView> {
   late final BreedingRepository _breedingRepository;
   bool _selectionMode = false;
   final Set<String> _selectedIds = <String>{};
+  final BreederImportService _importService = BreederImportService();
 
   @override
   void initState() {
@@ -95,9 +98,8 @@ class _AnimalListViewState extends State<_AnimalListView> {
   }
 
   Future<void> _createAnimal() async {
-    // Pass the cubit to the new screen
-    final newAnimal = await Navigator.of(context).push<Animal>(
-      MaterialPageRoute(
+    final Animal? created = await Navigator.of(context).push<Animal>(
+      MaterialPageRoute<Animal>(
         builder: (_) => BlocProvider.value(
           value: context.read<AnimalCubit>(),
           child: const AnimalFormScreen(),
@@ -105,14 +107,14 @@ class _AnimalListViewState extends State<_AnimalListView> {
       ),
     );
 
-    if (newAnimal != null && mounted) {
-      // The create logic is now handled inside the form screen
-      // So we just refresh the list
+    if (created != null && mounted) {
       await context.read<AnimalCubit>().fetchAnimals();
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Fiche animal créée.')));
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fiche animal creee.')),
+      );
     }
   }
 
@@ -132,7 +134,7 @@ class _AnimalListViewState extends State<_AnimalListView> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Saillie enregistrée pour ${animal.name ?? animal.tagId}.',
+            'Saillie enregistree pour ${animal.name ?? animal.tagId}.',
           ),
         ),
       );
@@ -150,8 +152,8 @@ class _AnimalListViewState extends State<_AnimalListView> {
         SnackBar(
           content: Text(
             created.length > 1
-                ? '${created.length} évènements créés.'
-                : 'Évènement créé.',
+                ? '${created.length} evenements crees.'
+                : 'Evenement cree.',
           ),
         ),
       );
@@ -184,7 +186,7 @@ class _AnimalListViewState extends State<_AnimalListView> {
   Future<void> _editAnimal(Animal animal) async {
     // Pass the cubit to the new screen
     final updatedAnimal = await Navigator.of(context).push<Animal>(
-      MaterialPageRoute(
+      MaterialPageRoute<Animal>(
         builder: (_) => BlocProvider.value(
           value: context.read<AnimalCubit>(),
           child: AnimalFormScreen(animal: animal),
@@ -197,7 +199,7 @@ class _AnimalListViewState extends State<_AnimalListView> {
       await context.read<AnimalCubit>().fetchAnimals();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fiche animal mise à jour.')),
+        const SnackBar(content: Text('Fiche animal mise a jour.')),
       );
     }
   }
@@ -232,7 +234,7 @@ class _AnimalListViewState extends State<_AnimalListView> {
       }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Fiche animal supprimée.')));
+      ).showSnackBar(const SnackBar(content: Text('Fiche animal supprimee.')));
     }
   }
 
@@ -240,8 +242,10 @@ class _AnimalListViewState extends State<_AnimalListView> {
     final AnimalFilters? result = await showModalBottomSheet<AnimalFilters>(
       context: context,
       isScrollControlled: true,
-      builder: (BuildContext context) =>
-          _AnimalFiltersSheet(initialFilters: state.filters),
+      builder: (BuildContext context) => _AnimalFiltersSheet(
+        initialFilters: state.filters,
+        animals: state.allAnimals,
+      ),
     );
 
     if (result != null && mounted) {
@@ -249,31 +253,305 @@ class _AnimalListViewState extends State<_AnimalListView> {
     }
   }
 
+  Future<void> _importBreeders() async {
+    final FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: <String>['csv'],
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) {
+      return;
+    }
+
+    final PlatformFile file = result.files.first;
+    final List<int>? bytes = file.bytes;
+    if (bytes == null) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lecture du fichier impossible.')),
+      );
+      return;
+    }
+
+    final BreederImportPreview preview = _importService.previewFromBytes(
+      bytes,
+      sourceName: file.name,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) =>
+          BreederImportPreviewDialog(preview: preview),
+    );
+  }
+
+  Future<void> _handleGroupAction(
+    _GroupAction action,
+    List<Animal> animals,
+  ) async {
+    if (animals.isEmpty) {
+      return;
+    }
+    final Map<_GroupAction, String> titles = <_GroupAction, String>{
+      _GroupAction.breeding: 'Confirmer la saillie groupee',
+      _GroupAction.archive: 'Confirmer l archivage',
+      _GroupAction.sell: 'Confirmer la vente',
+    };
+    final Map<_GroupAction, String> placeholders = <_GroupAction, String>{
+      _GroupAction.breeding:
+          'Planification de saillie groupee a finaliser avec Supabase.',
+      _GroupAction.archive:
+          'Archivage en attente de la connexion a la base distante.',
+      _GroupAction.sell:
+          'Marquage comme vendu a completer dans la synchronisation.',
+    };
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(titles[action]!),
+          content: Text(
+            'Vous etes sur le point d appliquer cette action a ${animals.length} eleveur(s). Cette action sera finalisee lorsque la connexion Supabase sera disponible.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Confirmer'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(placeholders[action]!)),
+      );
+    }
+  }
+
+  List<_SearchSuggestion> _buildSearchSuggestions(
+    List<Animal> animals,
+    String query,
+  ) {
+    final String normalized = query.trim().toLowerCase();
+    if (normalized.length < 2) {
+      return const <_SearchSuggestion>[];
+    }
+    final Set<String> seen = <String>{};
+    final List<_SearchSuggestion> matches = <_SearchSuggestion>[];
+    for (final Animal animal in animals) {
+      final List<String?> fields = <String?>[
+        animal.name,
+        animal.tagId,
+        animal.cageNumber,
+        animal.breed,
+      ];
+      bool match = false;
+      for (final String? field in fields) {
+        if (field != null && field.toLowerCase().contains(normalized)) {
+          match = true;
+          break;
+        }
+      }
+      if (!match) {
+        continue;
+      }
+      if (!seen.add(animal.id)) {
+        continue;
+      }
+      final String label =
+          (animal.name != null && animal.name!.isNotEmpty) ? animal.name! : animal.tagId;
+      final List<String> secondaryParts = <String>[
+        'ID ${animal.tagId}',
+        if (animal.cageNumber != null && animal.cageNumber!.isNotEmpty)
+          'Cage ${animal.cageNumber!}',
+        if (animal.breed != null && animal.breed!.isNotEmpty)
+          animal.breed!,
+      ];
+      matches.add(
+        _SearchSuggestion(
+          label: label,
+          secondary: secondaryParts.isEmpty
+              ? null
+              : secondaryParts.join(' - '),
+          animal: animal,
+        ),
+      );
+    }
+    matches.sort((_SearchSuggestion a, _SearchSuggestion b) => a.label.compareTo(b.label));
+    return matches.length > 6 ? matches.sublist(0, 6) : matches;
+  }
+
+  Widget _buildSuggestionsPanel(List<_SearchSuggestion> suggestions) {
+    final ThemeData theme = Theme.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 240),
+      child: Material(
+        elevation: 2,
+        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surface,
+        child: ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: suggestions.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (BuildContext context, int index) {
+            final _SearchSuggestion suggestion = suggestions[index];
+            return ListTile(
+              leading: const Icon(Icons.search),
+              title: Text(suggestion.label),
+              subtitle:
+                  suggestion.secondary == null ? null : Text(suggestion.secondary!),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<Widget>(
+                    builder: (BuildContext context) =>
+                        AnimalDetailScreen(animal: suggestion.animal),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildFiltersSummary(AnimalState state) {
-    final List<Widget> chips = <Widget>[
-      if (state.filters.sex != null)
-        InputChip(
-          label: Text('Sexe : ${state.filters.sex}'),
-          onDeleted: () => context.read<AnimalCubit>().setFilters(
-            state.filters.copyWith(clearSex: true),
-          ),
-        ),
-      if (state.filters.origin != null && state.filters.origin!.isNotEmpty)
-        InputChip(
-          label: Text('Origine : ${state.filters.origin}'),
-          onDeleted: () => context.read<AnimalCubit>().setFilters(
-            state.filters.copyWith(clearOrigin: true),
-          ),
-        ),
-      if (state.filters.cageNumber != null &&
-          state.filters.cageNumber!.isNotEmpty)
-        InputChip(
-          label: Text('Cage : ${state.filters.cageNumber}'),
-          onDeleted: () => context.read<AnimalCubit>().setFilters(
-            state.filters.copyWith(clearCageNumber: true),
-          ),
-        ),
-    ];
+    final AnimalFilters filters = state.filters;
+    final MaterialLocalizations localizations = MaterialLocalizations.of(context);
+    final List<Widget> chips = <Widget>[];
+    void addChip(String label, VoidCallback onDeleted) {
+      chips.add(InputChip(label: Text(label), onDeleted: onDeleted));
+    }
+
+    if (filters.sex != null) {
+      addChip(
+        'Sexe: ${filters.sex}',
+        () => context.read<AnimalCubit>().setFilters(
+              filters.copyWith(clearSex: true),
+            ),
+      );
+    }
+
+    if (filters.statuses != null) {
+      for (final String status in filters.statuses!) {
+        addChip(
+          'Statut: $status',
+          () {
+            final Set<String> updated =
+                Set<String>.from(filters.statuses!)..remove(status);
+            context.read<AnimalCubit>().setFilters(
+                  filters.copyWith(
+                    statuses: updated,
+                    clearStatuses: updated.isEmpty,
+                  ),
+                );
+          },
+        );
+      }
+    }
+
+    if (filters.breeds != null) {
+      for (final String breed in filters.breeds!) {
+        addChip(
+          'Race: $breed',
+          () {
+            final Set<String> updated =
+                Set<String>.from(filters.breeds!)..remove(breed);
+            context.read<AnimalCubit>().setFilters(
+                  filters.copyWith(
+                    breeds: updated,
+                    clearBreeds: updated.isEmpty,
+                  ),
+                );
+          },
+        );
+      }
+    }
+
+    if (filters.categories != null) {
+      for (final String category in filters.categories!) {
+        addChip(
+          'Categorie: $category',
+          () {
+            final Set<String> updated =
+                Set<String>.from(filters.categories!)..remove(category);
+            context.read<AnimalCubit>().setFilters(
+                  filters.copyWith(
+                    categories: updated,
+                    clearCategories: updated.isEmpty,
+                  ),
+                );
+          },
+        );
+      }
+    }
+
+    if (filters.birthStart != null || filters.birthEnd != null) {
+      final String start = filters.birthStart == null
+          ? ''
+          : localizations.formatMediumDate(filters.birthStart!);
+      final String end = filters.birthEnd == null
+          ? ''
+          : localizations.formatMediumDate(filters.birthEnd!);
+      addChip(
+        filters.birthStart != null && filters.birthEnd != null
+            ? 'Naissance: $start -> $end'
+            : filters.birthStart != null
+                ? 'Naissance apres $start'
+                : 'Naissance avant $end',
+        () => context.read<AnimalCubit>().setFilters(
+              filters.copyWith(
+                clearBirthStart: true,
+                clearBirthEnd: true,
+              ),
+            ),
+      );
+    }
+
+    if (filters.entryStart != null || filters.entryEnd != null) {
+      final String start = filters.entryStart == null
+          ? ''
+          : localizations.formatMediumDate(filters.entryStart!);
+      final String end = filters.entryEnd == null
+          ? ''
+          : localizations.formatMediumDate(filters.entryEnd!);
+      addChip(
+        filters.entryStart != null && filters.entryEnd != null
+            ? 'Entree: $start -> $end'
+            : filters.entryStart != null
+                ? 'Entree apres $start'
+                : 'Entree avant $end',
+        () => context.read<AnimalCubit>().setFilters(
+              filters.copyWith(
+                clearEntryStart: true,
+                clearEntryEnd: true,
+              ),
+            ),
+      );
+    }
+
+    if (filters.onlyRecentLitters) {
+      addChip(
+        'Portees < 90 jours',
+        () => context.read<AnimalCubit>().setFilters(
+              filters.copyWith(onlyRecentLitters: false),
+            ),
+      );
+    }
 
     if (chips.isEmpty) {
       return const SizedBox.shrink();
@@ -305,6 +583,10 @@ class _AnimalListViewState extends State<_AnimalListView> {
     final List<Animal> animals = state.animals;
     final bool hasFilters =
         state.filters.searchTerm.isNotEmpty || state.filters.hasAdvancedFilters;
+    final List<_SearchSuggestion> suggestions = _buildSearchSuggestions(
+      state.allAnimals,
+      state.filters.searchTerm,
+    );
 
     final Widget listContent = animals.isEmpty
         ? _EmptyAnimalsPlaceholder(
@@ -316,11 +598,11 @@ class _AnimalListViewState extends State<_AnimalListView> {
                   }
                 : null,
           )
-        : ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            itemCount: animals.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (BuildContext context, int index) {
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              itemCount: animals.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (BuildContext context, int index) {
               final Animal animal = animals[index];
               return AnimalCard(
                 animal: animal,
@@ -352,7 +634,7 @@ class _AnimalListViewState extends State<_AnimalListView> {
             controller: _searchController,
             decoration: InputDecoration(
               prefixIcon: const Icon(Icons.search),
-              hintText: 'Rechercher par identifiant, origine ou cage',
+              hintText: 'Rechercher nom, tatouage, cage ou race',
               suffixIcon: state.filters.searchTerm.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear),
@@ -365,6 +647,11 @@ class _AnimalListViewState extends State<_AnimalListView> {
             ),
           ),
         ),
+        if (suggestions.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: _buildSuggestionsPanel(suggestions),
+          ),
         if (state.filters.hasAdvancedFilters)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -399,26 +686,32 @@ class _AnimalListViewState extends State<_AnimalListView> {
               leading: _selectionMode
                   ? IconButton(
                       icon: const Icon(Icons.close),
-                      tooltip: 'Fermer la sélection',
+                      tooltip: 'Fermer la selection',
                       onPressed: _toggleSelectionMode,
                     )
                   : null,
               title: Text(
                 _selectionMode
-                    ? '${_selectedIds.length} sélectionné(s)'
-                    : 'Mes animaux',
+                    ? 'Selection (${_selectedIds.length})'
+                    : 'Eleveurs',
               ),
               actions: <Widget>[
                 if (!_selectionMode &&
                     (state.filters.searchTerm.isNotEmpty ||
                         state.filters.hasAdvancedFilters))
                   IconButton(
-                    tooltip: 'Réinitialiser les filtres',
+                    tooltip: 'Reinitialiser les filtres',
                     icon: const Icon(Icons.filter_alt_off),
                     onPressed: () {
                       _searchController.clear();
                       context.read<AnimalCubit>().clearAllFilters();
                     },
+                  ),
+                if (!_selectionMode)
+                  IconButton(
+                    icon: const Icon(Icons.upload_file),
+                    tooltip: 'Importer CSV',
+                    onPressed: _importBreeders,
                   ),
                 if (!_selectionMode)
                   IconButton(
@@ -435,16 +728,45 @@ class _AnimalListViewState extends State<_AnimalListView> {
                 if (_selectionMode)
                   IconButton(
                     icon: const Icon(Icons.select_all),
-                    tooltip: 'Tout sélectionner',
+                    tooltip: 'Tout selectionner',
                     onPressed: () => _selectAll(currentAnimals),
+                  ),
+                if (_selectionMode && hasSelection)
+                  PopupMenuButton<_GroupAction>(
+                    icon: const Icon(Icons.more_horiz),
+                    tooltip: 'Actions groupees',
+                    onSelected: (_GroupAction action) {
+                      final List<Animal> selected = currentAnimals
+                          .where(
+                            (Animal animal) =>
+                                _selectedIds.contains(animal.id),
+                          )
+                          .toList();
+                      _handleGroupAction(action, selected);
+                    },
+                    itemBuilder: (BuildContext context) =>
+                        const <PopupMenuEntry<_GroupAction>>[
+                      PopupMenuItem<_GroupAction>(
+                        value: _GroupAction.breeding,
+                        child: Text('Saillie groupee'),
+                      ),
+                      PopupMenuItem<_GroupAction>(
+                        value: _GroupAction.archive,
+                        child: Text('Archiver'),
+                      ),
+                      PopupMenuItem<_GroupAction>(
+                        value: _GroupAction.sell,
+                        child: Text('Marquer vendu'),
+                      ),
+                    ],
                   ),
                 IconButton(
                   icon: Icon(
                     _selectionMode ? Icons.check_box : Icons.check_box_outlined,
                   ),
                   tooltip: _selectionMode
-                      ? 'Quitter la sélection'
-                      : 'Sélection multiple',
+                      ? 'Quitter la selection'
+                      : 'Selection multiple',
                   onPressed: _toggleSelectionMode,
                 ),
               ],
@@ -469,8 +791,8 @@ class _AnimalListViewState extends State<_AnimalListView> {
                       icon: const Icon(Icons.playlist_add_check),
                       label: Text(
                         hasSelection
-                            ? 'Évènement groupé (${_selectedIds.length})'
-                            : 'Sélectionner des animaux',
+                            ? 'Evenement groupe (${_selectedIds.length})'
+                            : 'Selectionner des eleveurs',
                       ),
                     )
                   : FloatingActionButton.extended(
@@ -508,7 +830,7 @@ class _EmptyAnimalsPlaceholder extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               hasFilters
-                  ? 'Aucun animal ne correspond à votre recherche.'
+                  ? 'Aucun animal ne correspond a votre recherche.'
                   : 'Ajoutez vos premiers animaux pour suivre votre cheptel.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium,
@@ -525,7 +847,7 @@ class _EmptyAnimalsPlaceholder extends StatelessWidget {
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: onClearFilters,
-                      child: const Text('Réinitialiser les filtres'),
+                      child: const Text('Reinitialiser les filtres'),
                     ),
                   ],
                 ],
@@ -543,43 +865,144 @@ class _EmptyAnimalsPlaceholder extends StatelessWidget {
 }
 
 class _AnimalFiltersSheet extends StatefulWidget {
-  const _AnimalFiltersSheet({required this.initialFilters});
+  const _AnimalFiltersSheet({required this.initialFilters, required this.animals});
 
   final AnimalFilters initialFilters;
+  final List<Animal> animals;
 
   @override
   State<_AnimalFiltersSheet> createState() => _AnimalFiltersSheetState();
 }
 
 class _AnimalFiltersSheetState extends State<_AnimalFiltersSheet> {
-  String? _selectedSex;
-  late final TextEditingController _originController;
-  late final TextEditingController _cageController;
+  static const List<String> _statusOptions = <String>['Actif', 'Repos', 'Archive', 'Vendu'];
+  static const List<String> _categoryOptions = <String>[
+    'Lapine',
+    'Lapin',
+    'Remplacante',
+    'Reproducteur',
+    'Reforme',
+  ];
+
+  late String? _selectedSex;
+  late Set<String> _selectedStatuses;
+  late Set<String> _selectedBreeds;
+  late Set<String> _selectedCategories;
+  DateTime? _birthStart;
+  DateTime? _birthEnd;
+  DateTime? _entryStart;
+  DateTime? _entryEnd;
+  bool _onlyRecent = false;
+  late final TextEditingController _breedController;
+  late final List<String> _knownBreeds;
 
   @override
   void initState() {
     super.initState();
     _selectedSex = widget.initialFilters.sex;
-    _originController = TextEditingController(
-      text: widget.initialFilters.origin ?? '',
-    );
-    _cageController = TextEditingController(
-      text: widget.initialFilters.cageNumber ?? '',
-    );
+    _selectedStatuses = widget.initialFilters.statuses == null
+        ? <String>{}
+        : Set<String>.from(widget.initialFilters.statuses!);
+    _selectedBreeds = widget.initialFilters.breeds == null
+        ? <String>{}
+        : Set<String>.from(widget.initialFilters.breeds!);
+    _selectedCategories = widget.initialFilters.categories == null
+        ? <String>{}
+        : Set<String>.from(widget.initialFilters.categories!);
+    _birthStart = widget.initialFilters.birthStart;
+    _birthEnd = widget.initialFilters.birthEnd;
+    _entryStart = widget.initialFilters.entryStart;
+    _entryEnd = widget.initialFilters.entryEnd;
+    _onlyRecent = widget.initialFilters.onlyRecentLitters;
+    _breedController = TextEditingController();
+    final Set<String> breeds = <String>{};
+    for (final Animal animal in widget.animals) {
+      if (animal.breed != null && animal.breed!.trim().isNotEmpty) {
+        breeds.add(animal.breed!.trim());
+      }
+    }
+    _knownBreeds = breeds.toList()..sort();
   }
 
   @override
   void dispose() {
-    _originController.dispose();
-    _cageController.dispose();
+    _breedController.dispose();
     super.dispose();
+  }
+
+  void _toggleValue(Set<String> target, String value) {
+    setState(() {
+      if (target.contains(value)) {
+        target.remove(value);
+      } else {
+        target.add(value);
+      }
+    });
+  }
+
+  Future<void> _pickBirthRange() async {
+    final DateTime now = DateTime.now();
+    final DateTimeRange? range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 10),
+      lastDate: now,
+      initialDateRange: _birthStart != null && _birthEnd != null
+          ? DateTimeRange(start: _birthStart!, end: _birthEnd!)
+          : null,
+    );
+    if (range != null) {
+      setState(() {
+        _birthStart = range.start;
+        _birthEnd = range.end;
+      });
+    }
+  }
+
+  Future<void> _pickEntryRange() async {
+    final DateTime now = DateTime.now();
+    final DateTimeRange? range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 10),
+      lastDate: DateTime(now.year + 1),
+      initialDateRange: _entryStart != null && _entryEnd != null
+          ? DateTimeRange(start: _entryStart!, end: _entryEnd!)
+          : null,
+    );
+    if (range != null) {
+      setState(() {
+        _entryStart = range.start;
+        _entryEnd = range.end;
+      });
+    }
+  }
+
+  void _addCustomBreed() {
+    final String value = _breedController.text.trim();
+    if (value.isEmpty) {
+      return;
+    }
+    setState(() {
+      _selectedBreeds.add(value);
+      if (!_knownBreeds.contains(value)) {
+        _knownBreeds.add(value);
+        _knownBreeds.sort();
+      }
+      _breedController.clear();
+    });
   }
 
   void _reset() {
     setState(() {
       _selectedSex = null;
-      _originController.clear();
-      _cageController.clear();
+      _selectedStatuses.clear();
+      _selectedBreeds.clear();
+      _selectedCategories.clear();
+      _birthStart = null;
+      _birthEnd = null;
+      _entryStart = null;
+      _entryEnd = null;
+      _onlyRecent = false;
+      _breedController.clear();
     });
   }
 
@@ -588,12 +1011,14 @@ class _AnimalFiltersSheetState extends State<_AnimalFiltersSheet> {
       AnimalFilters(
         searchTerm: widget.initialFilters.searchTerm,
         sex: _selectedSex,
-        origin: _originController.text.trim().isEmpty
-            ? null
-            : _originController.text.trim(),
-        cageNumber: _cageController.text.trim().isEmpty
-            ? null
-            : _cageController.text.trim(),
+        statuses: _selectedStatuses.isEmpty ? null : _selectedStatuses,
+        breeds: _selectedBreeds.isEmpty ? null : _selectedBreeds,
+        categories: _selectedCategories.isEmpty ? null : _selectedCategories,
+        birthStart: _birthStart,
+        birthEnd: _birthEnd,
+        entryStart: _entryStart,
+        entryEnd: _entryEnd,
+        onlyRecentLitters: _onlyRecent,
       ),
     );
   }
@@ -601,9 +1026,11 @@ class _AnimalFiltersSheetState extends State<_AnimalFiltersSheet> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final MaterialLocalizations localizations =
+        MaterialLocalizations.of(context);
     return SafeArea(
       top: false,
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.only(
           left: 16,
           right: 16,
@@ -611,21 +1038,15 @@ class _AnimalFiltersSheetState extends State<_AnimalFiltersSheet> {
           bottom: MediaQuery.of(context).viewInsets.bottom + 16,
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Row(
               children: <Widget>[
                 Expanded(
-                  child: Text(
-                    'Filtres avancés',
-                    style: theme.textTheme.titleMedium,
-                  ),
+                  child: Text('Filtres eleveurs', style: theme.textTheme.titleMedium),
                 ),
-                TextButton(
-                  onPressed: _reset,
-                  child: const Text('Réinitialiser'),
-                ),
+                TextButton(onPressed: _reset, child: const Text('Reinitialiser')),
               ],
             ),
             const SizedBox(height: 12),
@@ -634,27 +1055,132 @@ class _AnimalFiltersSheetState extends State<_AnimalFiltersSheet> {
               decoration: const InputDecoration(labelText: 'Sexe'),
               hint: const Text('Tous'),
               items: const <DropdownMenuItem<String>>[
-                DropdownMenuItem<String>(
-                  value: 'Femelle',
-                  child: Text('Femelle'),
-                ),
-                DropdownMenuItem<String>(value: 'Mâle', child: Text('Mâle')),
+                DropdownMenuItem<String>(value: 'Femelle', child: Text('Femelle')),
+                DropdownMenuItem<String>(value: 'Male', child: Text('Male')),
               ],
-              onChanged: (String? value) =>
-                  setState(() => _selectedSex = value),
+              onChanged: (String? value) => setState(() => _selectedSex = value),
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _originController,
-              decoration: const InputDecoration(
-                labelText: 'Origine',
-                hintText: 'Ferme, fournisseur…',
+            const SizedBox(height: 16),
+            Text('Statuts', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _statusOptions
+                  .map(
+                    (String status) => FilterChip(
+                      selected: _selectedStatuses.contains(status),
+                      label: Text(status),
+                      onSelected: (_) => _toggleValue(_selectedStatuses, status),
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 16),
+            Text('Categories', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _categoryOptions
+                  .map(
+                    (String category) => FilterChip(
+                      selected: _selectedCategories.contains(category),
+                      label: Text(category),
+                      onSelected: (_) => _toggleValue(_selectedCategories, category),
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 16),
+            Text('Races', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            if (_knownBreeds.isNotEmpty)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _knownBreeds
+                    .map(
+                      (String breed) => FilterChip(
+                        selected: _selectedBreeds.contains(breed),
+                        label: Text(breed),
+                        onSelected: (_) => _toggleValue(_selectedBreeds, breed),
+                      ),
+                    )
+                    .toList(),
               ),
+            TextField(
+              controller: _breedController,
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                labelText: 'Ajouter une race',
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: _addCustomBreed,
+                ),
+              ),
+              onSubmitted: (_) => _addCustomBreed(),
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _cageController,
-              decoration: const InputDecoration(labelText: 'Numéro de cage'),
+            const SizedBox(height: 16),
+            Text('Naissance', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _pickBirthRange,
+                    icon: const Icon(Icons.date_range),
+                    label: Text(
+                      _birthStart == null || _birthEnd == null
+                          ? 'Selectionner une periode'
+                          : '${localizations.formatMediumDate(_birthStart!)} -> ${localizations.formatMediumDate(_birthEnd!)}',
+                    ),
+                  ),
+                ),
+                if (_birthStart != null || _birthEnd != null)
+                  IconButton(
+                    tooltip: 'Effacer',
+                    onPressed: () => setState(() {
+                      _birthStart = null;
+                      _birthEnd = null;
+                    }),
+                    icon: const Icon(Icons.close),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text('Entree', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _pickEntryRange,
+                    icon: const Icon(Icons.date_range),
+                    label: Text(
+                      _entryStart == null || _entryEnd == null
+                          ? 'Selectionner une periode'
+                          : '${localizations.formatMediumDate(_entryStart!)} -> ${localizations.formatMediumDate(_entryEnd!)}',
+                    ),
+                  ),
+                ),
+                if (_entryStart != null || _entryEnd != null)
+                  IconButton(
+                    tooltip: 'Effacer',
+                    onPressed: () => setState(() {
+                      _entryStart = null;
+                      _entryEnd = null;
+                    }),
+                    icon: const Icon(Icons.close),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Derniere portee inferieure a 90 jours'),
+              value: _onlyRecent,
+              onChanged: (bool value) => setState(() => _onlyRecent = value),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -671,3 +1197,123 @@ class _AnimalFiltersSheetState extends State<_AnimalFiltersSheet> {
     );
   }
 }
+
+class BreederImportPreviewDialog extends StatelessWidget {
+  const BreederImportPreviewDialog({required this.preview, super.key});
+
+  final BreederImportPreview preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final List<BreederImportRow> sampleRows = preview.rows.take(10).toList();
+    final List<String> headers = preview.headers;
+
+    return AlertDialog(
+      title: Text(preview.sourceName ?? 'Apercu import CSV'),
+      content: SizedBox(
+        width: 600,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text('Fichier: ${preview.sourceName ?? 'inconnu'}'),
+              Text('Lignes valides: ${preview.validCount}'),
+              Text('Lignes en erreur: ${preview.invalidCount}'),
+              if (preview.errors.isNotEmpty) ...preview.errors
+                  .map((String error) => Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          error,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      )),
+              const SizedBox(height: 16),
+              if (sampleRows.isEmpty)
+                const Text('Aucune ligne a afficher pour le moment.')
+              else ...<Widget>[
+                const Text('Apercu des 10 premieres lignes:'),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    columns: headers
+                        .map((String header) => DataColumn(label: Text(header)))
+                        .toList(),
+                    rows: sampleRows
+                        .map(
+                          (BreederImportRow row) => DataRow(
+                            color: row.isValid
+                                ? null
+                                : WidgetStatePropertyAll<Color>(
+                                    theme.colorScheme.errorContainer.withValues(alpha: 0.35),
+                                  ),
+                            cells: headers
+                                .map((String header) => DataCell(
+                                      Text(row.values[header] ?? ''),
+                                    ))
+                                .toList(),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (preview.invalidCount > 0) ...<Widget>[
+                const Text('Details des erreurs (limite 5 lignes):'),
+                const SizedBox(height: 8),
+                ...preview.rows
+                    .where((BreederImportRow row) => row.issues.isNotEmpty)
+                    .take(5)
+                    .map(
+                      (BreederImportRow row) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Ligne ${row.index}: ${row.issues.join('; ')}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    ),
+                if (preview.invalidCount > 5)
+                  Text(
+                    '... ${preview.invalidCount - 5} lignes supplementaires comportent des erreurs.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+              ],
+              const SizedBox(height: 16),
+              const Text(
+                'Remarque: cette previsualisation ne lance pas encore la creation des eleveurs sur Supabase.',
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Fermer'),
+        ),
+      ],
+    );
+  }
+}
+
+enum _GroupAction { breeding, archive, sell }
+
+class _SearchSuggestion {
+  const _SearchSuggestion({
+    required this.label,
+    required this.secondary,
+    required this.animal,
+  });
+
+  final String label;
+  final String? secondary;
+  final Animal animal;
+}
+

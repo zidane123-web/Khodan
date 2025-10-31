@@ -140,7 +140,7 @@ class _AnimalDetailView extends StatelessWidget {
         return AlertDialog(
           title: const Text('Supprimer cette photo ?'),
           content: const Text(
-            'La photo sera retirée de la galerie. Continuer ?',
+            'La photo sera retiree de la galerie. Continuer ?',
           ),
           actions: <Widget>[
             TextButton(
@@ -188,7 +188,7 @@ class _AnimalDetailView extends StatelessWidget {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: <pw.Widget>[
         pw.Text(
-          'Identité',
+          'Identite',
           style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
         ),
         pw.SizedBox(height: 8),
@@ -217,20 +217,20 @@ class _AnimalDetailView extends StatelessWidget {
               ),
               pw.SizedBox(height: 8),
               pw.Text('Saillies : ${performance.totalMatings}'),
-              pw.Text('Réussites : ${performance.successfulMatings}'),
+              pw.Text('Reussites : ${performance.successfulMatings}'),
               if (performance.successRate != null)
                 pw.Text(
-                  'Taux de réussite : ${(performance.successRate! * 100).toStringAsFixed(1)} %',
+                  'Taux de reussite : ${(performance.successRate! * 100).toStringAsFixed(1)} %',
                 ),
               if (performance.averageKitsBornAlive != null)
                 pw.Text(
-                  'Nés vivants moyens : ${performance.averageKitsBornAlive!.toStringAsFixed(1)}',
+                  'Nes vivants moyens : ${performance.averageKitsBornAlive!.toStringAsFixed(1)}',
                 ),
               if (performance.averageKitsWeaned != null)
                 pw.Text(
-                  'Sevrés moyens : ${performance.averageKitsWeaned!.toStringAsFixed(1)}',
+                  'Sevres moyens : ${performance.averageKitsWeaned!.toStringAsFixed(1)}',
                 ),
-              pw.Text('Sevrés cumulés : ${performance.totalKitsWeaned}'),
+              pw.Text('Sevres cumules : ${performance.totalKitsWeaned}'),
             ],
           );
 
@@ -245,7 +245,7 @@ class _AnimalDetailView extends StatelessWidget {
             (Animal? ancestor) => ancestor == null ? 'Inconnu' : ancestor.tagId,
           )
           .join(', ');
-      return 'Génération $index : $joined';
+      return 'Generation $index : $joined';
     }
 
     final pw.Widget? genealogySection = genealogy == null
@@ -254,7 +254,7 @@ class _AnimalDetailView extends StatelessWidget {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: <pw.Widget>[
               pw.Text(
-                'Généalogie',
+                'Genealogie',
                 style: pw.TextStyle(
                   fontSize: 18,
                   fontWeight: pw.FontWeight.bold,
@@ -287,7 +287,7 @@ class _AnimalDetailView extends StatelessWidget {
         ),
         pw.SizedBox(height: 8),
         if (state.timeline.isEmpty)
-          pw.Text('Aucun évènement enregistré.')
+          pw.Text('Aucun evenement enregistre.')
         else
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -358,14 +358,14 @@ class _AnimalDetailView extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         state.errorMessage ??
-                            'Impossible de charger la fiche détaillée.',
+                            'Impossible de charger la fiche detaillee.',
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
                       FilledButton(
                         onPressed: () =>
                             context.read<AnimalDetailCubit>().load(),
-                        child: const Text('Réessayer'),
+                        child: const Text('Reessayer'),
                       ),
                     ],
                   ),
@@ -373,39 +373,36 @@ class _AnimalDetailView extends StatelessWidget {
               );
               break;
             case AnimalDetailStatus.success:
-              final List<Widget> sections = <Widget>[
-                _IdentityCard(
-                  animal: animal,
-                  primaryPhoto: state.gallery.isNotEmpty
-                      ? state.gallery.first
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                if (state.performance != null) ...<Widget>[
-                  AnimalPerformanceOverview(performance: state.performance!),
-                  const SizedBox(height: 16),
-                ],
-                AnimalPhotoGallery(
-                  photos: state.gallery,
-                  onAddPhoto: () => _addPhoto(context),
-                  onRemovePhoto: state.gallery.isEmpty
-                      ? null
-                      : (AnimalMedia media) => _removePhoto(context, media),
-                  isLoading: state.galleryLoading,
-                  isUploading: state.isUploadingMedia,
-                ),
-                const SizedBox(height: 16),
-                GenealogyView(animal: animal, analysis: state.genealogy),
-                const SizedBox(height: 16),
-                AnimalTimeline(entries: state.timeline),
-              ];
-
-              body = RefreshIndicator(
-                onRefresh: () => context.read<AnimalDetailCubit>().load(),
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  children: sections,
+              final ThemeData theme = Theme.of(context);
+              body = DefaultTabController(
+                length: 4,
+                child: Column(
+                  children: <Widget>[
+                    Material(
+                      color: theme.colorScheme.surface,
+                      child: TabBar(
+                        isScrollable: true,
+                        labelColor: theme.colorScheme.primary,
+                        indicatorColor: theme.colorScheme.primary,
+                        tabs: const <Tab>[
+                          Tab(text: 'Informations'),
+                          Tab(text: 'Portees'),
+                          Tab(text: 'Sante'),
+                          Tab(text: 'Documents'),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        children: <Widget>[
+                          _buildInformationsTab(context, state),
+                          _buildBreedingTab(context, state),
+                          _buildHealthTab(context, state),
+                          _buildDocumentsTab(context, state),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               );
               break;
@@ -435,6 +432,189 @@ class _AnimalDetailView extends StatelessWidget {
       ),
     );
   }
+  Widget _buildInformationsTab(BuildContext context, AnimalDetailState state) {
+    final Animal animal = state.animal;
+    final List<String> validations = <String>[];
+    if (animal.entryDate != null && animal.entryDate!.isBefore(animal.birthDate)) {
+      validations.add(
+        'La date dentree doit etre posterieure a la naissance.',
+      );
+    }
+    if (animal.firstBreedingDate != null &&
+        animal.entryDate != null &&
+        animal.firstBreedingDate!.isBefore(animal.entryDate!)) {
+      validations.add(
+        'La premiere saillie doit etre apres la date dentree.',
+      );
+    }
+
+    final List<Widget> children = <Widget>[
+      _IdentityCard(
+        animal: animal,
+        primaryPhoto: state.gallery.isNotEmpty ? state.gallery.first : null,
+      ),
+      const SizedBox(height: 16),
+      if (validations.isNotEmpty) _ValidationNotice(messages: validations),
+      if (state.performance != null) ...<Widget>[
+        AnimalPerformanceOverview(performance: state.performance!),
+        const SizedBox(height: 16),
+      ],
+      GenealogyView(animal: animal, analysis: state.genealogy),
+    ];
+
+    final List<AnimalTimelineEntry> otherEntries = state.timeline
+        .where(
+          (AnimalTimelineEntry entry) =>
+              entry.category != AnimalTimelineCategory.breeding &&
+              entry.category != AnimalTimelineCategory.health &&
+              entry.category != AnimalTimelineCategory.weight,
+        )
+        .toList();
+    if (otherEntries.isNotEmpty) {
+      children
+        ..add(const SizedBox(height: 16))
+        ..add(AnimalTimeline(entries: otherEntries));
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => context.read<AnimalDetailCubit>().load(),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: children,
+      ),
+    );
+  }
+
+  Widget _buildBreedingTab(BuildContext context, AnimalDetailState state) {
+    final List<AnimalTimelineEntry> entries = state.timeline
+        .where(
+          (AnimalTimelineEntry entry) =>
+              entry.category == AnimalTimelineCategory.breeding,
+        )
+        .toList();
+    return RefreshIndicator(
+      onRefresh: () => context.read<AnimalDetailCubit>().load(),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: <Widget>[
+          if (entries.isEmpty)
+            const _EmptyTabMessage(message: 'Aucune portee enregistree.')
+          else
+            AnimalTimeline(entries: entries),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHealthTab(BuildContext context, AnimalDetailState state) {
+    final List<AnimalTimelineEntry> entries = state.timeline
+        .where(
+          (AnimalTimelineEntry entry) =>
+              entry.category == AnimalTimelineCategory.health ||
+              entry.category == AnimalTimelineCategory.weight,
+        )
+        .toList();
+    return RefreshIndicator(
+      onRefresh: () => context.read<AnimalDetailCubit>().load(),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: <Widget>[
+          if (entries.isEmpty)
+            const _EmptyTabMessage(
+              message: 'Aucun suivi de sante pour le moment.',
+            )
+          else
+            AnimalTimeline(entries: entries),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocumentsTab(BuildContext context, AnimalDetailState state) {
+    return RefreshIndicator(
+      onRefresh: () => context.read<AnimalDetailCubit>().load(),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: <Widget>[
+          AnimalPhotoGallery(
+            photos: state.gallery,
+            onAddPhoto: () => _addPhoto(context),
+            onRemovePhoto: state.gallery.isEmpty
+                ? null
+                : (AnimalMedia media) => _removePhoto(context, media),
+            isLoading: state.galleryLoading,
+            isUploading: state.isUploadingMedia,
+          ),
+          if (state.gallery.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: const _EmptyTabMessage(
+                message: 'Ajoutez des documents ou photos pour suivre cet eleveur.',
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+  }
+
+class _ValidationNotice extends StatelessWidget {
+  const _ValidationNotice({required this.messages});
+
+  final List<String> messages;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: messages
+            .map(
+              (String message) => Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  message,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onErrorContainer,
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _EmptyTabMessage extends StatelessWidget {
+  const _EmptyTabMessage({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ),
+    );
+  }
 }
 
 class _IdentityCard extends StatelessWidget {
@@ -461,7 +641,7 @@ class _IdentityCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Identité', style: theme.textTheme.titleLarge),
+                Text('Identite', style: theme.textTheme.titleLarge),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
@@ -477,11 +657,11 @@ class _IdentityCard extends StatelessWidget {
                   _InfoRow(label: 'Nom', value: animal.name!),
                 _InfoRow(
                   label: 'Cage',
-                  value: animal.cageNumber ?? 'Non renseignée',
+                  value: animal.cageNumber ?? 'Non renseignee',
                 ),
                 _InfoRow(
                   label: 'Origine',
-                  value: animal.origin ?? 'Non renseignée',
+                  value: animal.origin ?? 'Non renseignee',
                 ),
                 _InfoRow(
                   label: 'Date de naissance',
@@ -490,16 +670,16 @@ class _IdentityCard extends StatelessWidget {
                   ).formatMediumDate(animal.birthDate),
                 ),
                 _InfoRow(
-                  label: 'Date d’entrée',
+                  label: 'Date d’entree',
                   value: animal.entryDate != null
                       ? MaterialLocalizations.of(
                           context,
                         ).formatMediumDate(animal.entryDate!)
-                      : 'Non renseignée',
+                      : 'Non renseignee',
                 ),
                 if (animal.firstBreedingDate != null)
                   _InfoRow(
-                    label: '1ère saillie',
+                    label: '1ere saillie',
                     value:
                         '${MaterialLocalizations.of(context).formatMediumDate(animal.firstBreedingDate!)} · ${animal.firstBreedingDate!.difference(animal.birthDate).inDays} jours',
                   ),
@@ -645,7 +825,7 @@ class _AnimalQrSheet extends StatelessWidget {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Payload copié dans le presse-papiers.'),
+                        content: Text('Payload copie dans le presse-papiers.'),
                       ),
                     );
                   }

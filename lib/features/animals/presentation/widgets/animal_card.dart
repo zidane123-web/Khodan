@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 import '../../../../data/models/animal.dart';
@@ -27,14 +28,35 @@ class AnimalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final MaterialLocalizations localizations = MaterialLocalizations.of(context);
     final int ageInDays = animal.ageInDays;
     final String ageLabel = ageInDays ~/ 30 > 0
         ? '${ageInDays ~/ 30} mois'
         : '$ageInDays jours';
-    final MaterialLocalizations localizations =
-        MaterialLocalizations.of(context);
-
     final bool isFemale = animal.sex.toLowerCase().contains('fem');
+    final String displaySex = animal.sex.toLowerCase() == 'male'
+        ? 'Male'
+        : animal.sex;
+    final String cageLabel =
+        (animal.cageNumber != null && animal.cageNumber!.isNotEmpty)
+            ? 'Cage ${animal.cageNumber!}'
+            : 'Cage non definie';
+    final String? breed = (animal.breed != null && animal.breed!.trim().isNotEmpty)
+        ? animal.breed!.trim()
+        : null;
+    final String? category =
+        (animal.category != null && animal.category!.trim().isNotEmpty)
+            ? animal.category!.trim()
+            : null;
+    final String? lastLitter = animal.lastLitterDate == null
+        ? null
+        : localizations.formatMediumDate(animal.lastLitterDate!);
+    final String? nextTask = animal.nextTaskDate == null
+        ? null
+        : localizations.formatMediumDate(animal.nextTaskDate!);
+    final String? firstBreeding = animal.firstBreedingDate == null
+        ? null
+        : localizations.formatMediumDate(animal.firstBreedingDate!);
 
     void handleSelection() {
       if (selectionEnabled && onSelectionChanged != null) {
@@ -60,43 +82,80 @@ class AnimalCard extends StatelessWidget {
                 backgroundColor: theme.colorScheme.primaryContainer,
                 child: Text(animal.tagId),
               ),
-        title: Text(animal.name ?? animal.tagId),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        title: Row(
           children: <Widget>[
-            Text(
-              <String>[
-                animal.sex,
-                ageLabel,
-                if (animal.cageNumber != null)
-                  'Cage ${animal.cageNumber!}',
-              ].join(' · '),
-            ),
-            if (animal.origin != null && animal.origin!.isNotEmpty)
-              Text('Origine : ${animal.origin!}'),
-            if (animal.entryDate != null)
-              Text(
-                'Entrée : ${localizations.formatMediumDate(animal.entryDate!)}',
+            Expanded(
+              child: Text(
+                animal.name ?? animal.tagId,
+                style: theme.textTheme.titleMedium,
               ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: <Widget>[
-                Chip(
-                  label: Text(animal.status),
-                  backgroundColor: theme.colorScheme.secondaryContainer,
-                ),
-                if (animal.firstBreedingDate != null)
-                  Chip(
-                    label: Text(
-                      '1ère saillie : ${localizations.formatMediumDate(animal.firstBreedingDate!)}',
-                    ),
-                  ),
-              ],
             ),
+            if (category != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Chip(
+                  label: Text(category),
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                ),
+              ),
           ],
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                <String>[
+                  'ID ${animal.tagId}',
+                  displaySex,
+                  ageLabel,
+                  cageLabel,
+                ].join(' - '),
+              ),
+              if (breed != null) Text('Race: $breed'),
+              if (animal.origin != null && animal.origin!.isNotEmpty)
+                Text('Origine: ${animal.origin}'),
+              if (animal.entryDate != null)
+                Text(
+                  'Entree: ${localizations.formatMediumDate(animal.entryDate!)}',
+                ),
+              if (animal.notes != null && animal.notes!.isNotEmpty)
+                Text('Note: ${animal.notes}'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: <Widget>[
+                  Chip(
+                    label: Text(animal.status),
+                    backgroundColor: theme.colorScheme.secondaryContainer,
+                  ),
+                  if (breed != null)
+                    Chip(
+                      label: Text(breed),
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    ),
+                  if (firstBreeding != null)
+                    Chip(
+                      label: Text('Premiere saillie: $firstBreeding'),
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    ),
+                  if (lastLitter != null)
+                    Chip(
+                      label: Text('Derniere portee: $lastLitter'),
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                    ),
+                  if (nextTask != null)
+                    Chip(
+                      label: Text('Prochaine action: $nextTask'),
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                    ),
+                ],
+              ),
+            ],
+          ),
         ),
         trailing: (onEdit != null || onDelete != null || onQuickBreed != null)
             ? PopupMenuButton<String>(

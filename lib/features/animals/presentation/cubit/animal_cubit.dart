@@ -13,54 +13,137 @@ class AnimalFilters extends Equatable {
   const AnimalFilters({
     this.searchTerm = '',
     this.sex,
+    this.statuses,
+    this.breeds,
+    this.categories,
     this.origin,
     this.cageNumber,
+    this.birthStart,
+    this.birthEnd,
+    this.entryStart,
+    this.entryEnd,
+    this.onlyRecentLitters = false,
   });
 
   final String searchTerm;
   final String? sex;
+  final Set<String>? statuses;
+  final Set<String>? breeds;
+  final Set<String>? categories;
   final String? origin;
   final String? cageNumber;
+  final DateTime? birthStart;
+  final DateTime? birthEnd;
+  final DateTime? entryStart;
+  final DateTime? entryEnd;
+  final bool onlyRecentLitters;
 
   bool get hasAdvancedFilters =>
       sex != null ||
+      (statuses != null && statuses!.isNotEmpty) ||
+      (breeds != null && breeds!.isNotEmpty) ||
+      (categories != null && categories!.isNotEmpty) ||
       (origin != null && origin!.isNotEmpty) ||
-      (cageNumber != null && cageNumber!.isNotEmpty);
+      (cageNumber != null && cageNumber!.isNotEmpty) ||
+      birthStart != null ||
+      birthEnd != null ||
+      entryStart != null ||
+      entryEnd != null ||
+      onlyRecentLitters;
 
   AnimalFilters copyWith({
     String? searchTerm,
     String? sex,
     bool clearSex = false,
+    Set<String>? statuses,
+    bool clearStatuses = false,
+    Set<String>? breeds,
+    bool clearBreeds = false,
+    Set<String>? categories,
+    bool clearCategories = false,
     String? origin,
     bool clearOrigin = false,
     String? cageNumber,
     bool clearCageNumber = false,
+    DateTime? birthStart,
+    bool clearBirthStart = false,
+    DateTime? birthEnd,
+    bool clearBirthEnd = false,
+    DateTime? entryStart,
+    bool clearEntryStart = false,
+    DateTime? entryEnd,
+    bool clearEntryEnd = false,
+    bool? onlyRecentLitters,
   }) {
+    Set<String>? clone(Set<String>? values) =>
+        values == null ? null : <String>{...values};
+
     return AnimalFilters(
       searchTerm: searchTerm ?? this.searchTerm,
       sex: clearSex ? null : (sex ?? this.sex),
+      statuses: clearStatuses
+          ? null
+          : clone(statuses ?? this.statuses),
+      breeds: clearBreeds ? null : clone(breeds ?? this.breeds),
+      categories: clearCategories
+          ? null
+          : clone(categories ?? this.categories),
       origin: clearOrigin ? null : (origin ?? this.origin),
       cageNumber: clearCageNumber ? null : (cageNumber ?? this.cageNumber),
+      birthStart: clearBirthStart ? null : (birthStart ?? this.birthStart),
+      birthEnd: clearBirthEnd ? null : (birthEnd ?? this.birthEnd),
+      entryStart: clearEntryStart ? null : (entryStart ?? this.entryStart),
+      entryEnd: clearEntryEnd ? null : (entryEnd ?? this.entryEnd),
+      onlyRecentLitters: onlyRecentLitters ?? this.onlyRecentLitters,
     );
   }
 
   bool matches(Animal animal) {
     final String normalizedQuery = searchTerm.trim().toLowerCase();
-    final bool matchesSearch =
-        normalizedQuery.isEmpty ||
-        <String?>[
-              animal.tagId,
-              animal.name,
-              animal.id,
-              animal.origin,
-              animal.cageNumber,
-            ]
-            .where((String? value) => value != null)
-            .map((String? value) => value!.toLowerCase())
+    final Iterable<String?> searchable = <String?>[
+      animal.tagId,
+      animal.name,
+      animal.id,
+      animal.origin,
+      animal.cageNumber,
+      animal.breed,
+      animal.category,
+      animal.notes,
+    ];
+    final bool matchesSearch = normalizedQuery.isEmpty ||
+        searchable
+            .map((String? value) => value?.toLowerCase() ?? '')
             .any((String value) => value.contains(normalizedQuery));
 
+    String normalize(String? value) => value?.toLowerCase().trim() ?? '';
+
     final bool matchesSex =
-        sex == null || animal.sex.toLowerCase() == sex!.toLowerCase();
+        sex == null || normalize(animal.sex) == normalize(sex);
+
+    final Set<String>? normalizedStatuses = statuses
+        ?.where((String value) => value.trim().isNotEmpty)
+        .map(normalize)
+        .toSet();
+    final bool matchesStatus = normalizedStatuses == null ||
+        normalizedStatuses.isEmpty ||
+        normalizedStatuses.contains(normalize(animal.status));
+
+    final Set<String>? normalizedBreeds = breeds
+        ?.where((String value) => value.trim().isNotEmpty)
+        .map(normalize)
+        .toSet();
+    final bool matchesBreed = normalizedBreeds == null ||
+        normalizedBreeds.isEmpty ||
+        normalizedBreeds.contains(normalize(animal.breed));
+
+    final Set<String>? normalizedCategories = categories
+        ?.where((String value) => value.trim().isNotEmpty)
+        .map(normalize)
+        .toSet();
+    final bool matchesCategory = normalizedCategories == null ||
+        normalizedCategories.isEmpty ||
+        normalizedCategories.contains(normalize(animal.category));
+
     final bool matchesOrigin =
         origin == null ||
         (animal.origin != null &&
@@ -72,11 +155,62 @@ class AnimalFilters extends Equatable {
               cageNumber!.toLowerCase(),
             ));
 
-    return matchesSearch && matchesSex && matchesOrigin && matchesCage;
+    final bool matchesBirthStart =
+        birthStart == null || !animal.birthDate.isBefore(birthStart!);
+    final bool matchesBirthEnd =
+        birthEnd == null || !animal.birthDate.isAfter(birthEnd!);
+
+    final DateTime? entryDate = animal.entryDate;
+    final bool matchesEntryStart = entryStart == null ||
+        (entryDate != null && !entryDate.isBefore(entryStart!));
+    final bool matchesEntryEnd = entryEnd == null ||
+        (entryDate != null && !entryDate.isAfter(entryEnd!));
+
+    final bool matchesRecent = !onlyRecentLitters ||
+        (animal.lastLitterDate != null &&
+            DateTime.now().difference(animal.lastLitterDate!).inDays <= 90);
+
+    return matchesSearch &&
+        matchesSex &&
+        matchesStatus &&
+        matchesBreed &&
+        matchesCategory &&
+        matchesOrigin &&
+        matchesCage &&
+        matchesBirthStart &&
+        matchesBirthEnd &&
+        matchesEntryStart &&
+        matchesEntryEnd &&
+        matchesRecent;
+  }
+
+  List<String>? _sorted(Set<String>? values) {
+    if (values == null) {
+      return null;
+    }
+    final List<String> sorted = values
+        .where((String value) => value.trim().isNotEmpty)
+        .map((String value) => value.toLowerCase().trim())
+        .toList()
+      ..sort();
+    return sorted;
   }
 
   @override
-  List<Object?> get props => <Object?>[searchTerm, sex, origin, cageNumber];
+  List<Object?> get props => <Object?>[
+        searchTerm,
+        sex,
+        _sorted(statuses),
+        _sorted(breeds),
+        _sorted(categories),
+        origin,
+        cageNumber,
+        birthStart,
+        birthEnd,
+        entryStart,
+        entryEnd,
+        onlyRecentLitters,
+      ];
 }
 
 class AnimalState extends Equatable {
@@ -362,24 +496,49 @@ class AnimalCubit extends Cubit<AnimalState> {
   }
 
   void updateSearchTerm(String searchTerm) {
-    final AnimalFilters filters = AnimalFilters(
+    final AnimalFilters filters = state.filters.copyWith(
       searchTerm: searchTerm,
-      sex: state.filters.sex,
-      origin: state.filters.origin,
-      cageNumber: state.filters.cageNumber,
     );
     final List<Animal> filtered = _applyFilters(state.allAnimals, filters);
     emit(state.copyWith(filters: filters, animals: filtered));
   }
 
   void setFilters(AnimalFilters filters) {
+    Set<String>? cleanSet(Set<String>? values) {
+      if (values == null) {
+        return null;
+      }
+      final Set<String> cleaned = <String>{};
+      for (final String value in values) {
+        final String trimmed = value.trim();
+        if (trimmed.isNotEmpty) {
+          cleaned.add(trimmed);
+        }
+      }
+      return cleaned.isEmpty ? null : cleaned;
+    }
+
+    String? cleanString(String? value) {
+      if (value == null) {
+        return null;
+      }
+      final String trimmed = value.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+
     final AnimalFilters nextFilters = AnimalFilters(
       searchTerm: filters.searchTerm,
-      sex: filters.sex,
-      origin: filters.origin?.isEmpty == true ? null : filters.origin,
-      cageNumber: filters.cageNumber?.isEmpty == true
-          ? null
-          : filters.cageNumber,
+      sex: cleanString(filters.sex),
+      statuses: cleanSet(filters.statuses),
+      breeds: cleanSet(filters.breeds),
+      categories: cleanSet(filters.categories),
+      origin: cleanString(filters.origin),
+      cageNumber: cleanString(filters.cageNumber),
+      birthStart: filters.birthStart,
+      birthEnd: filters.birthEnd,
+      entryStart: filters.entryStart,
+      entryEnd: filters.entryEnd,
+      onlyRecentLitters: filters.onlyRecentLitters,
     );
     emit(
       state.copyWith(
