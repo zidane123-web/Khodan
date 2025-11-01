@@ -67,6 +67,30 @@ This document summarises the relational structure delivered by the initial migra
 - **Columns:** `subject`, `message`, `contact_email`, `channel`, `priority`, `status`, timestamps.
 - **Indexes:** composite on (`profile_id`, `created_at DESC`) to faciliter le suivi chronologique.
 
+## ailments
+- **Primary key:** `id` (`uuid`).
+- **Required:** `profile_id`, `name`, timestamps.
+- **Optional:** `slug`, `species_id`, narrative fields (`common_causes`, `preventive_actions`).
+- **JSON fields:** `symptoms` (array of structured descriptors) and `recommended_treatments` (list of default care suggestions).
+- **Relations:** `profile_id` cascades on delete; `species_id` points to `species_config`.
+- **Indexes:** unique on (`profile_id`, `name`) and (`profile_id`, `slug`); filtered index excludes archived rows.
+
+## health_records
+- **Primary key:** `id` (`uuid`).
+- **Required:** `profile_id`, `animal_id`, `status`, `severity`, `onset_date`.
+- **Optional:** `ailment_id`, `custom_diagnosis`, `notes`, `resolved_at`, `next_check_at`, `offline_reference`.
+- **Integrity:** check constraint ensures either `ailment_id` or `custom_diagnosis` is provided; severity limited to `low/moderate/high/critical`.
+- **Relations:** `animal_id` references `animals` (cascade delete), `ailment_id` references `ailments`.
+- **Indexes:** (`profile_id`, `animal_id`, `status`), (`profile_id`, `onset_date DESC`), filtered unique index on (`profile_id`, `offline_reference`).
+
+## health_treatments
+- **Primary key:** `id` (`uuid`).
+- **Required:** `record_id`, `profile_id`, `title`, `treatment_type`, `start_at`.
+- **Optional:** `dosage`, `frequency`, `end_at`, `completed_at`, `notes`, `task_id`.
+- **Array field:** `reminder_minutes` stores minute offsets; constraint enforces values between -4320 and +4320.
+- **Relations:** `record_id` references `health_records` (cascade), `task_id` references `events` (set null).
+- **Indexes:** (`record_id`, `start_at`), (`profile_id`, `start_at`), unique index on `task_id` (non-null).
+
 ## Soft delete strategy
 Tables carrying `deleted_at` support logical deletion and offline sync. Future triggers (task 02) should update `updated_at` automatically and filter on `deleted_at IS NULL` in RLS policies.
 

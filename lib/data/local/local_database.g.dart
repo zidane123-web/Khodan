@@ -2559,6 +2559,1568 @@ class TaskTemplateAssignmentEventsTableCompanion
   }
 }
 
+class $AilmentsTableTable extends AilmentsTable
+    with TableInfo<$AilmentsTableTable, AilmentsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AilmentsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _slugMeta = const VerificationMeta('slug');
+  @override
+  late final GeneratedColumn<String> slug = GeneratedColumn<String>(
+      'slug', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _speciesIdMeta =
+      const VerificationMeta('speciesId');
+  @override
+  late final GeneratedColumn<int> speciesId = GeneratedColumn<int>(
+      'species_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _payloadMeta =
+      const VerificationMeta('payload');
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+      'payload', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _archivedAtMeta =
+      const VerificationMeta('archivedAt');
+  @override
+  late final GeneratedColumn<DateTime> archivedAt = GeneratedColumn<DateTime>(
+      'archived_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _syncStateMeta =
+      const VerificationMeta('syncState');
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+      'sync_state', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('synced'));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        profileId,
+        name,
+        slug,
+        speciesId,
+        payload,
+        createdAt,
+        updatedAt,
+        archivedAt,
+        syncState
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ailments_table';
+  @override
+  VerificationContext validateIntegrity(Insertable<AilmentsTableData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('slug')) {
+      context.handle(
+          _slugMeta, slug.isAcceptableOrUnknown(data['slug']!, _slugMeta));
+    }
+    if (data.containsKey('species_id')) {
+      context.handle(_speciesIdMeta,
+          speciesId.isAcceptableOrUnknown(data['species_id']!, _speciesIdMeta));
+    }
+    if (data.containsKey('payload')) {
+      context.handle(_payloadMeta,
+          payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta));
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('archived_at')) {
+      context.handle(
+          _archivedAtMeta,
+          archivedAt.isAcceptableOrUnknown(
+              data['archived_at']!, _archivedAtMeta));
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(_syncStateMeta,
+          syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AilmentsTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AilmentsTableData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}profile_id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      slug: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}slug']),
+      speciesId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}species_id']),
+      payload: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      archivedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}archived_at']),
+      syncState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_state'])!,
+    );
+  }
+
+  @override
+  $AilmentsTableTable createAlias(String alias) {
+    return $AilmentsTableTable(attachedDatabase, alias);
+  }
+}
+
+class AilmentsTableData extends DataClass
+    implements Insertable<AilmentsTableData> {
+  final String id;
+  final String profileId;
+  final String name;
+  final String? slug;
+  final int? speciesId;
+  final String payload;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? archivedAt;
+  final String syncState;
+  const AilmentsTableData(
+      {required this.id,
+      required this.profileId,
+      required this.name,
+      this.slug,
+      this.speciesId,
+      required this.payload,
+      required this.createdAt,
+      required this.updatedAt,
+      this.archivedAt,
+      required this.syncState});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['profile_id'] = Variable<String>(profileId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || slug != null) {
+      map['slug'] = Variable<String>(slug);
+    }
+    if (!nullToAbsent || speciesId != null) {
+      map['species_id'] = Variable<int>(speciesId);
+    }
+    map['payload'] = Variable<String>(payload);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || archivedAt != null) {
+      map['archived_at'] = Variable<DateTime>(archivedAt);
+    }
+    map['sync_state'] = Variable<String>(syncState);
+    return map;
+  }
+
+  AilmentsTableCompanion toCompanion(bool nullToAbsent) {
+    return AilmentsTableCompanion(
+      id: Value(id),
+      profileId: Value(profileId),
+      name: Value(name),
+      slug: slug == null && nullToAbsent ? const Value.absent() : Value(slug),
+      speciesId: speciesId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(speciesId),
+      payload: Value(payload),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      archivedAt: archivedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(archivedAt),
+      syncState: Value(syncState),
+    );
+  }
+
+  factory AilmentsTableData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AilmentsTableData(
+      id: serializer.fromJson<String>(json['id']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      name: serializer.fromJson<String>(json['name']),
+      slug: serializer.fromJson<String?>(json['slug']),
+      speciesId: serializer.fromJson<int?>(json['speciesId']),
+      payload: serializer.fromJson<String>(json['payload']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      archivedAt: serializer.fromJson<DateTime?>(json['archivedAt']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'profileId': serializer.toJson<String>(profileId),
+      'name': serializer.toJson<String>(name),
+      'slug': serializer.toJson<String?>(slug),
+      'speciesId': serializer.toJson<int?>(speciesId),
+      'payload': serializer.toJson<String>(payload),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'archivedAt': serializer.toJson<DateTime?>(archivedAt),
+      'syncState': serializer.toJson<String>(syncState),
+    };
+  }
+
+  AilmentsTableData copyWith(
+          {String? id,
+          String? profileId,
+          String? name,
+          Value<String?> slug = const Value.absent(),
+          Value<int?> speciesId = const Value.absent(),
+          String? payload,
+          DateTime? createdAt,
+          DateTime? updatedAt,
+          Value<DateTime?> archivedAt = const Value.absent(),
+          String? syncState}) =>
+      AilmentsTableData(
+        id: id ?? this.id,
+        profileId: profileId ?? this.profileId,
+        name: name ?? this.name,
+        slug: slug.present ? slug.value : this.slug,
+        speciesId: speciesId.present ? speciesId.value : this.speciesId,
+        payload: payload ?? this.payload,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
+        syncState: syncState ?? this.syncState,
+      );
+  AilmentsTableData copyWithCompanion(AilmentsTableCompanion data) {
+    return AilmentsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      name: data.name.present ? data.name.value : this.name,
+      slug: data.slug.present ? data.slug.value : this.slug,
+      speciesId: data.speciesId.present ? data.speciesId.value : this.speciesId,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      archivedAt:
+          data.archivedAt.present ? data.archivedAt.value : this.archivedAt,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AilmentsTableData(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('name: $name, ')
+          ..write('slug: $slug, ')
+          ..write('speciesId: $speciesId, ')
+          ..write('payload: $payload, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('syncState: $syncState')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, profileId, name, slug, speciesId, payload,
+      createdAt, updatedAt, archivedAt, syncState);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AilmentsTableData &&
+          other.id == this.id &&
+          other.profileId == this.profileId &&
+          other.name == this.name &&
+          other.slug == this.slug &&
+          other.speciesId == this.speciesId &&
+          other.payload == this.payload &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.archivedAt == this.archivedAt &&
+          other.syncState == this.syncState);
+}
+
+class AilmentsTableCompanion extends UpdateCompanion<AilmentsTableData> {
+  final Value<String> id;
+  final Value<String> profileId;
+  final Value<String> name;
+  final Value<String?> slug;
+  final Value<int?> speciesId;
+  final Value<String> payload;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> archivedAt;
+  final Value<String> syncState;
+  final Value<int> rowid;
+  const AilmentsTableCompanion({
+    this.id = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.slug = const Value.absent(),
+    this.speciesId = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.archivedAt = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AilmentsTableCompanion.insert({
+    required String id,
+    required String profileId,
+    required String name,
+    this.slug = const Value.absent(),
+    this.speciesId = const Value.absent(),
+    required String payload,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.archivedAt = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        profileId = Value(profileId),
+        name = Value(name),
+        payload = Value(payload),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt);
+  static Insertable<AilmentsTableData> custom({
+    Expression<String>? id,
+    Expression<String>? profileId,
+    Expression<String>? name,
+    Expression<String>? slug,
+    Expression<int>? speciesId,
+    Expression<String>? payload,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? archivedAt,
+    Expression<String>? syncState,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (profileId != null) 'profile_id': profileId,
+      if (name != null) 'name': name,
+      if (slug != null) 'slug': slug,
+      if (speciesId != null) 'species_id': speciesId,
+      if (payload != null) 'payload': payload,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (archivedAt != null) 'archived_at': archivedAt,
+      if (syncState != null) 'sync_state': syncState,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AilmentsTableCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? profileId,
+      Value<String>? name,
+      Value<String?>? slug,
+      Value<int?>? speciesId,
+      Value<String>? payload,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<DateTime?>? archivedAt,
+      Value<String>? syncState,
+      Value<int>? rowid}) {
+    return AilmentsTableCompanion(
+      id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
+      name: name ?? this.name,
+      slug: slug ?? this.slug,
+      speciesId: speciesId ?? this.speciesId,
+      payload: payload ?? this.payload,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      archivedAt: archivedAt ?? this.archivedAt,
+      syncState: syncState ?? this.syncState,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (slug.present) {
+      map['slug'] = Variable<String>(slug.value);
+    }
+    if (speciesId.present) {
+      map['species_id'] = Variable<int>(speciesId.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (archivedAt.present) {
+      map['archived_at'] = Variable<DateTime>(archivedAt.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AilmentsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('name: $name, ')
+          ..write('slug: $slug, ')
+          ..write('speciesId: $speciesId, ')
+          ..write('payload: $payload, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('syncState: $syncState, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $HealthRecordsTableTable extends HealthRecordsTable
+    with TableInfo<$HealthRecordsTableTable, HealthRecordsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HealthRecordsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _animalIdMeta =
+      const VerificationMeta('animalId');
+  @override
+  late final GeneratedColumn<String> animalId = GeneratedColumn<String>(
+      'animal_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _severityMeta =
+      const VerificationMeta('severity');
+  @override
+  late final GeneratedColumn<String> severity = GeneratedColumn<String>(
+      'severity', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _onsetDateMeta =
+      const VerificationMeta('onsetDate');
+  @override
+  late final GeneratedColumn<DateTime> onsetDate = GeneratedColumn<DateTime>(
+      'onset_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _payloadMeta =
+      const VerificationMeta('payload');
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+      'payload', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _syncStateMeta =
+      const VerificationMeta('syncState');
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+      'sync_state', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('synced'));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        profileId,
+        animalId,
+        status,
+        severity,
+        onsetDate,
+        createdAt,
+        updatedAt,
+        payload,
+        syncState
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'health_records_table';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<HealthRecordsTableData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('animal_id')) {
+      context.handle(_animalIdMeta,
+          animalId.isAcceptableOrUnknown(data['animal_id']!, _animalIdMeta));
+    } else if (isInserting) {
+      context.missing(_animalIdMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('severity')) {
+      context.handle(_severityMeta,
+          severity.isAcceptableOrUnknown(data['severity']!, _severityMeta));
+    } else if (isInserting) {
+      context.missing(_severityMeta);
+    }
+    if (data.containsKey('onset_date')) {
+      context.handle(_onsetDateMeta,
+          onsetDate.isAcceptableOrUnknown(data['onset_date']!, _onsetDateMeta));
+    } else if (isInserting) {
+      context.missing(_onsetDateMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(_payloadMeta,
+          payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta));
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(_syncStateMeta,
+          syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  HealthRecordsTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HealthRecordsTableData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}profile_id'])!,
+      animalId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}animal_id'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      severity: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}severity'])!,
+      onsetDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}onset_date'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      payload: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload'])!,
+      syncState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_state'])!,
+    );
+  }
+
+  @override
+  $HealthRecordsTableTable createAlias(String alias) {
+    return $HealthRecordsTableTable(attachedDatabase, alias);
+  }
+}
+
+class HealthRecordsTableData extends DataClass
+    implements Insertable<HealthRecordsTableData> {
+  final String id;
+  final String profileId;
+  final String animalId;
+  final String status;
+  final String severity;
+  final DateTime onsetDate;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String payload;
+  final String syncState;
+  const HealthRecordsTableData(
+      {required this.id,
+      required this.profileId,
+      required this.animalId,
+      required this.status,
+      required this.severity,
+      required this.onsetDate,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.payload,
+      required this.syncState});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['profile_id'] = Variable<String>(profileId);
+    map['animal_id'] = Variable<String>(animalId);
+    map['status'] = Variable<String>(status);
+    map['severity'] = Variable<String>(severity);
+    map['onset_date'] = Variable<DateTime>(onsetDate);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['payload'] = Variable<String>(payload);
+    map['sync_state'] = Variable<String>(syncState);
+    return map;
+  }
+
+  HealthRecordsTableCompanion toCompanion(bool nullToAbsent) {
+    return HealthRecordsTableCompanion(
+      id: Value(id),
+      profileId: Value(profileId),
+      animalId: Value(animalId),
+      status: Value(status),
+      severity: Value(severity),
+      onsetDate: Value(onsetDate),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      payload: Value(payload),
+      syncState: Value(syncState),
+    );
+  }
+
+  factory HealthRecordsTableData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HealthRecordsTableData(
+      id: serializer.fromJson<String>(json['id']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      animalId: serializer.fromJson<String>(json['animalId']),
+      status: serializer.fromJson<String>(json['status']),
+      severity: serializer.fromJson<String>(json['severity']),
+      onsetDate: serializer.fromJson<DateTime>(json['onsetDate']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      payload: serializer.fromJson<String>(json['payload']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'profileId': serializer.toJson<String>(profileId),
+      'animalId': serializer.toJson<String>(animalId),
+      'status': serializer.toJson<String>(status),
+      'severity': serializer.toJson<String>(severity),
+      'onsetDate': serializer.toJson<DateTime>(onsetDate),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'payload': serializer.toJson<String>(payload),
+      'syncState': serializer.toJson<String>(syncState),
+    };
+  }
+
+  HealthRecordsTableData copyWith(
+          {String? id,
+          String? profileId,
+          String? animalId,
+          String? status,
+          String? severity,
+          DateTime? onsetDate,
+          DateTime? createdAt,
+          DateTime? updatedAt,
+          String? payload,
+          String? syncState}) =>
+      HealthRecordsTableData(
+        id: id ?? this.id,
+        profileId: profileId ?? this.profileId,
+        animalId: animalId ?? this.animalId,
+        status: status ?? this.status,
+        severity: severity ?? this.severity,
+        onsetDate: onsetDate ?? this.onsetDate,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        payload: payload ?? this.payload,
+        syncState: syncState ?? this.syncState,
+      );
+  HealthRecordsTableData copyWithCompanion(HealthRecordsTableCompanion data) {
+    return HealthRecordsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      animalId: data.animalId.present ? data.animalId.value : this.animalId,
+      status: data.status.present ? data.status.value : this.status,
+      severity: data.severity.present ? data.severity.value : this.severity,
+      onsetDate: data.onsetDate.present ? data.onsetDate.value : this.onsetDate,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HealthRecordsTableData(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('animalId: $animalId, ')
+          ..write('status: $status, ')
+          ..write('severity: $severity, ')
+          ..write('onsetDate: $onsetDate, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('payload: $payload, ')
+          ..write('syncState: $syncState')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, profileId, animalId, status, severity,
+      onsetDate, createdAt, updatedAt, payload, syncState);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HealthRecordsTableData &&
+          other.id == this.id &&
+          other.profileId == this.profileId &&
+          other.animalId == this.animalId &&
+          other.status == this.status &&
+          other.severity == this.severity &&
+          other.onsetDate == this.onsetDate &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.payload == this.payload &&
+          other.syncState == this.syncState);
+}
+
+class HealthRecordsTableCompanion
+    extends UpdateCompanion<HealthRecordsTableData> {
+  final Value<String> id;
+  final Value<String> profileId;
+  final Value<String> animalId;
+  final Value<String> status;
+  final Value<String> severity;
+  final Value<DateTime> onsetDate;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> payload;
+  final Value<String> syncState;
+  final Value<int> rowid;
+  const HealthRecordsTableCompanion({
+    this.id = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.animalId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.severity = const Value.absent(),
+    this.onsetDate = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  HealthRecordsTableCompanion.insert({
+    required String id,
+    required String profileId,
+    required String animalId,
+    required String status,
+    required String severity,
+    required DateTime onsetDate,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required String payload,
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        profileId = Value(profileId),
+        animalId = Value(animalId),
+        status = Value(status),
+        severity = Value(severity),
+        onsetDate = Value(onsetDate),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt),
+        payload = Value(payload);
+  static Insertable<HealthRecordsTableData> custom({
+    Expression<String>? id,
+    Expression<String>? profileId,
+    Expression<String>? animalId,
+    Expression<String>? status,
+    Expression<String>? severity,
+    Expression<DateTime>? onsetDate,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? payload,
+    Expression<String>? syncState,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (profileId != null) 'profile_id': profileId,
+      if (animalId != null) 'animal_id': animalId,
+      if (status != null) 'status': status,
+      if (severity != null) 'severity': severity,
+      if (onsetDate != null) 'onset_date': onsetDate,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (payload != null) 'payload': payload,
+      if (syncState != null) 'sync_state': syncState,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  HealthRecordsTableCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? profileId,
+      Value<String>? animalId,
+      Value<String>? status,
+      Value<String>? severity,
+      Value<DateTime>? onsetDate,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<String>? payload,
+      Value<String>? syncState,
+      Value<int>? rowid}) {
+    return HealthRecordsTableCompanion(
+      id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
+      animalId: animalId ?? this.animalId,
+      status: status ?? this.status,
+      severity: severity ?? this.severity,
+      onsetDate: onsetDate ?? this.onsetDate,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      payload: payload ?? this.payload,
+      syncState: syncState ?? this.syncState,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (animalId.present) {
+      map['animal_id'] = Variable<String>(animalId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (severity.present) {
+      map['severity'] = Variable<String>(severity.value);
+    }
+    if (onsetDate.present) {
+      map['onset_date'] = Variable<DateTime>(onsetDate.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HealthRecordsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('animalId: $animalId, ')
+          ..write('status: $status, ')
+          ..write('severity: $severity, ')
+          ..write('onsetDate: $onsetDate, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('payload: $payload, ')
+          ..write('syncState: $syncState, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $HealthTreatmentsTableTable extends HealthTreatmentsTable
+    with TableInfo<$HealthTreatmentsTableTable, HealthTreatmentsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HealthTreatmentsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _recordIdMeta =
+      const VerificationMeta('recordId');
+  @override
+  late final GeneratedColumn<String> recordId = GeneratedColumn<String>(
+      'record_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
+  @override
+  late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
+      'task_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _startAtMeta =
+      const VerificationMeta('startAt');
+  @override
+  late final GeneratedColumn<DateTime> startAt = GeneratedColumn<DateTime>(
+      'start_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _endAtMeta = const VerificationMeta('endAt');
+  @override
+  late final GeneratedColumn<DateTime> endAt = GeneratedColumn<DateTime>(
+      'end_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _completedAtMeta =
+      const VerificationMeta('completedAt');
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+      'completed_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _payloadMeta =
+      const VerificationMeta('payload');
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+      'payload', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _syncStateMeta =
+      const VerificationMeta('syncState');
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+      'sync_state', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('synced'));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        recordId,
+        profileId,
+        taskId,
+        startAt,
+        endAt,
+        completedAt,
+        createdAt,
+        updatedAt,
+        payload,
+        syncState
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'health_treatments_table';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<HealthTreatmentsTableData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('record_id')) {
+      context.handle(_recordIdMeta,
+          recordId.isAcceptableOrUnknown(data['record_id']!, _recordIdMeta));
+    } else if (isInserting) {
+      context.missing(_recordIdMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('task_id')) {
+      context.handle(_taskIdMeta,
+          taskId.isAcceptableOrUnknown(data['task_id']!, _taskIdMeta));
+    }
+    if (data.containsKey('start_at')) {
+      context.handle(_startAtMeta,
+          startAt.isAcceptableOrUnknown(data['start_at']!, _startAtMeta));
+    } else if (isInserting) {
+      context.missing(_startAtMeta);
+    }
+    if (data.containsKey('end_at')) {
+      context.handle(
+          _endAtMeta, endAt.isAcceptableOrUnknown(data['end_at']!, _endAtMeta));
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+          _completedAtMeta,
+          completedAt.isAcceptableOrUnknown(
+              data['completed_at']!, _completedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(_payloadMeta,
+          payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta));
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(_syncStateMeta,
+          syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  HealthTreatmentsTableData map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HealthTreatmentsTableData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      recordId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}record_id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}profile_id'])!,
+      taskId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}task_id']),
+      startAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}start_at'])!,
+      endAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}end_at']),
+      completedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}completed_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      payload: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload'])!,
+      syncState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_state'])!,
+    );
+  }
+
+  @override
+  $HealthTreatmentsTableTable createAlias(String alias) {
+    return $HealthTreatmentsTableTable(attachedDatabase, alias);
+  }
+}
+
+class HealthTreatmentsTableData extends DataClass
+    implements Insertable<HealthTreatmentsTableData> {
+  final String id;
+  final String recordId;
+  final String profileId;
+  final String? taskId;
+  final DateTime startAt;
+  final DateTime? endAt;
+  final DateTime? completedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String payload;
+  final String syncState;
+  const HealthTreatmentsTableData(
+      {required this.id,
+      required this.recordId,
+      required this.profileId,
+      this.taskId,
+      required this.startAt,
+      this.endAt,
+      this.completedAt,
+      required this.createdAt,
+      required this.updatedAt,
+      required this.payload,
+      required this.syncState});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['record_id'] = Variable<String>(recordId);
+    map['profile_id'] = Variable<String>(profileId);
+    if (!nullToAbsent || taskId != null) {
+      map['task_id'] = Variable<String>(taskId);
+    }
+    map['start_at'] = Variable<DateTime>(startAt);
+    if (!nullToAbsent || endAt != null) {
+      map['end_at'] = Variable<DateTime>(endAt);
+    }
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['payload'] = Variable<String>(payload);
+    map['sync_state'] = Variable<String>(syncState);
+    return map;
+  }
+
+  HealthTreatmentsTableCompanion toCompanion(bool nullToAbsent) {
+    return HealthTreatmentsTableCompanion(
+      id: Value(id),
+      recordId: Value(recordId),
+      profileId: Value(profileId),
+      taskId:
+          taskId == null && nullToAbsent ? const Value.absent() : Value(taskId),
+      startAt: Value(startAt),
+      endAt:
+          endAt == null && nullToAbsent ? const Value.absent() : Value(endAt),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      payload: Value(payload),
+      syncState: Value(syncState),
+    );
+  }
+
+  factory HealthTreatmentsTableData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HealthTreatmentsTableData(
+      id: serializer.fromJson<String>(json['id']),
+      recordId: serializer.fromJson<String>(json['recordId']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      taskId: serializer.fromJson<String?>(json['taskId']),
+      startAt: serializer.fromJson<DateTime>(json['startAt']),
+      endAt: serializer.fromJson<DateTime?>(json['endAt']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      payload: serializer.fromJson<String>(json['payload']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'recordId': serializer.toJson<String>(recordId),
+      'profileId': serializer.toJson<String>(profileId),
+      'taskId': serializer.toJson<String?>(taskId),
+      'startAt': serializer.toJson<DateTime>(startAt),
+      'endAt': serializer.toJson<DateTime?>(endAt),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'payload': serializer.toJson<String>(payload),
+      'syncState': serializer.toJson<String>(syncState),
+    };
+  }
+
+  HealthTreatmentsTableData copyWith(
+          {String? id,
+          String? recordId,
+          String? profileId,
+          Value<String?> taskId = const Value.absent(),
+          DateTime? startAt,
+          Value<DateTime?> endAt = const Value.absent(),
+          Value<DateTime?> completedAt = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt,
+          String? payload,
+          String? syncState}) =>
+      HealthTreatmentsTableData(
+        id: id ?? this.id,
+        recordId: recordId ?? this.recordId,
+        profileId: profileId ?? this.profileId,
+        taskId: taskId.present ? taskId.value : this.taskId,
+        startAt: startAt ?? this.startAt,
+        endAt: endAt.present ? endAt.value : this.endAt,
+        completedAt: completedAt.present ? completedAt.value : this.completedAt,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        payload: payload ?? this.payload,
+        syncState: syncState ?? this.syncState,
+      );
+  HealthTreatmentsTableData copyWithCompanion(
+      HealthTreatmentsTableCompanion data) {
+    return HealthTreatmentsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      recordId: data.recordId.present ? data.recordId.value : this.recordId,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      taskId: data.taskId.present ? data.taskId.value : this.taskId,
+      startAt: data.startAt.present ? data.startAt.value : this.startAt,
+      endAt: data.endAt.present ? data.endAt.value : this.endAt,
+      completedAt:
+          data.completedAt.present ? data.completedAt.value : this.completedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HealthTreatmentsTableData(')
+          ..write('id: $id, ')
+          ..write('recordId: $recordId, ')
+          ..write('profileId: $profileId, ')
+          ..write('taskId: $taskId, ')
+          ..write('startAt: $startAt, ')
+          ..write('endAt: $endAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('payload: $payload, ')
+          ..write('syncState: $syncState')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, recordId, profileId, taskId, startAt,
+      endAt, completedAt, createdAt, updatedAt, payload, syncState);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HealthTreatmentsTableData &&
+          other.id == this.id &&
+          other.recordId == this.recordId &&
+          other.profileId == this.profileId &&
+          other.taskId == this.taskId &&
+          other.startAt == this.startAt &&
+          other.endAt == this.endAt &&
+          other.completedAt == this.completedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.payload == this.payload &&
+          other.syncState == this.syncState);
+}
+
+class HealthTreatmentsTableCompanion
+    extends UpdateCompanion<HealthTreatmentsTableData> {
+  final Value<String> id;
+  final Value<String> recordId;
+  final Value<String> profileId;
+  final Value<String?> taskId;
+  final Value<DateTime> startAt;
+  final Value<DateTime?> endAt;
+  final Value<DateTime?> completedAt;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> payload;
+  final Value<String> syncState;
+  final Value<int> rowid;
+  const HealthTreatmentsTableCompanion({
+    this.id = const Value.absent(),
+    this.recordId = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.startAt = const Value.absent(),
+    this.endAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  HealthTreatmentsTableCompanion.insert({
+    required String id,
+    required String recordId,
+    required String profileId,
+    this.taskId = const Value.absent(),
+    required DateTime startAt,
+    this.endAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required String payload,
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        recordId = Value(recordId),
+        profileId = Value(profileId),
+        startAt = Value(startAt),
+        createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt),
+        payload = Value(payload);
+  static Insertable<HealthTreatmentsTableData> custom({
+    Expression<String>? id,
+    Expression<String>? recordId,
+    Expression<String>? profileId,
+    Expression<String>? taskId,
+    Expression<DateTime>? startAt,
+    Expression<DateTime>? endAt,
+    Expression<DateTime>? completedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? payload,
+    Expression<String>? syncState,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (recordId != null) 'record_id': recordId,
+      if (profileId != null) 'profile_id': profileId,
+      if (taskId != null) 'task_id': taskId,
+      if (startAt != null) 'start_at': startAt,
+      if (endAt != null) 'end_at': endAt,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (payload != null) 'payload': payload,
+      if (syncState != null) 'sync_state': syncState,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  HealthTreatmentsTableCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? recordId,
+      Value<String>? profileId,
+      Value<String?>? taskId,
+      Value<DateTime>? startAt,
+      Value<DateTime?>? endAt,
+      Value<DateTime?>? completedAt,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<String>? payload,
+      Value<String>? syncState,
+      Value<int>? rowid}) {
+    return HealthTreatmentsTableCompanion(
+      id: id ?? this.id,
+      recordId: recordId ?? this.recordId,
+      profileId: profileId ?? this.profileId,
+      taskId: taskId ?? this.taskId,
+      startAt: startAt ?? this.startAt,
+      endAt: endAt ?? this.endAt,
+      completedAt: completedAt ?? this.completedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      payload: payload ?? this.payload,
+      syncState: syncState ?? this.syncState,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (recordId.present) {
+      map['record_id'] = Variable<String>(recordId.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (taskId.present) {
+      map['task_id'] = Variable<String>(taskId.value);
+    }
+    if (startAt.present) {
+      map['start_at'] = Variable<DateTime>(startAt.value);
+    }
+    if (endAt.present) {
+      map['end_at'] = Variable<DateTime>(endAt.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HealthTreatmentsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('recordId: $recordId, ')
+          ..write('profileId: $profileId, ')
+          ..write('taskId: $taskId, ')
+          ..write('startAt: $startAt, ')
+          ..write('endAt: $endAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('payload: $payload, ')
+          ..write('syncState: $syncState, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $FoodTypesTableTable extends FoodTypesTable
     with TableInfo<$FoodTypesTableTable, FoodTypesTableData> {
   @override
@@ -5965,6 +7527,11 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
   late final $TaskTemplateAssignmentEventsTableTable
       taskTemplateAssignmentEventsTable =
       $TaskTemplateAssignmentEventsTableTable(this);
+  late final $AilmentsTableTable ailmentsTable = $AilmentsTableTable(this);
+  late final $HealthRecordsTableTable healthRecordsTable =
+      $HealthRecordsTableTable(this);
+  late final $HealthTreatmentsTableTable healthTreatmentsTable =
+      $HealthTreatmentsTableTable(this);
   late final $FoodTypesTableTable foodTypesTable = $FoodTypesTableTable(this);
   late final $FoodStockTableTable foodStockTable = $FoodStockTableTable(this);
   late final $DashboardPreferencesTableTable dashboardPreferencesTable =
@@ -5991,6 +7558,9 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
         taskTemplateStepsTable,
         taskTemplateAssignmentsTable,
         taskTemplateAssignmentEventsTable,
+        ailmentsTable,
+        healthRecordsTable,
+        healthTreatmentsTable,
         foodTypesTable,
         foodStockTable,
         dashboardPreferencesTable,
@@ -7045,6 +8615,649 @@ class $$TaskTemplateAssignmentEventsTableTableOrderingComposer
 
   ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
       column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+typedef $$AilmentsTableTableCreateCompanionBuilder = AilmentsTableCompanion
+    Function({
+  required String id,
+  required String profileId,
+  required String name,
+  Value<String?> slug,
+  Value<int?> speciesId,
+  required String payload,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  Value<DateTime?> archivedAt,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+typedef $$AilmentsTableTableUpdateCompanionBuilder = AilmentsTableCompanion
+    Function({
+  Value<String> id,
+  Value<String> profileId,
+  Value<String> name,
+  Value<String?> slug,
+  Value<int?> speciesId,
+  Value<String> payload,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<DateTime?> archivedAt,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+
+class $$AilmentsTableTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $AilmentsTableTable,
+    AilmentsTableData,
+    $$AilmentsTableTableFilterComposer,
+    $$AilmentsTableTableOrderingComposer,
+    $$AilmentsTableTableCreateCompanionBuilder,
+    $$AilmentsTableTableUpdateCompanionBuilder> {
+  $$AilmentsTableTableTableManager(
+      _$LocalDatabase db, $AilmentsTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$AilmentsTableTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$AilmentsTableTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> profileId = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> slug = const Value.absent(),
+            Value<int?> speciesId = const Value.absent(),
+            Value<String> payload = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<DateTime?> archivedAt = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AilmentsTableCompanion(
+            id: id,
+            profileId: profileId,
+            name: name,
+            slug: slug,
+            speciesId: speciesId,
+            payload: payload,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            archivedAt: archivedAt,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String profileId,
+            required String name,
+            Value<String?> slug = const Value.absent(),
+            Value<int?> speciesId = const Value.absent(),
+            required String payload,
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            Value<DateTime?> archivedAt = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AilmentsTableCompanion.insert(
+            id: id,
+            profileId: profileId,
+            name: name,
+            slug: slug,
+            speciesId: speciesId,
+            payload: payload,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            archivedAt: archivedAt,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$AilmentsTableTableFilterComposer
+    extends FilterComposer<_$LocalDatabase, $AilmentsTableTable> {
+  $$AilmentsTableTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get name => $state.composableBuilder(
+      column: $state.table.name,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get slug => $state.composableBuilder(
+      column: $state.table.slug,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get speciesId => $state.composableBuilder(
+      column: $state.table.speciesId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get archivedAt => $state.composableBuilder(
+      column: $state.table.archivedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$AilmentsTableTableOrderingComposer
+    extends OrderingComposer<_$LocalDatabase, $AilmentsTableTable> {
+  $$AilmentsTableTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get name => $state.composableBuilder(
+      column: $state.table.name,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get slug => $state.composableBuilder(
+      column: $state.table.slug,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get speciesId => $state.composableBuilder(
+      column: $state.table.speciesId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get archivedAt => $state.composableBuilder(
+      column: $state.table.archivedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+typedef $$HealthRecordsTableTableCreateCompanionBuilder
+    = HealthRecordsTableCompanion Function({
+  required String id,
+  required String profileId,
+  required String animalId,
+  required String status,
+  required String severity,
+  required DateTime onsetDate,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  required String payload,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+typedef $$HealthRecordsTableTableUpdateCompanionBuilder
+    = HealthRecordsTableCompanion Function({
+  Value<String> id,
+  Value<String> profileId,
+  Value<String> animalId,
+  Value<String> status,
+  Value<String> severity,
+  Value<DateTime> onsetDate,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> payload,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+
+class $$HealthRecordsTableTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $HealthRecordsTableTable,
+    HealthRecordsTableData,
+    $$HealthRecordsTableTableFilterComposer,
+    $$HealthRecordsTableTableOrderingComposer,
+    $$HealthRecordsTableTableCreateCompanionBuilder,
+    $$HealthRecordsTableTableUpdateCompanionBuilder> {
+  $$HealthRecordsTableTableTableManager(
+      _$LocalDatabase db, $HealthRecordsTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$HealthRecordsTableTableFilterComposer(ComposerState(db, table)),
+          orderingComposer: $$HealthRecordsTableTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> profileId = const Value.absent(),
+            Value<String> animalId = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String> severity = const Value.absent(),
+            Value<DateTime> onsetDate = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<String> payload = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HealthRecordsTableCompanion(
+            id: id,
+            profileId: profileId,
+            animalId: animalId,
+            status: status,
+            severity: severity,
+            onsetDate: onsetDate,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            payload: payload,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String profileId,
+            required String animalId,
+            required String status,
+            required String severity,
+            required DateTime onsetDate,
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            required String payload,
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HealthRecordsTableCompanion.insert(
+            id: id,
+            profileId: profileId,
+            animalId: animalId,
+            status: status,
+            severity: severity,
+            onsetDate: onsetDate,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            payload: payload,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$HealthRecordsTableTableFilterComposer
+    extends FilterComposer<_$LocalDatabase, $HealthRecordsTableTable> {
+  $$HealthRecordsTableTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get animalId => $state.composableBuilder(
+      column: $state.table.animalId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get severity => $state.composableBuilder(
+      column: $state.table.severity,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get onsetDate => $state.composableBuilder(
+      column: $state.table.onsetDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$HealthRecordsTableTableOrderingComposer
+    extends OrderingComposer<_$LocalDatabase, $HealthRecordsTableTable> {
+  $$HealthRecordsTableTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get animalId => $state.composableBuilder(
+      column: $state.table.animalId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get severity => $state.composableBuilder(
+      column: $state.table.severity,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get onsetDate => $state.composableBuilder(
+      column: $state.table.onsetDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+typedef $$HealthTreatmentsTableTableCreateCompanionBuilder
+    = HealthTreatmentsTableCompanion Function({
+  required String id,
+  required String recordId,
+  required String profileId,
+  Value<String?> taskId,
+  required DateTime startAt,
+  Value<DateTime?> endAt,
+  Value<DateTime?> completedAt,
+  required DateTime createdAt,
+  required DateTime updatedAt,
+  required String payload,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+typedef $$HealthTreatmentsTableTableUpdateCompanionBuilder
+    = HealthTreatmentsTableCompanion Function({
+  Value<String> id,
+  Value<String> recordId,
+  Value<String> profileId,
+  Value<String?> taskId,
+  Value<DateTime> startAt,
+  Value<DateTime?> endAt,
+  Value<DateTime?> completedAt,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<String> payload,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+
+class $$HealthTreatmentsTableTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $HealthTreatmentsTableTable,
+    HealthTreatmentsTableData,
+    $$HealthTreatmentsTableTableFilterComposer,
+    $$HealthTreatmentsTableTableOrderingComposer,
+    $$HealthTreatmentsTableTableCreateCompanionBuilder,
+    $$HealthTreatmentsTableTableUpdateCompanionBuilder> {
+  $$HealthTreatmentsTableTableTableManager(
+      _$LocalDatabase db, $HealthTreatmentsTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$HealthTreatmentsTableTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$HealthTreatmentsTableTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> recordId = const Value.absent(),
+            Value<String> profileId = const Value.absent(),
+            Value<String?> taskId = const Value.absent(),
+            Value<DateTime> startAt = const Value.absent(),
+            Value<DateTime?> endAt = const Value.absent(),
+            Value<DateTime?> completedAt = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<String> payload = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HealthTreatmentsTableCompanion(
+            id: id,
+            recordId: recordId,
+            profileId: profileId,
+            taskId: taskId,
+            startAt: startAt,
+            endAt: endAt,
+            completedAt: completedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            payload: payload,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String recordId,
+            required String profileId,
+            Value<String?> taskId = const Value.absent(),
+            required DateTime startAt,
+            Value<DateTime?> endAt = const Value.absent(),
+            Value<DateTime?> completedAt = const Value.absent(),
+            required DateTime createdAt,
+            required DateTime updatedAt,
+            required String payload,
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              HealthTreatmentsTableCompanion.insert(
+            id: id,
+            recordId: recordId,
+            profileId: profileId,
+            taskId: taskId,
+            startAt: startAt,
+            endAt: endAt,
+            completedAt: completedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            payload: payload,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$HealthTreatmentsTableTableFilterComposer
+    extends FilterComposer<_$LocalDatabase, $HealthTreatmentsTableTable> {
+  $$HealthTreatmentsTableTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get recordId => $state.composableBuilder(
+      column: $state.table.recordId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get taskId => $state.composableBuilder(
+      column: $state.table.taskId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get startAt => $state.composableBuilder(
+      column: $state.table.startAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get endAt => $state.composableBuilder(
+      column: $state.table.endAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get completedAt => $state.composableBuilder(
+      column: $state.table.completedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$HealthTreatmentsTableTableOrderingComposer
+    extends OrderingComposer<_$LocalDatabase, $HealthTreatmentsTableTable> {
+  $$HealthTreatmentsTableTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get recordId => $state.composableBuilder(
+      column: $state.table.recordId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get taskId => $state.composableBuilder(
+      column: $state.table.taskId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get startAt => $state.composableBuilder(
+      column: $state.table.startAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get endAt => $state.composableBuilder(
+      column: $state.table.endAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get completedAt => $state.composableBuilder(
+      column: $state.table.completedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -8463,6 +10676,12 @@ class $LocalDatabaseManager {
       get taskTemplateAssignmentEventsTable =>
           $$TaskTemplateAssignmentEventsTableTableTableManager(
               _db, _db.taskTemplateAssignmentEventsTable);
+  $$AilmentsTableTableTableManager get ailmentsTable =>
+      $$AilmentsTableTableTableManager(_db, _db.ailmentsTable);
+  $$HealthRecordsTableTableTableManager get healthRecordsTable =>
+      $$HealthRecordsTableTableTableManager(_db, _db.healthRecordsTable);
+  $$HealthTreatmentsTableTableTableManager get healthTreatmentsTable =>
+      $$HealthTreatmentsTableTableTableManager(_db, _db.healthTreatmentsTable);
   $$FoodTypesTableTableTableManager get foodTypesTable =>
       $$FoodTypesTableTableTableManager(_db, _db.foodTypesTable);
   $$FoodStockTableTableTableManager get foodStockTable =>

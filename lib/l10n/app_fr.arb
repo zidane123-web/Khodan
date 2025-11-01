@@ -84,6 +84,13 @@
     }
   },
   "commonClear": "Effacer",
+  "commonConfirm": "Confirmer",
+  "commonCancel": "Annuler",
+  "commonDelete": "Supprimer",
+  "commonClose": "Fermer",
+  "commonEdit": "Modifier",
+  "commonSave": "Enregistrer",
+  "commonUpdate": "Mettre a jour",
   "logsTitle": "Journaux et diagnostics",
   "logsRefresh": "Actualiser le diagnostic",
   "logsOfflineToggle": "Journalisation détaillée",
@@ -200,5 +207,111 @@
   },
   "planningBulkComplete": "Terminer la selection",
   "planningBulkExport": "Exporter la selection",
-  "planningCsvExported": "CSV genere"
+  "planningCsvExported": "CSV genere",
+  "navHealth": "Sante",
+  "navHealthDescription": "Suivre les maladies, traitements et rappels.",
+  "healthTitle": "Sante",
+  "healthTabLibrary": "Bibliotheque",
+  "healthTabRecords": "Dossiers",
+  "healthAddRecord": "Ajouter un dossier",
+  "healthEditRecord": "Modifier le dossier",
+  "healthSearchPlaceholder": "Rechercher une maladie…",
+  "healthAilmentsEmpty": "La bibliotheque est vide.",
+  "healthAilmentNoDetails": "Aucun detail disponible.",
+  "healthSymptomsTitle": "Symptomes",
+  "healthCausesTitle": "Causes frequentes",
+  "healthTreatmentsTitle": "Traitements recommandes",
+  "healthTreatmentSummary": "{dosage} • {days, plural, =0 {Duree flexible} =1 {1 jour} other {{days} jours}}",
+  "@healthTreatmentSummary": {
+    "placeholders": {
+      "dosage": {},
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "healthPreventionTitle": "Prevention",
+  "healthRecordsEmpty": "Aucun dossier de sante enregistre.",
+  "healthDiagnosisFromLibrary": "Depuis la bibliotheque des maladies",
+  "healthOpenDetails": "Voir les details",
+  "healthDeleteRecordConfirm": "Supprimer ce dossier de sante ?",
+  "healthSelectAnimal": "Animal",
+  "healthValidationAnimal": "Selectionner un animal.",
+  "healthSelectAilment": "Maladie",
+  "healthAilmentCustom": "Diagnostic personnalise",
+  "healthDiagnosisLabel": "Diagnostic",
+  "healthValidationDiagnosis": "Ajouter un diagnostic ou choisir une maladie.",
+  "healthSeverityLabel": "{severity, select, low {Faible} moderate {Moderee} high {Elevee} critical {Critique} other {Inconnu}}",
+  "@healthSeverityLabel": {
+    "placeholders": {
+      "severity": {}
+    }
+  },
+  "healthStatusLabel": "{status, select, draft {Brouillon} active {Actif} resolved {Resolue} archived {Archivee} other {Inconnu}}",
+  "@healthStatusLabel": {
+    "placeholders": {
+      "status": {}
+    }
+  },
+  "healthOnsetDateLabel": "Date d'apparition",
+  "healthNextCheckToggle": "Programmer un rappel de suivi",
+  "healthNextCheckLabel": "Prochain controle : {date}",
+  "@healthNextCheckLabel": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "healthNotesLabel": "Notes",
+  "healthRecordDetails": "Dossier de sante",
+  "healthRecordFor": "Dossier de sante – {animal}",
+  "@healthRecordFor": {
+    "placeholders": {
+      "animal": {}
+    }
+  },
+  "healthRecordNotFound": "Ce dossier n'est plus disponible.",
+  "healthTreatmentsSection": "Traitements",
+  "healthNoTreatmentsYet": "Aucun traitement enregistre.",
+  "healthMarkTreatmentDone": "Marquer comme termine",
+  "healthAddTreatment": "Ajouter un traitement",
+  "healthEditTreatment": "Modifier le traitement",
+  "healthTreatmentTitle": "Titre du traitement",
+  "healthValidationTreatmentTitle": "Indiquer un titre de traitement.",
+  "healthTreatmentType": "Type de traitement",
+  "healthTreatmentTypeLabel": "{type, select, medication {Medicament} procedure {Procedure} care {Soin} diet_adjustment {Ajustement alimentaire} other {Traitement}}",
+  "@healthTreatmentTypeLabel": {
+    "placeholders": {
+      "type": {}
+    }
+  },
+  "healthTreatmentDosage": "Dosage",
+  "healthTreatmentFrequency": "Frequence",
+  "healthTreatmentStart": "Debut",
+  "healthTreatmentEndOptional": "Fin (optionnel)",
+  "healthTreatmentEndValue": "Fin : {value}",
+  "@healthTreatmentEndValue": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "healthTreatmentMarkCompleted": "Termine",
+  "healthRemindersTitle": "Rappels",
+  "healthReminderOneDayBefore": "1 jour avant",
+  "healthReminderOneHourBefore": "1 heure avant",
+  "healthReminderAtStart": "A l'heure de debut",
+  "healthReminderOneHourAfter": "1 heure apres",
+  "healthReminderOneDayAfter": "1 jour apres",
+  "healthReminderMinutes": "Rappel {minutes} min",
+  "@healthReminderMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "healthValidationDates": "La date de fin doit suivre la date de debut.",
+  "healthDeleteTreatmentConfirm": "Supprimer ce traitement ?"
 }
+
+
+

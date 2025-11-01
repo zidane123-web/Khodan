@@ -210,6 +210,27 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonClear => 'Effacer';
 
   @override
+  String get commonConfirm => 'Confirmer';
+
+  @override
+  String get commonCancel => 'Annuler';
+
+  @override
+  String get commonDelete => 'Supprimer';
+
+  @override
+  String get commonClose => 'Fermer';
+
+  @override
+  String get commonEdit => 'Modifier';
+
+  @override
+  String get commonSave => 'Enregistrer';
+
+  @override
+  String get commonUpdate => 'Mettre a jour';
+
+  @override
   String get logsTitle => 'Journaux et diagnostics';
 
   @override
@@ -461,4 +482,227 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get planningCsvExported => 'CSV genere';
+
+  @override
+  String get navHealth => 'Sante';
+
+  @override
+  String get navHealthDescription =>
+      'Suivre les maladies, traitements et rappels.';
+
+  @override
+  String get healthTitle => 'Sante';
+
+  @override
+  String get healthTabLibrary => 'Bibliotheque';
+
+  @override
+  String get healthTabRecords => 'Dossiers';
+
+  @override
+  String get healthAddRecord => 'Ajouter un dossier';
+
+  @override
+  String get healthEditRecord => 'Modifier le dossier';
+
+  @override
+  String get healthSearchPlaceholder => 'Rechercher une maladie…';
+
+  @override
+  String get healthAilmentsEmpty => 'La bibliotheque est vide.';
+
+  @override
+  String get healthAilmentNoDetails => 'Aucun detail disponible.';
+
+  @override
+  String get healthSymptomsTitle => 'Symptomes';
+
+  @override
+  String get healthCausesTitle => 'Causes frequentes';
+
+  @override
+  String get healthTreatmentsTitle => 'Traitements recommandes';
+
+  @override
+  String healthTreatmentSummary(Object dosage, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days jours',
+      one: '1 jour',
+      zero: 'Duree flexible',
+    );
+    return '$dosage • $_temp0';
+  }
+
+  @override
+  String get healthPreventionTitle => 'Prevention';
+
+  @override
+  String get healthRecordsEmpty => 'Aucun dossier de sante enregistre.';
+
+  @override
+  String get healthDiagnosisFromLibrary =>
+      'Depuis la bibliotheque des maladies';
+
+  @override
+  String get healthOpenDetails => 'Voir les details';
+
+  @override
+  String get healthDeleteRecordConfirm => 'Supprimer ce dossier de sante ?';
+
+  @override
+  String get healthSelectAnimal => 'Animal';
+
+  @override
+  String get healthValidationAnimal => 'Selectionner un animal.';
+
+  @override
+  String get healthSelectAilment => 'Maladie';
+
+  @override
+  String get healthAilmentCustom => 'Diagnostic personnalise';
+
+  @override
+  String get healthDiagnosisLabel => 'Diagnostic';
+
+  @override
+  String get healthValidationDiagnosis =>
+      'Ajouter un diagnostic ou choisir une maladie.';
+
+  @override
+  String healthSeverityLabel(String severity) {
+    String _temp0 = intl.Intl.selectLogic(severity, {
+      'low': 'Faible',
+      'moderate': 'Moderee',
+      'high': 'Elevee',
+      'critical': 'Critique',
+      'other': 'Inconnu',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String healthStatusLabel(String status) {
+    String _temp0 = intl.Intl.selectLogic(status, {
+      'draft': 'Brouillon',
+      'active': 'Actif',
+      'resolved': 'Resolue',
+      'archived': 'Archivee',
+      'other': 'Inconnu',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get healthOnsetDateLabel => 'Date d\'apparition';
+
+  @override
+  String get healthNextCheckToggle => 'Programmer un rappel de suivi';
+
+  @override
+  String healthNextCheckLabel(Object date) {
+    return 'Prochain controle : $date';
+  }
+
+  @override
+  String get healthNotesLabel => 'Notes';
+
+  @override
+  String get healthRecordDetails => 'Dossier de sante';
+
+  @override
+  String healthRecordFor(Object animal) {
+    return 'Dossier de sante – $animal';
+  }
+
+  @override
+  String get healthRecordNotFound => 'Ce dossier n\'est plus disponible.';
+
+  @override
+  String get healthTreatmentsSection => 'Traitements';
+
+  @override
+  String get healthNoTreatmentsYet => 'Aucun traitement enregistre.';
+
+  @override
+  String get healthMarkTreatmentDone => 'Marquer comme termine';
+
+  @override
+  String get healthAddTreatment => 'Ajouter un traitement';
+
+  @override
+  String get healthEditTreatment => 'Modifier le traitement';
+
+  @override
+  String get healthTreatmentTitle => 'Titre du traitement';
+
+  @override
+  String get healthValidationTreatmentTitle =>
+      'Indiquer un titre de traitement.';
+
+  @override
+  String get healthTreatmentType => 'Type de traitement';
+
+  @override
+  String healthTreatmentTypeLabel(String type) {
+    String _temp0 = intl.Intl.selectLogic(type, {
+      'medication': 'Medicament',
+      'procedure': 'Procedure',
+      'care': 'Soin',
+      'diet_adjustment': 'Ajustement alimentaire',
+      'other': 'Traitement',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get healthTreatmentDosage => 'Dosage';
+
+  @override
+  String get healthTreatmentFrequency => 'Frequence';
+
+  @override
+  String get healthTreatmentStart => 'Debut';
+
+  @override
+  String get healthTreatmentEndOptional => 'Fin (optionnel)';
+
+  @override
+  String healthTreatmentEndValue(Object value) {
+    return 'Fin : $value';
+  }
+
+  @override
+  String get healthTreatmentMarkCompleted => 'Termine';
+
+  @override
+  String get healthRemindersTitle => 'Rappels';
+
+  @override
+  String get healthReminderOneDayBefore => '1 jour avant';
+
+  @override
+  String get healthReminderOneHourBefore => '1 heure avant';
+
+  @override
+  String get healthReminderAtStart => 'A l\'heure de debut';
+
+  @override
+  String get healthReminderOneHourAfter => '1 heure apres';
+
+  @override
+  String get healthReminderOneDayAfter => '1 jour apres';
+
+  @override
+  String healthReminderMinutes(int minutes) {
+    return 'Rappel $minutes min';
+  }
+
+  @override
+  String get healthValidationDates =>
+      'La date de fin doit suivre la date de debut.';
+
+  @override
+  String get healthDeleteTreatmentConfirm => 'Supprimer ce traitement ?';
 }

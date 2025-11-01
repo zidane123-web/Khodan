@@ -26,6 +26,7 @@ import '../../features/settings/presentation/screens/settings_personalization_sc
 import '../../features/settings/presentation/screens/settings_profile_screen.dart';
 import '../../features/settings/presentation/screens/settings_referentials_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/health/presentation/screens/health_screen.dart';
 import '../../data/models/animal.dart';
 import '../../l10n/app_localizations.dart';
 import '../core/widgets/khodan_placeholder_screen.dart';
@@ -118,6 +119,12 @@ class KhodanRouter {
                         label: l10n.navNotifications,
                         description: l10n.navNotificationsDescription,
                         icon: Icons.notifications_none_outlined,
+                      ),
+                      KhodanShellExtraDestination(
+                        route: const HealthRoute().location,
+                        label: l10n.navHealth,
+                        description: l10n.navHealthDescription,
+                        icon: Icons.health_and_safety_outlined,
                       ),
                       KhodanShellExtraDestination(
                         route: const SettingsKnowledgeBaseRoute().location,
@@ -285,6 +292,11 @@ class KhodanRouter {
             ],
           ),
           GoRoute(
+            path: const HealthRoute().path,
+            builder: (BuildContext context, GoRouterState state) =>
+                const HealthScreen(),
+          ),
+          GoRoute(
             path: const NotificationsRoute().path,
             builder: (BuildContext context, GoRouterState state) {
               final AppLocalizations l10n = AppLocalizations.of(context);
@@ -422,6 +434,10 @@ class PlanningTemplatesRoute extends KhodanRoute {
   String get subPath => 'templates';
 
   String get name => 'planning-templates';
+}
+
+class HealthRoute extends KhodanRoute {
+  const HealthRoute() : super('/health');
 }
 
 class NotificationsRoute extends KhodanRoute {

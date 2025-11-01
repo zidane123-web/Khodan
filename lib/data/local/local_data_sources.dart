@@ -5,11 +5,14 @@ import 'package:drift/drift.dart';
 import '../models/animal.dart';
 import '../models/animal_event.dart';
 import '../models/animal_media.dart';
+import '../models/ailment.dart';
 import '../models/breeding_record.dart';
 import '../models/event_template.dart';
 import '../models/event.dart';
 import '../models/food_stock.dart';
 import '../models/food_type.dart';
+import '../models/health_record.dart';
+import '../models/health_treatment.dart';
 import '../models/task_template.dart';
 import '../models/dashboard_preferences.dart';
 import '../models/profile.dart';
@@ -25,10 +28,7 @@ class LocalAnimalDataSource {
 
   final LocalDatabase _db;
 
-  Future<void> replaceAnimals(
-    List<Animal> animals, {
-    String? profileId,
-  }) async {
+  Future<void> replaceAnimals(List<Animal> animals, {String? profileId}) async {
     final String? targetProfile =
         profileId ?? (animals.isNotEmpty ? animals.first.profileId : null);
     if (targetProfile == null) {
@@ -36,15 +36,16 @@ class LocalAnimalDataSource {
     }
     final DateTime now = DateTime.now();
     await _db.transaction(() async {
-      final List<String> ids = animals.map((Animal animal) => animal.id).toList();
-      await (_db.delete(_db.animalsTable)
-            ..where(
-              (AnimalsTable tbl) =>
-                  tbl.profileId.equals(targetProfile) &
-                  (ids.isEmpty
-                      ? const Constant<bool>(true)
-                      : tbl.id.isNotIn(ids)),
-            ))
+      final List<String> ids = animals
+          .map((Animal animal) => animal.id)
+          .toList();
+      await (_db.delete(_db.animalsTable)..where(
+            (AnimalsTable tbl) =>
+                tbl.profileId.equals(targetProfile) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.id.isNotIn(ids)),
+          ))
           .go();
 
       if (animals.isEmpty) {
@@ -73,7 +74,9 @@ class LocalAnimalDataSource {
     Animal animal, {
     String syncState = kSyncStateSynced,
   }) async {
-    await _db.into(_db.animalsTable).insertOnConflictUpdate(
+    await _db
+        .into(_db.animalsTable)
+        .insertOnConflictUpdate(
           AnimalsTableCompanion.insert(
             id: animal.id,
             profileId: animal.profileId,
@@ -86,15 +89,12 @@ class LocalAnimalDataSource {
   }
 
   Future<void> deleteAnimal(String id) async {
-    await (_db.delete(_db.animalsTable)
-          ..where((AnimalsTable tbl) => tbl.id.equals(id)))
-        .go();
+    await (_db.delete(
+      _db.animalsTable,
+    )..where((AnimalsTable tbl) => tbl.id.equals(id))).go();
   }
 
-  Future<List<Animal>> fetchAnimals({
-    String? profileId,
-    int? speciesId,
-  }) async {
+  Future<List<Animal>> fetchAnimals({String? profileId, int? speciesId}) async {
     final query = _db.select(_db.animalsTable);
     if (profileId != null) {
       query.where((AnimalsTable tbl) => tbl.profileId.equals(profileId));
@@ -109,9 +109,9 @@ class LocalAnimalDataSource {
   }
 
   Future<Animal?> fetchAnimalById(String id) async {
-    final AnimalsTableData? row = await (_db.select(_db.animalsTable)
-          ..where((AnimalsTable tbl) => tbl.id.equals(id)))
-        .getSingleOrNull();
+    final AnimalsTableData? row = await (_db.select(
+      _db.animalsTable,
+    )..where((AnimalsTable tbl) => tbl.id.equals(id))).getSingleOrNull();
     if (row == null) {
       return null;
     }
@@ -136,17 +136,17 @@ class LocalAnimalMediaDataSource {
     required String animalId,
   }) async {
     await _db.transaction(() async {
-      final List<String> ids =
-          media.map((AnimalMedia asset) => asset.id).toList();
-      await (_db.delete(_db.animalMediaTable)
-            ..where(
-              (AnimalMediaTable tbl) =>
-                  tbl.profileId.equals(profileId) &
-                  tbl.animalId.equals(animalId) &
-                  (ids.isEmpty
-                      ? const Constant<bool>(true)
-                      : tbl.id.isNotIn(ids)),
-            ))
+      final List<String> ids = media
+          .map((AnimalMedia asset) => asset.id)
+          .toList();
+      await (_db.delete(_db.animalMediaTable)..where(
+            (AnimalMediaTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                tbl.animalId.equals(animalId) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.id.isNotIn(ids)),
+          ))
           .go();
       if (media.isEmpty) {
         return;
@@ -171,20 +171,17 @@ class LocalAnimalMediaDataSource {
     });
   }
 
-  Future<void> upsertMedia(
-    AnimalMedia asset, {
-    String? syncState,
-  }) async {
-    await _db.into(_db.animalMediaTable).insertOnConflictUpdate(
+  Future<void> upsertMedia(AnimalMedia asset, {String? syncState}) async {
+    await _db
+        .into(_db.animalMediaTable)
+        .insertOnConflictUpdate(
           AnimalMediaTableCompanion.insert(
             id: asset.id,
             profileId: asset.profileId,
             animalId: asset.animalId,
             storagePath: asset.storagePath,
             payload: jsonEncode(
-              asset.copyWith(
-                syncState: syncState ?? asset.syncState,
-              ).toJson(),
+              asset.copyWith(syncState: syncState ?? asset.syncState).toJson(),
             ),
             createdAt: asset.createdAt,
             updatedAt: asset.updatedAt,
@@ -193,10 +190,7 @@ class LocalAnimalMediaDataSource {
         );
   }
 
-  Future<void> upsertAll(
-    List<AnimalMedia> assets, {
-    String? syncState,
-  }) async {
+  Future<void> upsertAll(List<AnimalMedia> assets, {String? syncState}) async {
     if (assets.isEmpty) {
       return;
     }
@@ -223,9 +217,9 @@ class LocalAnimalMediaDataSource {
   }
 
   Future<AnimalMedia?> fetchById(String id) async {
-    final AnimalMediaTableData? row = await (_db.select(_db.animalMediaTable)
-          ..where((AnimalMediaTable tbl) => tbl.id.equals(id)))
-        .getSingleOrNull();
+    final AnimalMediaTableData? row = await (_db.select(
+      _db.animalMediaTable,
+    )..where((AnimalMediaTable tbl) => tbl.id.equals(id))).getSingleOrNull();
     if (row == null) {
       return null;
     }
@@ -236,16 +230,16 @@ class LocalAnimalMediaDataSource {
     required String profileId,
     required String animalId,
   }) async {
-    final List<AnimalMediaTableData> rows = await (_db
-            .select(_db.animalMediaTable)
-          ..where(
-            (AnimalMediaTable tbl) =>
-                tbl.profileId.equals(profileId) &
-                tbl.animalId.equals(animalId),
-          ))
-        .get();
-    final List<AnimalMedia> assets =
-        rows.map(_mapMedia).toList(growable: false);
+    final List<AnimalMediaTableData> rows =
+        await (_db.select(_db.animalMediaTable)..where(
+              (AnimalMediaTable tbl) =>
+                  tbl.profileId.equals(profileId) &
+                  tbl.animalId.equals(animalId),
+            ))
+            .get();
+    final List<AnimalMedia> assets = rows
+        .map(_mapMedia)
+        .toList(growable: false);
     assets.sort(
       (AnimalMedia a, AnimalMedia b) => b.createdAt.compareTo(a.createdAt),
     );
@@ -253,21 +247,19 @@ class LocalAnimalMediaDataSource {
   }
 
   Future<void> delete(String id) async {
-    await (_db.delete(_db.animalMediaTable)
-          ..where((AnimalMediaTable tbl) => tbl.id.equals(id)))
-        .go();
+    await (_db.delete(
+      _db.animalMediaTable,
+    )..where((AnimalMediaTable tbl) => tbl.id.equals(id))).go();
   }
 
   Future<void> deleteForAnimal({
     required String profileId,
     required String animalId,
   }) async {
-    await (_db.delete(_db.animalMediaTable)
-          ..where(
-            (AnimalMediaTable tbl) =>
-                tbl.profileId.equals(profileId) &
-                tbl.animalId.equals(animalId),
-          ))
+    await (_db.delete(_db.animalMediaTable)..where(
+          (AnimalMediaTable tbl) =>
+              tbl.profileId.equals(profileId) & tbl.animalId.equals(animalId),
+        ))
         .go();
   }
 
@@ -302,16 +294,16 @@ class LocalBreedingDataSource {
     }
     final DateTime now = DateTime.now();
     await _db.transaction(() async {
-      final List<String> ids =
-          records.map((BreedingRecord record) => record.id).toList();
-      await (_db.delete(_db.breedingRecordsTable)
-            ..where(
-              (BreedingRecordsTable tbl) =>
-                  tbl.profileId.equals(targetProfile) &
-                  (ids.isEmpty
-                      ? const Constant<bool>(true)
-                      : tbl.id.isNotIn(ids)),
-            ))
+      final List<String> ids = records
+          .map((BreedingRecord record) => record.id)
+          .toList();
+      await (_db.delete(_db.breedingRecordsTable)..where(
+            (BreedingRecordsTable tbl) =>
+                tbl.profileId.equals(targetProfile) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.id.isNotIn(ids)),
+          ))
           .go();
       if (records.isEmpty) {
         return;
@@ -338,7 +330,9 @@ class LocalBreedingDataSource {
     BreedingRecord record, {
     String syncState = kSyncStateSynced,
   }) async {
-    await _db.into(_db.breedingRecordsTable).insertOnConflictUpdate(
+    await _db
+        .into(_db.breedingRecordsTable)
+        .insertOnConflictUpdate(
           BreedingRecordsTableCompanion.insert(
             id: record.id,
             profileId: record.profileId,
@@ -351,16 +345,16 @@ class LocalBreedingDataSource {
   }
 
   Future<void> deleteBreedingRecord(String id) async {
-    await (_db.delete(_db.breedingRecordsTable)
-          ..where((BreedingRecordsTable tbl) => tbl.id.equals(id)))
-        .go();
+    await (_db.delete(
+      _db.breedingRecordsTable,
+    )..where((BreedingRecordsTable tbl) => tbl.id.equals(id))).go();
   }
 
   Future<List<BreedingRecord>> fetchBreedingRecords() async {
-    final List<BreedingRecordsTableData> rows =
-        await _db.select(_db.breedingRecordsTable).get();
-    final List<BreedingRecord> records =
-        rows.map(_mapBreedingRecord).toList();
+    final List<BreedingRecordsTableData> rows = await _db
+        .select(_db.breedingRecordsTable)
+        .get();
+    final List<BreedingRecord> records = rows.map(_mapBreedingRecord).toList();
     records.sort(
       (BreedingRecord a, BreedingRecord b) =>
           b.matingDate.compareTo(a.matingDate),
@@ -369,10 +363,10 @@ class LocalBreedingDataSource {
   }
 
   Future<BreedingRecord?> fetchBreedingRecordById(String id) async {
-    final BreedingRecordsTableData? row = await (_db
-            .select(_db.breedingRecordsTable)
-          ..where((BreedingRecordsTable tbl) => tbl.id.equals(id)))
-        .getSingleOrNull();
+    final BreedingRecordsTableData? row =
+        await (_db.select(_db.breedingRecordsTable)
+              ..where((BreedingRecordsTable tbl) => tbl.id.equals(id)))
+            .getSingleOrNull();
     if (row == null) {
       return null;
     }
@@ -441,7 +435,9 @@ class LocalEventDataSource {
   }) async {
     final DateTime now = DateTime.now();
     await _db.transaction(() async {
-      await _db.into(_db.eventsTable).insertOnConflictUpdate(
+      await _db
+          .into(_db.eventsTable)
+          .insertOnConflictUpdate(
             EventsTableCompanion.insert(
               id: event.id,
               profileId: event.profileId,
@@ -451,11 +447,9 @@ class LocalEventDataSource {
               syncState: Value(syncState),
             ),
           );
-      await (_db.delete(_db.animalEventsTable)
-            ..where(
-              (AnimalEventsTable tbl) => tbl.eventId.equals(event.id),
-            ))
-          .go();
+      await (_db.delete(
+        _db.animalEventsTable,
+      )..where((AnimalEventsTable tbl) => tbl.eventId.equals(event.id))).go();
       if (links.isNotEmpty) {
         await _db.batch((Batch batch) {
           batch.insertAllOnConflictUpdate(
@@ -476,12 +470,12 @@ class LocalEventDataSource {
 
   Future<void> deleteEvent(String id) async {
     await _db.transaction(() async {
-      await (_db.delete(_db.animalEventsTable)
-            ..where((AnimalEventsTable tbl) => tbl.eventId.equals(id)))
-          .go();
-      await (_db.delete(_db.eventsTable)
-            ..where((EventsTable tbl) => tbl.id.equals(id)))
-          .go();
+      await (_db.delete(
+        _db.animalEventsTable,
+      )..where((AnimalEventsTable tbl) => tbl.eventId.equals(id))).go();
+      await (_db.delete(
+        _db.eventsTable,
+      )..where((EventsTable tbl) => tbl.id.equals(id))).go();
     });
   }
 
@@ -491,20 +485,28 @@ class LocalEventDataSource {
   }) async {
     final query = _db.select(_db.eventsTable);
     if (start != null) {
-      query.where((EventsTable tbl) => tbl.eventDate.isBiggerOrEqualValue(start));
+      query.where(
+        (EventsTable tbl) => tbl.eventDate.isBiggerOrEqualValue(start),
+      );
     }
     if (end != null) {
-      query.where((EventsTable tbl) => tbl.eventDate.isSmallerOrEqualValue(end));
+      query.where(
+        (EventsTable tbl) => tbl.eventDate.isSmallerOrEqualValue(end),
+      );
     }
     final List<EventsTableData> rows = await query.get();
     final List<LivestockEvent> events = rows.map(_mapEvent).toList();
-    events.sort((LivestockEvent a, LivestockEvent b) => a.eventDate.compareTo(b.eventDate));
+    events.sort(
+      (LivestockEvent a, LivestockEvent b) =>
+          a.eventDate.compareTo(b.eventDate),
+    );
     return events;
   }
 
   Future<List<AnimalEventLink>> fetchLinks() async {
-    final List<AnimalEventsTableData> rows =
-        await _db.select(_db.animalEventsTable).get();
+    final List<AnimalEventsTableData> rows = await _db
+        .select(_db.animalEventsTable)
+        .get();
     return rows
         .map(
           (AnimalEventsTableData row) => AnimalEventLink(
@@ -517,9 +519,9 @@ class LocalEventDataSource {
   }
 
   Future<LivestockEvent?> fetchEventById(String id) async {
-    final EventsTableData? row = await (_db.select(_db.eventsTable)
-          ..where((EventsTable tbl) => tbl.id.equals(id)))
-        .getSingleOrNull();
+    final EventsTableData? row = await (_db.select(
+      _db.eventsTable,
+    )..where((EventsTable tbl) => tbl.id.equals(id))).getSingleOrNull();
     if (row == null) {
       return null;
     }
@@ -527,10 +529,9 @@ class LocalEventDataSource {
   }
 
   Future<List<AnimalEventLink>> fetchLinksForEvent(String eventId) async {
-    final List<AnimalEventsTableData> rows = await (_db
-            .select(_db.animalEventsTable)
-          ..where((AnimalEventsTable tbl) => tbl.eventId.equals(eventId)))
-        .get();
+    final List<AnimalEventsTableData> rows = await (_db.select(
+      _db.animalEventsTable,
+    )..where((AnimalEventsTable tbl) => tbl.eventId.equals(eventId))).get();
     return rows
         .map(
           (AnimalEventsTableData row) => AnimalEventLink(
@@ -588,16 +589,16 @@ class LocalSpeciesDataSource {
     }
     final DateTime now = DateTime.now();
     await _db.transaction(() async {
-      final List<int> ids =
-          configs.map((SpeciesConfig config) => config.id).toList();
-      await (_db.delete(_db.speciesConfigsTable)
-            ..where(
-              (SpeciesConfigsTable tbl) =>
-                  tbl.profileId.equals(targetProfile) &
-                  (ids.isEmpty
-                      ? const Constant<bool>(true)
-                      : tbl.id.isNotIn(ids)),
-            ))
+      final List<int> ids = configs
+          .map((SpeciesConfig config) => config.id)
+          .toList();
+      await (_db.delete(_db.speciesConfigsTable)..where(
+            (SpeciesConfigsTable tbl) =>
+                tbl.profileId.equals(targetProfile) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.id.isNotIn(ids)),
+          ))
           .go();
       if (configs.isEmpty) {
         return;
@@ -644,20 +645,18 @@ class LocalSpeciesDataSource {
   }
 
   Future<void> deleteSpeciesConfig(int id) async {
-    await (_db.delete(_db.speciesConfigsTable)
-          ..where((SpeciesConfigsTable tbl) => tbl.id.equals(id)))
-        .go();
+    await (_db.delete(
+      _db.speciesConfigsTable,
+    )..where((SpeciesConfigsTable tbl) => tbl.id.equals(id))).go();
   }
 
   Future<List<SpeciesConfig>> fetchSpecies(String profileId) async {
     final List<SpeciesConfigsTableData> rows =
-        await (_db.select(_db.speciesConfigsTable)
-              ..where(
-                (SpeciesConfigsTable tbl) => tbl.profileId.equals(profileId),
-              ))
+        await (_db.select(_db.speciesConfigsTable)..where(
+              (SpeciesConfigsTable tbl) => tbl.profileId.equals(profileId),
+            ))
             .get();
-    final List<SpeciesConfig> configs =
-        rows.map(_mapSpecies).toList();
+    final List<SpeciesConfig> configs = rows.map(_mapSpecies).toList();
     configs.sort(
       (SpeciesConfig a, SpeciesConfig b) =>
           a.speciesName.compareTo(b.speciesName),
@@ -680,32 +679,28 @@ class LocalEventTemplateDataSource {
   Future<void> replaceTemplates(
     List<EventTemplate> templates, {
     required String profileId,
-    }) async {
-      await _db.transaction(() async {
-        if (templates.isEmpty) {
-        await (_db.delete(_db.eventTemplatesTable)
-              ..where(
-                (EventTemplatesTable tbl) => tbl.profileId.equals(profileId),
-              ))
+  }) async {
+    await _db.transaction(() async {
+      if (templates.isEmpty) {
+        await (_db.delete(_db.eventTemplatesTable)..where(
+              (EventTemplatesTable tbl) => tbl.profileId.equals(profileId),
+            ))
             .go();
         return;
       }
-      final List<int> ids =
-          templates.map((EventTemplate template) => template.id).toList();
-      await (_db.delete(_db.eventTemplatesTable)
-            ..where(
-              (EventTemplatesTable tbl) =>
-                  tbl.profileId.equals(profileId) &
-                  (ids.isEmpty
-                      ? const Constant<bool>(true)
-                      : tbl.id.isNotIn(ids)),
-            ))
+      final List<int> ids = templates
+          .map((EventTemplate template) => template.id)
+          .toList();
+      await (_db.delete(_db.eventTemplatesTable)..where(
+            (EventTemplatesTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.id.isNotIn(ids)),
+          ))
           .go();
-        await upsertTemplates(
-          templates,
-          syncState: kSyncStateSynced,
-        );
-      });
+      await upsertTemplates(templates, syncState: kSyncStateSynced);
+    });
   }
 
   Future<void> upsertTemplates(
@@ -735,28 +730,25 @@ class LocalEventTemplateDataSource {
   }
 
   Future<EventTemplate?> fetchTemplateById(int id) async {
-    final EventTemplatesTableData? row =
-        await (_db.select(_db.eventTemplatesTable)
-              ..where((EventTemplatesTable tbl) => tbl.id.equals(id)))
-            .getSingleOrNull();
+    final EventTemplatesTableData? row = await (_db.select(
+      _db.eventTemplatesTable,
+    )..where((EventTemplatesTable tbl) => tbl.id.equals(id))).getSingleOrNull();
     return row == null ? null : _mapTemplate(row);
   }
 
   Future<void> deleteTemplate(int id) async {
-    await (_db.delete(_db.eventTemplatesTable)
-          ..where((EventTemplatesTable tbl) => tbl.id.equals(id)))
-        .go();
+    await (_db.delete(
+      _db.eventTemplatesTable,
+    )..where((EventTemplatesTable tbl) => tbl.id.equals(id))).go();
   }
 
   Future<List<EventTemplate>> fetchTemplates(String profileId) async {
     final List<EventTemplatesTableData> rows =
-        await (_db.select(_db.eventTemplatesTable)
-              ..where(
-                (EventTemplatesTable tbl) => tbl.profileId.equals(profileId),
-              ))
+        await (_db.select(_db.eventTemplatesTable)..where(
+              (EventTemplatesTable tbl) => tbl.profileId.equals(profileId),
+            ))
             .get();
-    final List<EventTemplate> templates =
-        rows.map(_mapTemplate).toList();
+    final List<EventTemplate> templates = rows.map(_mapTemplate).toList();
     templates.sort(
       (EventTemplate a, EventTemplate b) =>
           a.templateName.compareTo(b.templateName),
@@ -781,25 +773,24 @@ class LocalTaskTemplateDataSource {
     required String profileId,
   }) async {
     await _db.transaction(() async {
-      final List<String> ids =
-          templates.map((TaskTemplate template) => template.id).toList();
-      await (_db.delete(_db.taskTemplateStepsTable)
-            ..where(
-              (TaskTemplateStepsTable tbl) =>
-                  tbl.profileId.equals(profileId) &
-                  (ids.isEmpty
-                      ? const Constant<bool>(true)
-                      : tbl.templateId.isNotIn(ids)),
-            ))
+      final List<String> ids = templates
+          .map((TaskTemplate template) => template.id)
+          .toList();
+      await (_db.delete(_db.taskTemplateStepsTable)..where(
+            (TaskTemplateStepsTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.templateId.isNotIn(ids)),
+          ))
           .go();
-      await (_db.delete(_db.taskTemplatesTable)
-            ..where(
-              (TaskTemplatesTable tbl) =>
-                  tbl.profileId.equals(profileId) &
-                  (ids.isEmpty
-                      ? const Constant<bool>(true)
-                      : tbl.id.isNotIn(ids)),
-            ))
+      await (_db.delete(_db.taskTemplatesTable)..where(
+            (TaskTemplatesTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.id.isNotIn(ids)),
+          ))
           .go();
       if (templates.isEmpty) {
         return;
@@ -824,9 +815,7 @@ class LocalTaskTemplateDataSource {
             return TaskTemplatesTableCompanion(
               id: Value(template.id),
               profileId: Value(template.profileId),
-              payload: Value(
-                jsonEncode(template.toJson(includeSteps: false)),
-              ),
+              payload: Value(jsonEncode(template.toJson(includeSteps: false))),
               updatedAt: Value(now),
               syncState: Value(syncState),
             );
@@ -834,11 +823,10 @@ class LocalTaskTemplateDataSource {
         );
       });
       for (final TaskTemplate template in templates) {
-        await (_db.delete(_db.taskTemplateStepsTable)
-              ..where(
-                (TaskTemplateStepsTable tbl) =>
-                    tbl.templateId.equals(template.id),
-              ))
+        await (_db.delete(_db.taskTemplateStepsTable)..where(
+              (TaskTemplateStepsTable tbl) =>
+                  tbl.templateId.equals(template.id),
+            ))
             .go();
         if (template.steps.isEmpty) {
           continue;
@@ -865,19 +853,17 @@ class LocalTaskTemplateDataSource {
 
   Future<List<TaskTemplate>> fetchTemplates(String profileId) async {
     final List<TaskTemplatesTableData> templateRows =
-        await (_db.select(_db.taskTemplatesTable)
-              ..where(
-                (TaskTemplatesTable tbl) => tbl.profileId.equals(profileId),
-              ))
+        await (_db.select(_db.taskTemplatesTable)..where(
+              (TaskTemplatesTable tbl) => tbl.profileId.equals(profileId),
+            ))
             .get();
     if (templateRows.isEmpty) {
       return <TaskTemplate>[];
     }
     final List<TaskTemplateStepsTableData> stepRows =
-        await (_db.select(_db.taskTemplateStepsTable)
-              ..where(
-                (TaskTemplateStepsTable tbl) => tbl.profileId.equals(profileId),
-              ))
+        await (_db.select(_db.taskTemplateStepsTable)..where(
+              (TaskTemplateStepsTable tbl) => tbl.profileId.equals(profileId),
+            ))
             .get();
     final Map<String, List<TaskTemplateStep>> stepsByTemplate =
         <String, List<TaskTemplateStep>>{};
@@ -891,51 +877,60 @@ class LocalTaskTemplateDataSource {
       );
       list.add(step);
     }
-    final List<TaskTemplate> templates = templateRows.map((TaskTemplatesTableData row) {
+    final List<TaskTemplate> templates = templateRows.map((
+      TaskTemplatesTableData row,
+    ) {
       final Map<String, dynamic> json =
           jsonDecode(row.payload) as Map<String, dynamic>;
       final TaskTemplate template = TaskTemplate.fromJson(json);
-      final List<TaskTemplateStep> steps =
-          List<TaskTemplateStep>.from(stepsByTemplate[template.id] ?? <TaskTemplateStep>[]);
-      steps.sort((TaskTemplateStep a, TaskTemplateStep b) => a.position.compareTo(b.position));
+      final List<TaskTemplateStep> steps = List<TaskTemplateStep>.from(
+        stepsByTemplate[template.id] ?? <TaskTemplateStep>[],
+      );
+      steps.sort(
+        (TaskTemplateStep a, TaskTemplateStep b) =>
+            a.position.compareTo(b.position),
+      );
       return template.copyWith(steps: steps);
     }).toList();
-    templates.sort((TaskTemplate a, TaskTemplate b) => a.name.compareTo(b.name));
+    templates.sort(
+      (TaskTemplate a, TaskTemplate b) => a.name.compareTo(b.name),
+    );
     return templates;
   }
 
   Future<TaskTemplate?> fetchTemplateById(String id) async {
-    final TaskTemplatesTableData? row =
-        await (_db.select(_db.taskTemplatesTable)
-              ..where((TaskTemplatesTable tbl) => tbl.id.equals(id)))
-            .getSingleOrNull();
+    final TaskTemplatesTableData? row = await (_db.select(
+      _db.taskTemplatesTable,
+    )..where((TaskTemplatesTable tbl) => tbl.id.equals(id))).getSingleOrNull();
     if (row == null) {
       return null;
     }
     final Map<String, dynamic> json =
         jsonDecode(row.payload) as Map<String, dynamic>;
     final TaskTemplate template = TaskTemplate.fromJson(json);
-    final List<TaskTemplateStepsTableData> stepRows =
-        await (_db.select(_db.taskTemplateStepsTable)
-              ..where((TaskTemplateStepsTable tbl) => tbl.templateId.equals(id)))
-            .get();
-    final List<TaskTemplateStep> steps = stepRows.map((TaskTemplateStepsTableData data) {
-      final Map<String, dynamic> stepJson =
-          jsonDecode(data.payload) as Map<String, dynamic>;
-      return TaskTemplateStep.fromJson(stepJson);
-    }).toList()
-      ..sort((TaskTemplateStep a, TaskTemplateStep b) => a.position.compareTo(b.position));
+    final List<TaskTemplateStepsTableData> stepRows = await (_db.select(
+      _db.taskTemplateStepsTable,
+    )..where((TaskTemplateStepsTable tbl) => tbl.templateId.equals(id))).get();
+    final List<TaskTemplateStep> steps =
+        stepRows.map((TaskTemplateStepsTableData data) {
+          final Map<String, dynamic> stepJson =
+              jsonDecode(data.payload) as Map<String, dynamic>;
+          return TaskTemplateStep.fromJson(stepJson);
+        }).toList()..sort(
+          (TaskTemplateStep a, TaskTemplateStep b) =>
+              a.position.compareTo(b.position),
+        );
     return template.copyWith(steps: steps);
   }
 
   Future<void> deleteTemplate(String id) async {
     await _db.transaction(() async {
-      await (_db.delete(_db.taskTemplateStepsTable)
-            ..where((TaskTemplateStepsTable tbl) => tbl.templateId.equals(id)))
-          .go();
-      await (_db.delete(_db.taskTemplatesTable)
-            ..where((TaskTemplatesTable tbl) => tbl.id.equals(id)))
-          .go();
+      await (_db.delete(
+        _db.taskTemplateStepsTable,
+      )..where((TaskTemplateStepsTable tbl) => tbl.templateId.equals(id))).go();
+      await (_db.delete(
+        _db.taskTemplatesTable,
+      )..where((TaskTemplatesTable tbl) => tbl.id.equals(id))).go();
     });
   }
 }
@@ -952,25 +947,24 @@ class LocalTaskTemplateAssignmentDataSource {
         const <String, List<TaskTemplateAssignmentEvent>>{},
   }) async {
     await _db.transaction(() async {
-      final List<String> ids =
-          assignments.map((TaskTemplateAssignment a) => a.id).toList();
-      await (_db.delete(_db.taskTemplateAssignmentEventsTable)
-            ..where(
-              (TaskTemplateAssignmentEventsTable tbl) =>
-                  tbl.profileId.equals(profileId) &
-                  (ids.isEmpty
-                      ? const Constant<bool>(true)
-                      : tbl.assignmentId.isNotIn(ids)),
-            ))
+      final List<String> ids = assignments
+          .map((TaskTemplateAssignment a) => a.id)
+          .toList();
+      await (_db.delete(_db.taskTemplateAssignmentEventsTable)..where(
+            (TaskTemplateAssignmentEventsTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.assignmentId.isNotIn(ids)),
+          ))
           .go();
-      await (_db.delete(_db.taskTemplateAssignmentsTable)
-            ..where(
-              (TaskTemplateAssignmentsTable tbl) =>
-                  tbl.profileId.equals(profileId) &
-                  (ids.isEmpty
-                      ? const Constant<bool>(true)
-                      : tbl.id.isNotIn(ids)),
-            ))
+      await (_db.delete(_db.taskTemplateAssignmentsTable)..where(
+            (TaskTemplateAssignmentsTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.id.isNotIn(ids)),
+          ))
           .go();
       if (assignments.isEmpty) {
         return;
@@ -979,7 +973,8 @@ class LocalTaskTemplateAssignmentDataSource {
         await upsertAssignment(
           assignment,
           events:
-              eventsByAssignment[assignment.id] ?? const <TaskTemplateAssignmentEvent>[],
+              eventsByAssignment[assignment.id] ??
+              const <TaskTemplateAssignmentEvent>[],
           syncState: kSyncStateSynced,
         );
       }
@@ -994,7 +989,9 @@ class LocalTaskTemplateAssignmentDataSource {
   }) async {
     final DateTime now = DateTime.now();
     await _db.transaction(() async {
-      await _db.into(_db.taskTemplateAssignmentsTable).insertOnConflictUpdate(
+      await _db
+          .into(_db.taskTemplateAssignmentsTable)
+          .insertOnConflictUpdate(
             TaskTemplateAssignmentsTableCompanion(
               id: Value(assignment.id),
               profileId: Value(assignment.profileId),
@@ -1013,11 +1010,10 @@ class LocalTaskTemplateAssignmentDataSource {
               syncState: Value(syncState),
             ),
           );
-      await (_db.delete(_db.taskTemplateAssignmentEventsTable)
-            ..where(
-              (TaskTemplateAssignmentEventsTable tbl) =>
-                  tbl.assignmentId.equals(assignment.id),
-            ))
+      await (_db.delete(_db.taskTemplateAssignmentEventsTable)..where(
+            (TaskTemplateAssignmentEventsTable tbl) =>
+                tbl.assignmentId.equals(assignment.id),
+          ))
           .go();
       if (events.isEmpty) {
         return;
@@ -1041,20 +1037,24 @@ class LocalTaskTemplateAssignmentDataSource {
     });
   }
 
-  Future<List<TaskTemplateAssignment>> fetchAssignments(String profileId) async {
+  Future<List<TaskTemplateAssignment>> fetchAssignments(
+    String profileId,
+  ) async {
     final List<TaskTemplateAssignmentsTableData> rows =
-        await (_db.select(_db.taskTemplateAssignmentsTable)
-              ..where(
-                (TaskTemplateAssignmentsTable tbl) =>
-                    tbl.profileId.equals(profileId),
-              ))
+        await (_db.select(_db.taskTemplateAssignmentsTable)..where(
+              (TaskTemplateAssignmentsTable tbl) =>
+                  tbl.profileId.equals(profileId),
+            ))
             .get();
-    final List<TaskTemplateAssignment> assignments = rows.map((TaskTemplateAssignmentsTableData row) {
-      final Map<String, dynamic> json =
-          jsonDecode(row.payload) as Map<String, dynamic>;
-      return TaskTemplateAssignment.fromJson(json);
-    }).toList()
-      ..sort((TaskTemplateAssignment a, TaskTemplateAssignment b) => b.updatedAt.compareTo(a.updatedAt));
+    final List<TaskTemplateAssignment> assignments =
+        rows.map((TaskTemplateAssignmentsTableData row) {
+          final Map<String, dynamic> json =
+              jsonDecode(row.payload) as Map<String, dynamic>;
+          return TaskTemplateAssignment.fromJson(json);
+        }).toList()..sort(
+          (TaskTemplateAssignment a, TaskTemplateAssignment b) =>
+              b.updatedAt.compareTo(a.updatedAt),
+        );
     return assignments;
   }
 
@@ -1075,37 +1075,348 @@ class LocalTaskTemplateAssignmentDataSource {
     String assignmentId,
   ) async {
     final List<TaskTemplateAssignmentEventsTableData> rows =
-        await (_db.select(_db.taskTemplateAssignmentEventsTable)
-              ..where(
-                (TaskTemplateAssignmentEventsTable tbl) =>
-                    tbl.assignmentId.equals(assignmentId),
-              ))
+        await (_db.select(_db.taskTemplateAssignmentEventsTable)..where(
+              (TaskTemplateAssignmentEventsTable tbl) =>
+                  tbl.assignmentId.equals(assignmentId),
+            ))
             .get();
     final List<TaskTemplateAssignmentEvent> events =
         rows.map((TaskTemplateAssignmentEventsTableData row) {
-      final Map<String, dynamic> json =
-          jsonDecode(row.payload) as Map<String, dynamic>;
-      return TaskTemplateAssignmentEvent.fromJson(json);
-    }).toList()
-          ..sort(
-            (TaskTemplateAssignmentEvent a, TaskTemplateAssignmentEvent b) =>
-                a.stepId.compareTo(b.stepId),
-          );
+          final Map<String, dynamic> json =
+              jsonDecode(row.payload) as Map<String, dynamic>;
+          return TaskTemplateAssignmentEvent.fromJson(json);
+        }).toList()..sort(
+          (TaskTemplateAssignmentEvent a, TaskTemplateAssignmentEvent b) =>
+              a.stepId.compareTo(b.stepId),
+        );
     return events;
   }
 
   Future<void> deleteAssignment(String id) async {
     await _db.transaction(() async {
-      await (_db.delete(_db.taskTemplateAssignmentEventsTable)
-            ..where(
-              (TaskTemplateAssignmentEventsTable tbl) =>
-                  tbl.assignmentId.equals(id),
-            ))
+      await (_db.delete(_db.taskTemplateAssignmentEventsTable)..where(
+            (TaskTemplateAssignmentEventsTable tbl) =>
+                tbl.assignmentId.equals(id),
+          ))
           .go();
-      await (_db.delete(_db.taskTemplateAssignmentsTable)
-            ..where((TaskTemplateAssignmentsTable tbl) => tbl.id.equals(id)))
-          .go();
+      await (_db.delete(
+        _db.taskTemplateAssignmentsTable,
+      )..where((TaskTemplateAssignmentsTable tbl) => tbl.id.equals(id))).go();
     });
+  }
+}
+
+class LocalAilmentDataSource {
+  LocalAilmentDataSource(this._db);
+
+  final LocalDatabase _db;
+
+  Future<void> replaceAilments(
+    List<Ailment> ailments, {
+    required String profileId,
+  }) async {
+    await _db.transaction(() async {
+      final List<String> ids = ailments
+          .map((Ailment ailment) => ailment.id)
+          .toList();
+      await (_db.delete(_db.ailmentsTable)..where(
+            (AilmentsTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.id.isNotIn(ids)),
+          ))
+          .go();
+      if (ailments.isEmpty) {
+        return;
+      }
+      await _db.batch((Batch batch) {
+        batch.insertAllOnConflictUpdate(
+          _db.ailmentsTable,
+          ailments.map((Ailment ailment) {
+            return AilmentsTableCompanion.insert(
+              id: ailment.id,
+              profileId: ailment.profileId,
+              name: ailment.name,
+              slug: Value(ailment.slug),
+              speciesId: Value(ailment.speciesId),
+              payload: jsonEncode(ailment.toJson()),
+              createdAt: ailment.createdAt,
+              updatedAt: ailment.updatedAt,
+              archivedAt: Value(ailment.archivedAt),
+              syncState: const Value(kSyncStateSynced),
+            );
+          }).toList(),
+        );
+      });
+    });
+  }
+
+  Future<List<Ailment>> fetchAilments({
+    String? profileId,
+    bool includeArchived = false,
+  }) async {
+    final select = _db.select(_db.ailmentsTable);
+    if (profileId != null) {
+      select.where((AilmentsTable tbl) => tbl.profileId.equals(profileId));
+    }
+    if (!includeArchived) {
+      select.where((AilmentsTable tbl) => tbl.archivedAt.isNull());
+    }
+    final List<AilmentsTableData> rows =
+        await (select..orderBy(<OrderingTerm Function(AilmentsTable)>[
+              (AilmentsTable tbl) =>
+                  OrderingTerm(expression: tbl.name, mode: OrderingMode.asc),
+            ]))
+            .get();
+    return rows.map(_mapAilment).toList();
+  }
+
+  Ailment _mapAilment(AilmentsTableData row) {
+    final Map<String, dynamic> json =
+        jsonDecode(row.payload) as Map<String, dynamic>;
+    return Ailment.fromJson(json);
+  }
+}
+
+class LocalHealthRecordDataSource {
+  LocalHealthRecordDataSource(this._db);
+
+  final LocalDatabase _db;
+
+  Future<void> replaceRecords(
+    List<HealthRecord> records, {
+    required String profileId,
+  }) async {
+    await _db.transaction(() async {
+      final List<String> ids = records
+          .map((HealthRecord record) => record.id)
+          .toList();
+      await (_db.delete(_db.healthTreatmentsTable)..where(
+            (HealthTreatmentsTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.recordId.isNotIn(ids)),
+          ))
+          .go();
+      await (_db.delete(_db.healthRecordsTable)..where(
+            (HealthRecordsTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.id.isNotIn(ids)),
+          ))
+          .go();
+      if (records.isEmpty) {
+        return;
+      }
+      for (final HealthRecord record in records) {
+        await upsertRecord(record, syncState: kSyncStateSynced);
+      }
+    });
+  }
+
+  Future<void> upsertRecord(
+    HealthRecord record, {
+    String syncState = kSyncStateSynced,
+  }) async {
+    await _db
+        .into(_db.healthRecordsTable)
+        .insertOnConflictUpdate(
+          HealthRecordsTableCompanion.insert(
+            id: record.id,
+            profileId: record.profileId,
+            animalId: record.animalId,
+            status: record.status.key,
+            severity: record.severity.key,
+            onsetDate: record.onsetDate,
+            createdAt: record.createdAt,
+            updatedAt: record.updatedAt,
+            payload: jsonEncode(
+              record.copyWith(treatments: const <HealthTreatment>[]).toJson(),
+            ),
+            syncState: Value(syncState),
+          ),
+        );
+    if (record.treatments.isNotEmpty) {
+      await upsertTreatments(record.treatments, syncState: syncState);
+    }
+  }
+
+  Future<void> deleteRecord(String id) async {
+    await _db.transaction(() async {
+      await (_db.delete(
+        _db.healthTreatmentsTable,
+      )..where((HealthTreatmentsTable tbl) => tbl.recordId.equals(id))).go();
+      await (_db.delete(
+        _db.healthRecordsTable,
+      )..where((HealthRecordsTable tbl) => tbl.id.equals(id))).go();
+    });
+  }
+
+  Future<HealthRecord?> fetchRecordById(String id) async {
+    final HealthRecordsTableData? row = await (_db.select(
+      _db.healthRecordsTable,
+    )..where((HealthRecordsTable tbl) => tbl.id.equals(id))).getSingleOrNull();
+    if (row == null) {
+      return null;
+    }
+    final Map<String, List<HealthTreatment>> grouped =
+        await _fetchTreatmentsGrouped(<String>[row.id]);
+    return _mapRecord(row, grouped[row.id] ?? const <HealthTreatment>[]);
+  }
+
+  Future<List<HealthRecord>> fetchRecords({
+    String? profileId,
+    String? animalId,
+    bool includeArchived = false,
+  }) async {
+    final select = _db.select(_db.healthRecordsTable);
+    if (profileId != null) {
+      select.where((HealthRecordsTable tbl) => tbl.profileId.equals(profileId));
+    }
+    if (animalId != null) {
+      select.where((HealthRecordsTable tbl) => tbl.animalId.equals(animalId));
+    }
+    if (!includeArchived) {
+      select.where(
+        (HealthRecordsTable tbl) =>
+            tbl.status.isNotIn(<String>[HealthRecordStatus.archived.key]),
+      );
+    }
+    final List<HealthRecordsTableData> rows =
+        await (select..orderBy(<OrderingTerm Function(HealthRecordsTable)>[
+              (HealthRecordsTable tbl) => OrderingTerm(
+                expression: tbl.onsetDate,
+                mode: OrderingMode.desc,
+              ),
+            ]))
+            .get();
+    final List<String> ids = rows
+        .map((HealthRecordsTableData row) => row.id)
+        .toList();
+    final Map<String, List<HealthTreatment>> grouped =
+        await _fetchTreatmentsGrouped(ids);
+    return rows
+        .map(
+          (HealthRecordsTableData row) =>
+              _mapRecord(row, grouped[row.id] ?? const <HealthTreatment>[]),
+        )
+        .toList();
+  }
+
+  Future<void> upsertTreatments(
+    List<HealthTreatment> treatments, {
+    String syncState = kSyncStateSynced,
+  }) async {
+    if (treatments.isEmpty) {
+      return;
+    }
+    await _db.batch((Batch batch) {
+      batch.insertAllOnConflictUpdate(
+        _db.healthTreatmentsTable,
+        treatments.map((HealthTreatment treatment) {
+          return HealthTreatmentsTableCompanion.insert(
+            id: treatment.id,
+            recordId: treatment.recordId,
+            profileId: treatment.profileId,
+            taskId: Value(treatment.taskId),
+            startAt: treatment.startAt,
+            endAt: Value(treatment.endAt),
+            completedAt: Value(treatment.completedAt),
+            createdAt: treatment.createdAt,
+            updatedAt: treatment.updatedAt,
+            payload: jsonEncode(treatment.toJson()),
+            syncState: Value(syncState),
+          );
+        }).toList(),
+      );
+    });
+  }
+
+  Future<void> upsertTreatment(
+    HealthTreatment treatment, {
+    String syncState = kSyncStateSynced,
+  }) async {
+    await _db
+        .into(_db.healthTreatmentsTable)
+        .insertOnConflictUpdate(
+          HealthTreatmentsTableCompanion.insert(
+            id: treatment.id,
+            recordId: treatment.recordId,
+            profileId: treatment.profileId,
+            taskId: Value(treatment.taskId),
+            startAt: treatment.startAt,
+            endAt: Value(treatment.endAt),
+            completedAt: Value(treatment.completedAt),
+            createdAt: treatment.createdAt,
+            updatedAt: treatment.updatedAt,
+            payload: jsonEncode(treatment.toJson()),
+            syncState: Value(syncState),
+          ),
+        );
+  }
+
+  Future<void> deleteTreatment(String id) async {
+    await (_db.delete(
+      _db.healthTreatmentsTable,
+    )..where((HealthTreatmentsTable tbl) => tbl.id.equals(id))).go();
+  }
+
+  Future<void> deleteTreatmentsForRecord(String recordId) async {
+    await (_db.delete(_db.healthTreatmentsTable)
+          ..where((HealthTreatmentsTable tbl) => tbl.recordId.equals(recordId)))
+        .go();
+  }
+
+  Future<List<HealthTreatment>> fetchTreatments(String recordId) async {
+    final Map<String, List<HealthTreatment>> grouped =
+        await _fetchTreatmentsGrouped(<String>[recordId]);
+    return grouped[recordId]?.toList() ?? const <HealthTreatment>[];
+  }
+
+  Future<Map<String, List<HealthTreatment>>> _fetchTreatmentsGrouped(
+    List<String> recordIds,
+  ) async {
+    if (recordIds.isEmpty) {
+      return <String, List<HealthTreatment>>{};
+    }
+    final List<HealthTreatmentsTableData> rows =
+        await (_db.select(_db.healthTreatmentsTable)..where(
+              (HealthTreatmentsTable tbl) => tbl.recordId.isIn(recordIds),
+            ))
+            .get();
+    final Map<String, List<HealthTreatment>> grouped =
+        <String, List<HealthTreatment>>{};
+    for (final HealthTreatmentsTableData row in rows) {
+      final HealthTreatment treatment = _mapTreatment(row);
+      grouped
+          .putIfAbsent(row.recordId, () => <HealthTreatment>[])
+          .add(treatment);
+    }
+    for (final List<HealthTreatment> group in grouped.values) {
+      group.sort(
+        (HealthTreatment a, HealthTreatment b) =>
+            a.startAt.compareTo(b.startAt),
+      );
+    }
+    return grouped;
+  }
+
+  HealthRecord _mapRecord(
+    HealthRecordsTableData row,
+    List<HealthTreatment> treatments,
+  ) {
+    final Map<String, dynamic> json =
+        jsonDecode(row.payload) as Map<String, dynamic>;
+    return HealthRecord.fromJson(json).copyWith(treatments: treatments);
+  }
+
+  HealthTreatment _mapTreatment(HealthTreatmentsTableData row) {
+    final Map<String, dynamic> json =
+        jsonDecode(row.payload) as Map<String, dynamic>;
+    return HealthTreatment.fromJson(json);
   }
 }
 
@@ -1120,14 +1431,13 @@ class LocalFoodTypeDataSource {
   }) async {
     await _db.transaction(() async {
       final List<int> ids = types.map((FoodType type) => type.id).toList();
-      await (_db.delete(_db.foodTypesTable)
-            ..where(
-              (FoodTypesTable tbl) =>
-                  tbl.profileId.equals(profileId) &
-                  (ids.isEmpty
-                      ? const Constant<bool>(true)
-                      : tbl.id.isNotIn(ids)),
-            ))
+      await (_db.delete(_db.foodTypesTable)..where(
+            (FoodTypesTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.id.isNotIn(ids)),
+          ))
           .go();
       if (types.isEmpty) {
         return;
@@ -1162,30 +1472,27 @@ class LocalFoodTypeDataSource {
   }
 
   Future<void> deleteFoodType(int id) async {
-    await (_db.delete(_db.foodTypesTable)
-          ..where((FoodTypesTable tbl) => tbl.id.equals(id)))
-        .go();
+    await (_db.delete(
+      _db.foodTypesTable,
+    )..where((FoodTypesTable tbl) => tbl.id.equals(id))).go();
   }
 
   Future<List<FoodType>> fetchFoodTypes(String profileId) async {
-    final List<FoodTypesTableData> rows =
-        await (_db.select(_db.foodTypesTable)
-              ..where((FoodTypesTable tbl) => tbl.profileId.equals(profileId)))
-            .get();
+    final List<FoodTypesTableData> rows = await (_db.select(
+      _db.foodTypesTable,
+    )..where((FoodTypesTable tbl) => tbl.profileId.equals(profileId))).get();
     final List<FoodType> types = rows.map(_mapFoodType).toList();
     types.sort(
-      (FoodType a, FoodType b) => a.name.toLowerCase().compareTo(
-            b.name.toLowerCase(),
-          ),
+      (FoodType a, FoodType b) =>
+          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
     );
     return types;
   }
 
   Future<FoodType?> fetchFoodTypeById(int id) async {
-    final FoodTypesTableData? row =
-        await (_db.select(_db.foodTypesTable)
-              ..where((FoodTypesTable tbl) => tbl.id.equals(id)))
-            .getSingleOrNull();
+    final FoodTypesTableData? row = await (_db.select(
+      _db.foodTypesTable,
+    )..where((FoodTypesTable tbl) => tbl.id.equals(id))).getSingleOrNull();
     return row == null ? null : _mapFoodType(row);
   }
 
@@ -1206,16 +1513,16 @@ class LocalFoodStockDataSource {
     required String profileId,
   }) async {
     await _db.transaction(() async {
-      final List<int> ids =
-          entries.map((FoodStockEntry entry) => entry.id).toList();
-      await (_db.delete(_db.foodStockTable)
-            ..where(
-              (FoodStockTable tbl) =>
-                  tbl.profileId.equals(profileId) &
-                  (ids.isEmpty
-                      ? const Constant<bool>(true)
-                      : tbl.id.isNotIn(ids)),
-            ))
+      final List<int> ids = entries
+          .map((FoodStockEntry entry) => entry.id)
+          .toList();
+      await (_db.delete(_db.foodStockTable)..where(
+            (FoodStockTable tbl) =>
+                tbl.profileId.equals(profileId) &
+                (ids.isEmpty
+                    ? const Constant<bool>(true)
+                    : tbl.id.isNotIn(ids)),
+          ))
           .go();
       if (entries.isEmpty) {
         return;
@@ -1250,18 +1557,16 @@ class LocalFoodStockDataSource {
   }
 
   Future<void> deleteEntry(int id) async {
-    await (_db.delete(_db.foodStockTable)
-          ..where((FoodStockTable tbl) => tbl.id.equals(id)))
-        .go();
+    await (_db.delete(
+      _db.foodStockTable,
+    )..where((FoodStockTable tbl) => tbl.id.equals(id))).go();
   }
 
   Future<List<FoodStockEntry>> fetchEntries(String profileId) async {
-    final List<FoodStockTableData> rows =
-        await (_db.select(_db.foodStockTable)
-              ..where((FoodStockTable tbl) => tbl.profileId.equals(profileId)))
-            .get();
-    final List<FoodStockEntry> entries =
-        rows.map(_mapEntry).toList();
+    final List<FoodStockTableData> rows = await (_db.select(
+      _db.foodStockTable,
+    )..where((FoodStockTable tbl) => tbl.profileId.equals(profileId))).get();
+    final List<FoodStockEntry> entries = rows.map(_mapEntry).toList();
     entries.sort(
       (FoodStockEntry a, FoodStockEntry b) =>
           a.createdAt.compareTo(b.createdAt),
@@ -1270,10 +1575,9 @@ class LocalFoodStockDataSource {
   }
 
   Future<FoodStockEntry?> fetchEntryById(int id) async {
-    final FoodStockTableData? row =
-        await (_db.select(_db.foodStockTable)
-              ..where((FoodStockTable tbl) => tbl.id.equals(id)))
-            .getSingleOrNull();
+    final FoodStockTableData? row = await (_db.select(
+      _db.foodStockTable,
+    )..where((FoodStockTable tbl) => tbl.id.equals(id))).getSingleOrNull();
     return row == null ? null : _mapEntry(row);
   }
 
@@ -1293,7 +1597,9 @@ class LocalProfileDataSource {
     Profile profile, {
     String syncState = kSyncStateSynced,
   }) async {
-    await _db.into(_db.profilesTable).insertOnConflictUpdate(
+    await _db
+        .into(_db.profilesTable)
+        .insertOnConflictUpdate(
           ProfilesTableCompanion.insert(
             id: profile.id,
             payload: jsonEncode(profile.toJson()),
@@ -1304,9 +1610,9 @@ class LocalProfileDataSource {
   }
 
   Future<Profile?> fetchProfile(String id) async {
-    final ProfilesTableData? row = await (_db.select(_db.profilesTable)
-          ..where((ProfilesTable tbl) => tbl.id.equals(id)))
-        .getSingleOrNull();
+    final ProfilesTableData? row = await (_db.select(
+      _db.profilesTable,
+    )..where((ProfilesTable tbl) => tbl.id.equals(id))).getSingleOrNull();
     if (row == null) {
       return null;
     }
@@ -1323,12 +1629,10 @@ class LocalDashboardPreferencesDataSource {
 
   Future<DashboardPreferences?> fetch(String profileId) async {
     final DashboardPreferencesTableData? row =
-        await (_db.select(_db.dashboardPreferencesTable)
-              ..where(
-                (DashboardPreferencesTable tbl) => tbl.profileId.equals(
-                  profileId,
-                ),
-              ))
+        await (_db.select(_db.dashboardPreferencesTable)..where(
+              (DashboardPreferencesTable tbl) =>
+                  tbl.profileId.equals(profileId),
+            ))
             .getSingleOrNull();
     if (row == null) {
       return null;
@@ -1339,7 +1643,9 @@ class LocalDashboardPreferencesDataSource {
   }
 
   Future<void> upsert(DashboardPreferences preferences) async {
-    await _db.into(_db.dashboardPreferencesTable).insertOnConflictUpdate(
+    await _db
+        .into(_db.dashboardPreferencesTable)
+        .insertOnConflictUpdate(
           DashboardPreferencesTableCompanion.insert(
             profileId: preferences.profileId,
             payload: jsonEncode(preferences.toJson()),
@@ -1349,10 +1655,9 @@ class LocalDashboardPreferencesDataSource {
   }
 
   Future<void> delete(String profileId) async {
-    await (_db.delete(_db.dashboardPreferencesTable)
-          ..where(
-            (DashboardPreferencesTable tbl) => tbl.profileId.equals(profileId),
-          ))
+    await (_db.delete(_db.dashboardPreferencesTable)..where(
+          (DashboardPreferencesTable tbl) => tbl.profileId.equals(profileId),
+        ))
         .go();
   }
 }
@@ -1363,7 +1668,9 @@ class LocalSyncQueueDataSource {
   final LocalDatabase _db;
 
   Future<void> insertAction(QueuedSyncAction action) async {
-    await _db.into(_db.queuedActionsTable).insert(
+    await _db
+        .into(_db.queuedActionsTable)
+        .insert(
           QueuedActionsTableCompanion.insert(
             id: action.id,
             type: action.type.key,
@@ -1387,55 +1694,51 @@ class LocalSyncQueueDataSource {
   }
 
   Future<QueuedSyncAction?> findById(String id) async {
-    final QueuedActionsTableData? row = await (_db.select(_db.queuedActionsTable)
-          ..where((QueuedActionsTable tbl) => tbl.id.equals(id)))
-        .getSingleOrNull();
+    final QueuedActionsTableData? row = await (_db.select(
+      _db.queuedActionsTable,
+    )..where((QueuedActionsTable tbl) => tbl.id.equals(id))).getSingleOrNull();
     return row == null ? null : _mapQueuedAction(row);
   }
 
   Future<List<QueuedSyncAction>> fetchAll() async {
     final List<QueuedActionsTableData> rows =
         await (_db.select(_db.queuedActionsTable)
-              ..orderBy(
-                <OrderingTerm Function(QueuedActionsTable)>[
-                  (QueuedActionsTable tbl) => OrderingTerm(
-                        expression: tbl.priority,
-                        mode: OrderingMode.desc,
-                      ),
-                  (QueuedActionsTable tbl) => OrderingTerm(
-                        expression: tbl.createdAt,
-                        mode: OrderingMode.asc,
-                      ),
-                ],
-              ))
+              ..orderBy(<OrderingTerm Function(QueuedActionsTable)>[
+                (QueuedActionsTable tbl) => OrderingTerm(
+                  expression: tbl.priority,
+                  mode: OrderingMode.desc,
+                ),
+                (QueuedActionsTable tbl) => OrderingTerm(
+                  expression: tbl.createdAt,
+                  mode: OrderingMode.asc,
+                ),
+              ]))
             .get();
     return rows.map(_mapQueuedAction).toList();
   }
 
   Future<List<QueuedSyncAction>> fetchExecutable({int limit = 10}) async {
     final DateTime now = DateTime.now();
-    final List<QueuedActionsTableData> rows = await (_db
-            .select(_db.queuedActionsTable)
-          ..where(
-            (QueuedActionsTable tbl) =>
-                tbl.status.equals(SyncActionStatus.pending.key) &
-                (tbl.scheduledAt.isNull() |
-                    tbl.scheduledAt.isSmallerOrEqualValue(now)),
-          )
-          ..orderBy(
-            <OrderingTerm Function(QueuedActionsTable)>[
-              (QueuedActionsTable tbl) => OrderingTerm(
-                    expression: tbl.priority,
-                    mode: OrderingMode.desc,
-                  ),
-              (QueuedActionsTable tbl) => OrderingTerm(
-                    expression: tbl.createdAt,
-                    mode: OrderingMode.asc,
-                  ),
-            ],
-          )
-          ..limit(limit))
-        .get();
+    final List<QueuedActionsTableData> rows =
+        await (_db.select(_db.queuedActionsTable)
+              ..where(
+                (QueuedActionsTable tbl) =>
+                    tbl.status.equals(SyncActionStatus.pending.key) &
+                    (tbl.scheduledAt.isNull() |
+                        tbl.scheduledAt.isSmallerOrEqualValue(now)),
+              )
+              ..orderBy(<OrderingTerm Function(QueuedActionsTable)>[
+                (QueuedActionsTable tbl) => OrderingTerm(
+                  expression: tbl.priority,
+                  mode: OrderingMode.desc,
+                ),
+                (QueuedActionsTable tbl) => OrderingTerm(
+                  expression: tbl.createdAt,
+                  mode: OrderingMode.asc,
+                ),
+              ])
+              ..limit(limit))
+            .get();
     return rows.map(_mapQueuedAction).toList();
   }
 
@@ -1447,77 +1750,76 @@ class LocalSyncQueueDataSource {
     String? lastError,
   }) async {
     final DateTime now = DateTime.now();
-    await (_db.update(_db.queuedActionsTable)
-          ..where((QueuedActionsTable tbl) => tbl.id.equals(id)))
-        .write(
-          QueuedActionsTableCompanion(
-            status: Value(status.key),
-            attempts: attempts == null
-                ? const Value.absent()
-                : Value<int>(attempts),
-            updatedAt: Value(now),
-            scheduledAt: scheduledAt == null
-                ? const Value(null)
-                : Value<DateTime?>(scheduledAt),
-            lastError: lastError == null
-                ? const Value.absent()
-                : Value<String?>(lastError),
-          ),
-        );
+    await (_db.update(
+      _db.queuedActionsTable,
+    )..where((QueuedActionsTable tbl) => tbl.id.equals(id))).write(
+      QueuedActionsTableCompanion(
+        status: Value(status.key),
+        attempts: attempts == null
+            ? const Value.absent()
+            : Value<int>(attempts),
+        updatedAt: Value(now),
+        scheduledAt: scheduledAt == null
+            ? const Value(null)
+            : Value<DateTime?>(scheduledAt),
+        lastError: lastError == null
+            ? const Value.absent()
+            : Value<String?>(lastError),
+      ),
+    );
   }
 
   Future<void> updateAttempts(String id, int attempts) async {
     final DateTime now = DateTime.now();
-    await (_db.update(_db.queuedActionsTable)
-          ..where((QueuedActionsTable tbl) => tbl.id.equals(id)))
-        .write(
-          QueuedActionsTableCompanion(
-            attempts: Value(attempts),
-            updatedAt: Value(now),
-          ),
-        );
+    await (_db.update(
+      _db.queuedActionsTable,
+    )..where((QueuedActionsTable tbl) => tbl.id.equals(id))).write(
+      QueuedActionsTableCompanion(
+        attempts: Value(attempts),
+        updatedAt: Value(now),
+      ),
+    );
   }
 
   Future<void> updateSchedule(String id, DateTime? scheduledAt) async {
     final DateTime now = DateTime.now();
-    await (_db.update(_db.queuedActionsTable)
-          ..where((QueuedActionsTable tbl) => tbl.id.equals(id)))
-        .write(
-          QueuedActionsTableCompanion(
-            scheduledAt: scheduledAt == null
-                ? const Value(null)
-                : Value<DateTime?>(scheduledAt),
-            updatedAt: Value(now),
-          ),
-        );
+    await (_db.update(
+      _db.queuedActionsTable,
+    )..where((QueuedActionsTable tbl) => tbl.id.equals(id))).write(
+      QueuedActionsTableCompanion(
+        scheduledAt: scheduledAt == null
+            ? const Value(null)
+            : Value<DateTime?>(scheduledAt),
+        updatedAt: Value(now),
+      ),
+    );
   }
 
   Future<void> updateError(String id, String? error) async {
     final DateTime now = DateTime.now();
-    await (_db.update(_db.queuedActionsTable)
-          ..where((QueuedActionsTable tbl) => tbl.id.equals(id)))
-        .write(
-          QueuedActionsTableCompanion(
-            lastError:
-                error == null ? const Value(null) : Value<String?>(error),
-            updatedAt: Value(now),
-          ),
-        );
+    await (_db.update(
+      _db.queuedActionsTable,
+    )..where((QueuedActionsTable tbl) => tbl.id.equals(id))).write(
+      QueuedActionsTableCompanion(
+        lastError: error == null ? const Value(null) : Value<String?>(error),
+        updatedAt: Value(now),
+      ),
+    );
   }
 
   Future<int> countActive() async {
-    final Expression<int> countExp =
-        _db.queuedActionsTable.id.count(distinct: false);
-    final List<TypedResult> result = await (_db.selectOnly(
-      _db.queuedActionsTable,
-    )
-          ..addColumns(<Expression<int>>[countExp])
-          ..where(
-            _db.queuedActionsTable.status.isNotIn(
-              <String>[SyncActionStatus.completed.key],
-            ),
-          ))
-        .get();
+    final Expression<int> countExp = _db.queuedActionsTable.id.count(
+      distinct: false,
+    );
+    final List<TypedResult> result =
+        await (_db.selectOnly(_db.queuedActionsTable)
+              ..addColumns(<Expression<int>>[countExp])
+              ..where(
+                _db.queuedActionsTable.status.isNotIn(<String>[
+                  SyncActionStatus.completed.key,
+                ]),
+              ))
+            .get();
     if (result.isEmpty) {
       return 0;
     }
@@ -1525,9 +1827,9 @@ class LocalSyncQueueDataSource {
   }
 
   Future<void> deleteAction(String id) async {
-    await (_db.delete(_db.queuedActionsTable)
-          ..where((QueuedActionsTable tbl) => tbl.id.equals(id)))
-        .go();
+    await (_db.delete(
+      _db.queuedActionsTable,
+    )..where((QueuedActionsTable tbl) => tbl.id.equals(id))).go();
   }
 
   QueuedSyncAction _mapQueuedAction(QueuedActionsTableData row) {
@@ -1535,8 +1837,9 @@ class LocalSyncQueueDataSource {
     if (type == null) {
       throw StateError('Unknown sync action type: ${row.type}');
     }
-    final SyncActionType? rollbackType =
-        row.rollbackType == null ? null : SyncActionType.fromKey(row.rollbackType!);
+    final SyncActionType? rollbackType = row.rollbackType == null
+        ? null
+        : SyncActionType.fromKey(row.rollbackType!);
     return QueuedSyncAction(
       id: row.id,
       type: type,

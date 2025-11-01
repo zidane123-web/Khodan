@@ -8,8 +8,7 @@ class ProfilesTable extends Table {
   TextColumn get id => text()();
   TextColumn get payload => text()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
@@ -20,8 +19,7 @@ class SpeciesConfigsTable extends Table {
   TextColumn get profileId => text()();
   TextColumn get payload => text()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
@@ -35,8 +33,7 @@ class EventTemplatesTable extends Table {
   TextColumn get payload => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
@@ -47,8 +44,7 @@ class TaskTemplatesTable extends Table {
   TextColumn get profileId => text()();
   TextColumn get payload => text()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
@@ -61,8 +57,7 @@ class TaskTemplateStepsTable extends Table {
   IntColumn get position => integer()();
   TextColumn get payload => text()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
@@ -77,8 +72,7 @@ class TaskTemplateAssignmentsTable extends Table {
   DateTimeColumn get anchorDate => dateTime()();
   TextColumn get payload => text()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
@@ -91,15 +85,63 @@ class TaskTemplateAssignmentEventsTable extends Table {
   TextColumn get profileId => text()();
   TextColumn get payload => text()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{
-        assignmentId,
-        stepId,
-        eventId,
-      };
+    assignmentId,
+    stepId,
+    eventId,
+  };
+}
+
+class AilmentsTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get profileId => text()();
+  TextColumn get name => text()();
+  TextColumn get slug => text().nullable()();
+  IntColumn get speciesId => integer().nullable()();
+  TextColumn get payload => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get archivedAt => dateTime().nullable()();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+class HealthRecordsTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get profileId => text()();
+  TextColumn get animalId => text()();
+  TextColumn get status => text()();
+  TextColumn get severity => text()();
+  DateTimeColumn get onsetDate => dateTime()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get payload => text()();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+class HealthTreatmentsTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get recordId => text()();
+  TextColumn get profileId => text()();
+  TextColumn get taskId => text().nullable()();
+  DateTimeColumn get startAt => dateTime()();
+  DateTimeColumn get endAt => dateTime().nullable()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get payload => text()();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
 class FoodTypesTable extends Table {
@@ -109,8 +151,7 @@ class FoodTypesTable extends Table {
   TextColumn get payload => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
@@ -123,8 +164,7 @@ class FoodStockTable extends Table {
   TextColumn get payload => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
@@ -145,8 +185,7 @@ class AnimalsTable extends Table {
   IntColumn get speciesId => integer()();
   TextColumn get payload => text()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
@@ -158,8 +197,7 @@ class BreedingRecordsTable extends Table {
   TextColumn get payload => text()();
   DateTimeColumn get matingDate => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
@@ -171,8 +209,7 @@ class EventsTable extends Table {
   TextColumn get payload => text()();
   DateTimeColumn get eventDate => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
@@ -185,7 +222,11 @@ class AnimalEventsTable extends Table {
   DateTimeColumn get updatedAt => dateTime()();
 
   @override
-  Set<Column<Object>> get primaryKey => <Column<Object>>{eventId, animalId, role};
+  Set<Column<Object>> get primaryKey => <Column<Object>>{
+    eventId,
+    animalId,
+    role,
+  };
 }
 
 class AnimalMediaTable extends Table {
@@ -196,8 +237,7 @@ class AnimalMediaTable extends Table {
   TextColumn get payload => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
@@ -231,6 +271,9 @@ class QueuedActionsTable extends Table {
     TaskTemplateStepsTable,
     TaskTemplateAssignmentsTable,
     TaskTemplateAssignmentEventsTable,
+    AilmentsTable,
+    HealthRecordsTable,
+    HealthTreatmentsTable,
     FoodTypesTable,
     FoodStockTable,
     DashboardPreferencesTable,
@@ -250,47 +293,51 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (Migrator migrator) async {
-          await migrator.createAll();
-        },
-        onUpgrade: (Migrator migrator, int from, int to) async {
-          if (from < 2) {
-            await migrator.createTable(queuedActionsTable);
-          }
-          if (from < 3) {
-            await migrator.createTable(eventTemplatesTable);
-          }
-          if (from < 4) {
-            await migrator.createTable(foodTypesTable);
-            await migrator.createTable(foodStockTable);
-          }
-          if (from < 5) {
-            await migrator.createTable(dashboardPreferencesTable);
-          }
-          if (from < 6) {
-            await migrator.createTable(animalMediaTable);
-          }
-          if (from < 7) {
-            await migrator.createTable(taskTemplatesTable);
-            await migrator.createTable(taskTemplateStepsTable);
-            await migrator.createTable(taskTemplateAssignmentsTable);
-            await migrator.createTable(taskTemplateAssignmentEventsTable);
-          }
-          if (from < 8) {
-            await migrator.alterTable(
-              TableMigration(
-                taskTemplateAssignmentsTable,
-                columnTransformer:
-                    <GeneratedColumn<Object>, Expression<Object>>{},
-              ),
-            );
-          }
-        },
-      );
+    onCreate: (Migrator migrator) async {
+      await migrator.createAll();
+    },
+    onUpgrade: (Migrator migrator, int from, int to) async {
+      if (from < 2) {
+        await migrator.createTable(queuedActionsTable);
+      }
+      if (from < 3) {
+        await migrator.createTable(eventTemplatesTable);
+      }
+      if (from < 4) {
+        await migrator.createTable(foodTypesTable);
+        await migrator.createTable(foodStockTable);
+      }
+      if (from < 5) {
+        await migrator.createTable(dashboardPreferencesTable);
+      }
+      if (from < 6) {
+        await migrator.createTable(animalMediaTable);
+      }
+      if (from < 7) {
+        await migrator.createTable(taskTemplatesTable);
+        await migrator.createTable(taskTemplateStepsTable);
+        await migrator.createTable(taskTemplateAssignmentsTable);
+        await migrator.createTable(taskTemplateAssignmentEventsTable);
+      }
+      if (from < 8) {
+        await migrator.alterTable(
+          TableMigration(
+            taskTemplateAssignmentsTable,
+            columnTransformer: <GeneratedColumn<Object>, Expression<Object>>{},
+          ),
+        );
+      }
+      if (from < 9) {
+        await migrator.createTable(ailmentsTable);
+        await migrator.createTable(healthRecordsTable);
+        await migrator.createTable(healthTreatmentsTable);
+      }
+    },
+  );
 
   Future<void> clearAll() async {
     await transaction(() async {
@@ -299,6 +346,9 @@ class LocalDatabase extends _$LocalDatabase {
       await delete(breedingRecordsTable).go();
       await delete(animalsTable).go();
       await delete(animalMediaTable).go();
+      await delete(healthTreatmentsTable).go();
+      await delete(healthRecordsTable).go();
+      await delete(ailmentsTable).go();
       await delete(taskTemplateAssignmentEventsTable).go();
       await delete(taskTemplateAssignmentsTable).go();
       await delete(taskTemplateStepsTable).go();

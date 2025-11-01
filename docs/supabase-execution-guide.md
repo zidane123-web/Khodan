@@ -165,6 +165,39 @@ public     | user_preferences    | user_preferences_owner_all
 
 Comptes `codex-agent+*@example.com` supprimes le 30/10/2025 (Auth > Users).
 
+### Journal 2025-11-01 (Plan2 tache 10)
+
+- Migration a appliquer : `supabase/migrations/20251101103000_health_module.sql`.
+- Contexte : la CLI reste instable sous Windows -> preferer **Methode B** (SQL Editor).
+- Requetes de verification a executer apres application :
+  ```sql
+  SELECT table_name
+  FROM information_schema.tables
+  WHERE table_schema = 'public'
+    AND table_name IN ('ailments', 'health_records', 'health_treatments');
+  ```
+- Resultats attendus :
+  ```text
+  ailments
+  health_records
+  health_treatments
+  ```
+- Pour controler les index :
+  ```sql
+  SELECT indexname, tablename
+  FROM pg_indexes
+  WHERE schemaname = 'public'
+    AND tablename IN ('ailments', 'health_records', 'health_treatments');
+  ```
+- Pour valider les policies RLS :
+  ```sql
+  SELECT tablename, policyname
+  FROM pg_policies
+  WHERE schemaname = 'public'
+    AND tablename IN ('ailments', 'health_records', 'health_treatments');
+  ```
+- Statut : a executer via SQL Editor (copier le fichier + insertion dans `schema_migrations` avec la version `20251101103000`).
+
 ## Creation rapide d'un token `authenticated` pour tests API
 
 ```powershell
@@ -190,7 +223,7 @@ flutter run -d chrome
 ## Migrations futures a planifier
 
 - **Finances** : tables `transactions`, `transaction_items`, `contacts`, vues de synthese.
-- **Sante** : tables `health_records`, `health_templates`, `medications`, journaux de traitements.
+- **Sante** : tables `health_templates`, `medications`, vues de synthese (complements au module livre).
 - **Notifications** : table `notification_preferences`, table `notifications` (log) + edge function.
 - **Abonnements** : tables `plans`, `subscriptions`, `invoices`, `subscription_limits`.
 - **Rapports avances** : vues materialisees reproduction, croissance, finance; fonction `get_advanced_reports`.

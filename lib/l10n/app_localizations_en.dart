@@ -207,6 +207,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonClear => 'Clear';
 
   @override
+  String get commonConfirm => 'Confirm';
+
+  @override
+  String get commonCancel => 'Cancel';
+
+  @override
+  String get commonDelete => 'Delete';
+
+  @override
+  String get commonClose => 'Close';
+
+  @override
+  String get commonEdit => 'Edit';
+
+  @override
+  String get commonSave => 'Save';
+
+  @override
+  String get commonUpdate => 'Update';
+
+  @override
   String get logsTitle => 'Logs and Diagnostics';
 
   @override
@@ -458,4 +479,224 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get planningCsvExported => 'CSV generated';
+
+  @override
+  String get navHealth => 'Health';
+
+  @override
+  String get navHealthDescription =>
+      'Track ailments, treatments, and reminders.';
+
+  @override
+  String get healthTitle => 'Health';
+
+  @override
+  String get healthTabLibrary => 'Library';
+
+  @override
+  String get healthTabRecords => 'Records';
+
+  @override
+  String get healthAddRecord => 'Add record';
+
+  @override
+  String get healthEditRecord => 'Edit record';
+
+  @override
+  String get healthSearchPlaceholder => 'Search ailments…';
+
+  @override
+  String get healthAilmentsEmpty => 'The health library is empty.';
+
+  @override
+  String get healthAilmentNoDetails => 'No additional details.';
+
+  @override
+  String get healthSymptomsTitle => 'Symptoms';
+
+  @override
+  String get healthCausesTitle => 'Common causes';
+
+  @override
+  String get healthTreatmentsTitle => 'Recommended treatments';
+
+  @override
+  String healthTreatmentSummary(Object dosage, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+      zero: 'Flexible duration',
+    );
+    return '$dosage • $_temp0';
+  }
+
+  @override
+  String get healthPreventionTitle => 'Prevention';
+
+  @override
+  String get healthRecordsEmpty => 'No health records yet.';
+
+  @override
+  String get healthDiagnosisFromLibrary => 'From the ailment library';
+
+  @override
+  String get healthOpenDetails => 'View details';
+
+  @override
+  String get healthDeleteRecordConfirm => 'Delete this health record?';
+
+  @override
+  String get healthSelectAnimal => 'Animal';
+
+  @override
+  String get healthValidationAnimal => 'Please choose an animal.';
+
+  @override
+  String get healthSelectAilment => 'Ailment';
+
+  @override
+  String get healthAilmentCustom => 'Custom diagnosis';
+
+  @override
+  String get healthDiagnosisLabel => 'Diagnosis';
+
+  @override
+  String get healthValidationDiagnosis => 'Add a diagnosis or pick an ailment.';
+
+  @override
+  String healthSeverityLabel(String severity) {
+    String _temp0 = intl.Intl.selectLogic(severity, {
+      'low': 'Low',
+      'moderate': 'Moderate',
+      'high': 'High',
+      'critical': 'Critical',
+      'other': 'Unknown',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String healthStatusLabel(String status) {
+    String _temp0 = intl.Intl.selectLogic(status, {
+      'draft': 'Draft',
+      'active': 'Active',
+      'resolved': 'Resolved',
+      'archived': 'Archived',
+      'other': 'Unknown',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get healthOnsetDateLabel => 'Onset date';
+
+  @override
+  String get healthNextCheckToggle => 'Schedule a follow-up reminder';
+
+  @override
+  String healthNextCheckLabel(Object date) {
+    return 'Next check: $date';
+  }
+
+  @override
+  String get healthNotesLabel => 'Notes';
+
+  @override
+  String get healthRecordDetails => 'Health record';
+
+  @override
+  String healthRecordFor(Object animal) {
+    return 'Health record – $animal';
+  }
+
+  @override
+  String get healthRecordNotFound => 'This record is no longer available.';
+
+  @override
+  String get healthTreatmentsSection => 'Treatments';
+
+  @override
+  String get healthNoTreatmentsYet => 'No treatments logged yet.';
+
+  @override
+  String get healthMarkTreatmentDone => 'Mark as completed';
+
+  @override
+  String get healthAddTreatment => 'Add treatment';
+
+  @override
+  String get healthEditTreatment => 'Edit treatment';
+
+  @override
+  String get healthTreatmentTitle => 'Treatment title';
+
+  @override
+  String get healthValidationTreatmentTitle =>
+      'Please enter a treatment title.';
+
+  @override
+  String get healthTreatmentType => 'Treatment type';
+
+  @override
+  String healthTreatmentTypeLabel(String type) {
+    String _temp0 = intl.Intl.selectLogic(type, {
+      'medication': 'Medication',
+      'procedure': 'Procedure',
+      'care': 'Care routine',
+      'diet_adjustment': 'Diet adjustment',
+      'other': 'Treatment',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get healthTreatmentDosage => 'Dosage';
+
+  @override
+  String get healthTreatmentFrequency => 'Frequency';
+
+  @override
+  String get healthTreatmentStart => 'Start';
+
+  @override
+  String get healthTreatmentEndOptional => 'End (optional)';
+
+  @override
+  String healthTreatmentEndValue(Object value) {
+    return 'End: $value';
+  }
+
+  @override
+  String get healthTreatmentMarkCompleted => 'Completed';
+
+  @override
+  String get healthRemindersTitle => 'Reminders';
+
+  @override
+  String get healthReminderOneDayBefore => '1 day before';
+
+  @override
+  String get healthReminderOneHourBefore => '1 hour before';
+
+  @override
+  String get healthReminderAtStart => 'At start time';
+
+  @override
+  String get healthReminderOneHourAfter => '1 hour after';
+
+  @override
+  String get healthReminderOneDayAfter => '1 day after';
+
+  @override
+  String healthReminderMinutes(int minutes) {
+    return 'Reminder $minutes min';
+  }
+
+  @override
+  String get healthValidationDates => 'End date must be after start date.';
+
+  @override
+  String get healthDeleteTreatmentConfirm => 'Delete this treatment?';
 }

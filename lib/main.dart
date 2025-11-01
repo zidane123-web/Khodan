@@ -29,6 +29,7 @@ import 'data/repositories/species_repository.dart';
 import 'data/repositories/litter_repository.dart';
 import 'data/repositories/hutch_repository.dart';
 import 'data/repositories/task_template_repository.dart';
+import 'data/repositories/health_repository.dart';
 import 'data/services/api_client.dart';
 import 'data/services/connectivity_watcher.dart';
 import 'data/services/offline_sync_manager.dart';
@@ -115,6 +116,8 @@ class _KhodanAppState extends State<KhodanApp> {
   late final LocalTaskTemplateDataSource _localTaskTemplateDataSource;
   late final LocalTaskTemplateAssignmentDataSource
       _localTaskTemplateAssignmentDataSource;
+  late final LocalAilmentDataSource _localAilmentDataSource;
+  late final LocalHealthRecordDataSource _localHealthRecordDataSource;
   late final LocalFoodTypeDataSource _localFoodTypeDataSource;
   late final LocalFoodStockDataSource _localFoodStockDataSource;
   late final LocalProfileDataSource _localProfileDataSource;
@@ -137,6 +140,8 @@ class _KhodanAppState extends State<KhodanApp> {
     _localTaskTemplateDataSource = LocalTaskTemplateDataSource(_localDb);
     _localTaskTemplateAssignmentDataSource =
         LocalTaskTemplateAssignmentDataSource(_localDb);
+    _localAilmentDataSource = LocalAilmentDataSource(_localDb);
+    _localHealthRecordDataSource = LocalHealthRecordDataSource(_localDb);
     _localFoodTypeDataSource = LocalFoodTypeDataSource(_localDb);
     _localFoodStockDataSource = LocalFoodStockDataSource(_localDb);
     _localProfileDataSource = LocalProfileDataSource(_localDb);
@@ -236,6 +241,12 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<LocalTaskTemplateAssignmentDataSource>.value(
         value: _localTaskTemplateAssignmentDataSource,
       ),
+      RepositoryProvider<LocalAilmentDataSource>.value(
+        value: _localAilmentDataSource,
+      ),
+      RepositoryProvider<LocalHealthRecordDataSource>.value(
+        value: _localHealthRecordDataSource,
+      ),
       RepositoryProvider<LocalFoodTypeDataSource>.value(
         value: _localFoodTypeDataSource,
       ),
@@ -286,6 +297,9 @@ class _KhodanAppState extends State<KhodanApp> {
       ),
       RepositoryProvider<TaskTemplateRepository>(
         create: (_) => InMemoryTaskTemplateRepository(),
+      ),
+      RepositoryProvider<HealthRepository>(
+        create: (_) => InMemoryHealthRepository(),
       ),
       RepositoryProvider<FoodInventoryRepository>(
         create: (_) => SyncedFoodInventoryRepository(
@@ -353,6 +367,9 @@ class _KhodanAppState extends State<KhodanApp> {
         SupabaseFoodInventoryRepository(apiClient: apiClient);
     final TaskTemplateRepository remoteTaskTemplates =
         SupabaseTaskTemplateRepository(apiClient: apiClient);
+    final HealthRepository remoteHealth = SupabaseHealthRepository(
+      apiClient: apiClient,
+    );
 
     final AnimalRepository syncedAnimal = SyncedAnimalRepository(
       remote: remoteAnimal,
@@ -367,6 +384,13 @@ class _KhodanAppState extends State<KhodanApp> {
     final EventRepository syncedEvent = SyncedEventRepository(
       remote: remoteEvent,
       local: _localEventDataSource,
+      offlineManager: offlineManager,
+    );
+    final HealthRepository syncedHealth = SyncedHealthRepository(
+      remote: remoteHealth,
+      localAilments: _localAilmentDataSource,
+      localRecords: _localHealthRecordDataSource,
+      eventRepository: syncedEvent,
       offlineManager: offlineManager,
     );
     final MediaRepository syncedMedia = SyncedMediaRepository(
@@ -441,6 +465,12 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<LocalTaskTemplateAssignmentDataSource>.value(
         value: _localTaskTemplateAssignmentDataSource,
       ),
+      RepositoryProvider<LocalAilmentDataSource>.value(
+        value: _localAilmentDataSource,
+      ),
+      RepositoryProvider<LocalHealthRecordDataSource>.value(
+        value: _localHealthRecordDataSource,
+      ),
       RepositoryProvider<LocalFoodTypeDataSource>.value(
         value: _localFoodTypeDataSource,
       ),
@@ -468,6 +498,9 @@ class _KhodanAppState extends State<KhodanApp> {
       ),
       RepositoryProvider<FoodInventoryRepository>(
         create: (_) => syncedInventory,
+      ),
+      RepositoryProvider<HealthRepository>(
+        create: (_) => syncedHealth,
       ),
       RepositoryProvider<MediaRepository>(create: (_) => syncedMedia),
       RepositoryProvider<KnowledgeBaseRepository>(

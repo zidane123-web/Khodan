@@ -131,6 +131,13 @@
     }
   },
   "commonClear": "Clear",
+  "commonConfirm": "Confirm",
+  "commonCancel": "Cancel",
+  "commonDelete": "Delete",
+  "commonClose": "Close",
+  "commonEdit": "Edit",
+  "commonSave": "Save",
+  "commonUpdate": "Update",
   "logsTitle": "Logs and Diagnostics",
   "logsRefresh": "Refresh diagnostics",
   "logsOfflineToggle": "Detailed logging",
@@ -200,5 +207,110 @@
   "contactSupportMessageHint": "Describe your question or the issue with as many details as possible.",
   "contactSupportMessageValidation": "Please add more details (minimum 10 characters).",
   "contactSupportSubmitting": "Sending…",
-  "contactSupportRecentTitle": "Latest tickets"
+  "contactSupportRecentTitle": "Latest tickets",
+  "navHealth": "Health",
+  "navHealthDescription": "Track ailments, treatments, and reminders.",
+  "healthTitle": "Health",
+  "healthTabLibrary": "Library",
+  "healthTabRecords": "Records",
+  "healthAddRecord": "Add record",
+  "healthEditRecord": "Edit record",
+  "healthSearchPlaceholder": "Search ailments…",
+  "healthAilmentsEmpty": "The health library is empty.",
+  "healthAilmentNoDetails": "No additional details.",
+  "healthSymptomsTitle": "Symptoms",
+  "healthCausesTitle": "Common causes",
+  "healthTreatmentsTitle": "Recommended treatments",
+  "healthTreatmentSummary": "{dosage} • {days, plural, =0 {Flexible duration} =1 {1 day} other {{days} days}}",
+  "@healthTreatmentSummary": {
+    "placeholders": {
+      "dosage": {},
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "healthPreventionTitle": "Prevention",
+  "healthRecordsEmpty": "No health records yet.",
+  "healthDiagnosisFromLibrary": "From the ailment library",
+  "healthOpenDetails": "View details",
+  "healthDeleteRecordConfirm": "Delete this health record?",
+  "healthSelectAnimal": "Animal",
+  "healthValidationAnimal": "Please choose an animal.",
+  "healthSelectAilment": "Ailment",
+  "healthAilmentCustom": "Custom diagnosis",
+  "healthDiagnosisLabel": "Diagnosis",
+  "healthValidationDiagnosis": "Add a diagnosis or pick an ailment.",
+  "healthSeverityLabel": "{severity, select, low {Low} moderate {Moderate} high {High} critical {Critical} other {Unknown}}",
+  "@healthSeverityLabel": {
+    "placeholders": {
+      "severity": {}
+    }
+  },
+  "healthStatusLabel": "{status, select, draft {Draft} active {Active} resolved {Resolved} archived {Archived} other {Unknown}}",
+  "@healthStatusLabel": {
+    "placeholders": {
+      "status": {}
+    }
+  },
+  "healthOnsetDateLabel": "Onset date",
+  "healthNextCheckToggle": "Schedule a follow-up reminder",
+  "healthNextCheckLabel": "Next check: {date}",
+  "@healthNextCheckLabel": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "healthNotesLabel": "Notes",
+  "healthRecordDetails": "Health record",
+  "healthRecordFor": "Health record – {animal}",
+  "@healthRecordFor": {
+    "placeholders": {
+      "animal": {}
+    }
+  },
+  "healthRecordNotFound": "This record is no longer available.",
+  "healthTreatmentsSection": "Treatments",
+  "healthNoTreatmentsYet": "No treatments logged yet.",
+  "healthMarkTreatmentDone": "Mark as completed",
+  "healthAddTreatment": "Add treatment",
+  "healthEditTreatment": "Edit treatment",
+  "healthTreatmentTitle": "Treatment title",
+  "healthValidationTreatmentTitle": "Please enter a treatment title.",
+  "healthTreatmentType": "Treatment type",
+  "healthTreatmentTypeLabel": "{type, select, medication {Medication} procedure {Procedure} care {Care routine} diet_adjustment {Diet adjustment} other {Treatment}}",
+  "@healthTreatmentTypeLabel": {
+    "placeholders": {
+      "type": {}
+    }
+  },
+  "healthTreatmentDosage": "Dosage",
+  "healthTreatmentFrequency": "Frequency",
+  "healthTreatmentStart": "Start",
+  "healthTreatmentEndOptional": "End (optional)",
+  "healthTreatmentEndValue": "End: {value}",
+  "@healthTreatmentEndValue": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "healthTreatmentMarkCompleted": "Completed",
+  "healthRemindersTitle": "Reminders",
+  "healthReminderOneDayBefore": "1 day before",
+  "healthReminderOneHourBefore": "1 hour before",
+  "healthReminderAtStart": "At start time",
+  "healthReminderOneHourAfter": "1 hour after",
+  "healthReminderOneDayAfter": "1 day after",
+  "healthReminderMinutes": "Reminder {minutes} min",
+  "@healthReminderMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "healthValidationDates": "End date must be after start date.",
+  "healthDeleteTreatmentConfirm": "Delete this treatment?"
 }
+
+

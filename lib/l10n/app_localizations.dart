@@ -429,6 +429,48 @@ abstract class AppLocalizations {
   /// **'Effacer'**
   String get commonClear;
 
+  /// No description provided for @commonConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmer'**
+  String get commonConfirm;
+
+  /// No description provided for @commonCancel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get commonCancel;
+
+  /// No description provided for @commonDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get commonDelete;
+
+  /// No description provided for @commonClose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get commonClose;
+
+  /// No description provided for @commonEdit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get commonEdit;
+
+  /// No description provided for @commonSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get commonSave;
+
+  /// No description provided for @commonUpdate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre a jour'**
+  String get commonUpdate;
+
   /// No description provided for @logsTitle.
   ///
   /// In fr, this message translates to:
@@ -878,6 +920,354 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'CSV genere'**
   String get planningCsvExported;
+
+  /// No description provided for @navHealth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sante'**
+  String get navHealth;
+
+  /// No description provided for @navHealthDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivre les maladies, traitements et rappels.'**
+  String get navHealthDescription;
+
+  /// No description provided for @healthTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sante'**
+  String get healthTitle;
+
+  /// No description provided for @healthTabLibrary.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bibliotheque'**
+  String get healthTabLibrary;
+
+  /// No description provided for @healthTabRecords.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dossiers'**
+  String get healthTabRecords;
+
+  /// No description provided for @healthAddRecord.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un dossier'**
+  String get healthAddRecord;
+
+  /// No description provided for @healthEditRecord.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le dossier'**
+  String get healthEditRecord;
+
+  /// No description provided for @healthSearchPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher une maladie…'**
+  String get healthSearchPlaceholder;
+
+  /// No description provided for @healthAilmentsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'La bibliotheque est vide.'**
+  String get healthAilmentsEmpty;
+
+  /// No description provided for @healthAilmentNoDetails.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun detail disponible.'**
+  String get healthAilmentNoDetails;
+
+  /// No description provided for @healthSymptomsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Symptomes'**
+  String get healthSymptomsTitle;
+
+  /// No description provided for @healthCausesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Causes frequentes'**
+  String get healthCausesTitle;
+
+  /// No description provided for @healthTreatmentsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Traitements recommandes'**
+  String get healthTreatmentsTitle;
+
+  /// No description provided for @healthTreatmentSummary.
+  ///
+  /// In fr, this message translates to:
+  /// **'{dosage} • {days, plural, =0 {Duree flexible} =1 {1 jour} other {{days} jours}}'**
+  String healthTreatmentSummary(Object dosage, int days);
+
+  /// No description provided for @healthPreventionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prevention'**
+  String get healthPreventionTitle;
+
+  /// No description provided for @healthRecordsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun dossier de sante enregistre.'**
+  String get healthRecordsEmpty;
+
+  /// No description provided for @healthDiagnosisFromLibrary.
+  ///
+  /// In fr, this message translates to:
+  /// **'Depuis la bibliotheque des maladies'**
+  String get healthDiagnosisFromLibrary;
+
+  /// No description provided for @healthOpenDetails.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir les details'**
+  String get healthOpenDetails;
+
+  /// No description provided for @healthDeleteRecordConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer ce dossier de sante ?'**
+  String get healthDeleteRecordConfirm;
+
+  /// No description provided for @healthSelectAnimal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Animal'**
+  String get healthSelectAnimal;
+
+  /// No description provided for @healthValidationAnimal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Selectionner un animal.'**
+  String get healthValidationAnimal;
+
+  /// No description provided for @healthSelectAilment.
+  ///
+  /// In fr, this message translates to:
+  /// **'Maladie'**
+  String get healthSelectAilment;
+
+  /// No description provided for @healthAilmentCustom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Diagnostic personnalise'**
+  String get healthAilmentCustom;
+
+  /// No description provided for @healthDiagnosisLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Diagnostic'**
+  String get healthDiagnosisLabel;
+
+  /// No description provided for @healthValidationDiagnosis.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un diagnostic ou choisir une maladie.'**
+  String get healthValidationDiagnosis;
+
+  /// No description provided for @healthSeverityLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'{severity, select, low {Faible} moderate {Moderee} high {Elevee} critical {Critique} other {Inconnu}}'**
+  String healthSeverityLabel(String severity);
+
+  /// No description provided for @healthStatusLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'{status, select, draft {Brouillon} active {Actif} resolved {Resolue} archived {Archivee} other {Inconnu}}'**
+  String healthStatusLabel(String status);
+
+  /// No description provided for @healthOnsetDateLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date d\'apparition'**
+  String get healthOnsetDateLabel;
+
+  /// No description provided for @healthNextCheckToggle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Programmer un rappel de suivi'**
+  String get healthNextCheckToggle;
+
+  /// No description provided for @healthNextCheckLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prochain controle : {date}'**
+  String healthNextCheckLabel(Object date);
+
+  /// No description provided for @healthNotesLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notes'**
+  String get healthNotesLabel;
+
+  /// No description provided for @healthRecordDetails.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dossier de sante'**
+  String get healthRecordDetails;
+
+  /// No description provided for @healthRecordFor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dossier de sante – {animal}'**
+  String healthRecordFor(Object animal);
+
+  /// No description provided for @healthRecordNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce dossier n\'est plus disponible.'**
+  String get healthRecordNotFound;
+
+  /// No description provided for @healthTreatmentsSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Traitements'**
+  String get healthTreatmentsSection;
+
+  /// No description provided for @healthNoTreatmentsYet.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun traitement enregistre.'**
+  String get healthNoTreatmentsYet;
+
+  /// No description provided for @healthMarkTreatmentDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer comme termine'**
+  String get healthMarkTreatmentDone;
+
+  /// No description provided for @healthAddTreatment.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un traitement'**
+  String get healthAddTreatment;
+
+  /// No description provided for @healthEditTreatment.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le traitement'**
+  String get healthEditTreatment;
+
+  /// No description provided for @healthTreatmentTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre du traitement'**
+  String get healthTreatmentTitle;
+
+  /// No description provided for @healthValidationTreatmentTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indiquer un titre de traitement.'**
+  String get healthValidationTreatmentTitle;
+
+  /// No description provided for @healthTreatmentType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type de traitement'**
+  String get healthTreatmentType;
+
+  /// No description provided for @healthTreatmentTypeLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'{type, select, medication {Medicament} procedure {Procedure} care {Soin} diet_adjustment {Ajustement alimentaire} other {Traitement}}'**
+  String healthTreatmentTypeLabel(String type);
+
+  /// No description provided for @healthTreatmentDosage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dosage'**
+  String get healthTreatmentDosage;
+
+  /// No description provided for @healthTreatmentFrequency.
+  ///
+  /// In fr, this message translates to:
+  /// **'Frequence'**
+  String get healthTreatmentFrequency;
+
+  /// No description provided for @healthTreatmentStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Debut'**
+  String get healthTreatmentStart;
+
+  /// No description provided for @healthTreatmentEndOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin (optionnel)'**
+  String get healthTreatmentEndOptional;
+
+  /// No description provided for @healthTreatmentEndValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin : {value}'**
+  String healthTreatmentEndValue(Object value);
+
+  /// No description provided for @healthTreatmentMarkCompleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Termine'**
+  String get healthTreatmentMarkCompleted;
+
+  /// No description provided for @healthRemindersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rappels'**
+  String get healthRemindersTitle;
+
+  /// No description provided for @healthReminderOneDayBefore.
+  ///
+  /// In fr, this message translates to:
+  /// **'1 jour avant'**
+  String get healthReminderOneDayBefore;
+
+  /// No description provided for @healthReminderOneHourBefore.
+  ///
+  /// In fr, this message translates to:
+  /// **'1 heure avant'**
+  String get healthReminderOneHourBefore;
+
+  /// No description provided for @healthReminderAtStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'A l\'heure de debut'**
+  String get healthReminderAtStart;
+
+  /// No description provided for @healthReminderOneHourAfter.
+  ///
+  /// In fr, this message translates to:
+  /// **'1 heure apres'**
+  String get healthReminderOneHourAfter;
+
+  /// No description provided for @healthReminderOneDayAfter.
+  ///
+  /// In fr, this message translates to:
+  /// **'1 jour apres'**
+  String get healthReminderOneDayAfter;
+
+  /// No description provided for @healthReminderMinutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rappel {minutes} min'**
+  String healthReminderMinutes(int minutes);
+
+  /// No description provided for @healthValidationDates.
+  ///
+  /// In fr, this message translates to:
+  /// **'La date de fin doit suivre la date de debut.'**
+  String get healthValidationDates;
+
+  /// No description provided for @healthDeleteTreatmentConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer ce traitement ?'**
+  String get healthDeleteTreatmentConfirm;
 }
 
 class _AppLocalizationsDelegate
