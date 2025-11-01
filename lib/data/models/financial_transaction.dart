@@ -49,8 +49,7 @@ class FinancialTransaction extends Equatable {
       category: categoryJson != null
           ? TransactionCategory.fromJson(categoryJson)
           : null,
-      contact:
-          contactJson != null ? Contact.fromJson(contactJson) : null,
+      contact: contactJson != null ? Contact.fromJson(contactJson) : null,
     );
   }
 
@@ -204,22 +203,22 @@ class FinancialTransaction extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        id,
-        profileId,
-        title,
-        flow,
-        amount,
-        currency,
-        occuredOn,
-        categoryId,
-        contactId,
-        paymentMethod,
-        notes,
-        attachmentUrl,
-        attachmentName,
-        createdAt,
-        updatedAt,
-        category,
-        contact,
-      ];
+    id,
+    profileId,
+    title,
+    flow,
+    amount,
+    currency,
+    occuredOn,
+    categoryId,
+    contactId,
+    paymentMethod,
+    notes,
+    attachmentUrl,
+    attachmentName,
+    createdAt,
+    updatedAt,
+    category,
+    contact,
+  ];
 }

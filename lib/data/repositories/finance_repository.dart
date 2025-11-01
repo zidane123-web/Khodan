@@ -48,8 +48,8 @@ abstract class FinanceRepository {
 
 class SupabaseFinanceRepository implements FinanceRepository {
   SupabaseFinanceRepository({ApiExecutor? apiClient})
-      : _api = apiClient ?? ApiClient(),
-        _uuid = const Uuid();
+    : _api = apiClient ?? ApiClient(),
+      _uuid = const Uuid();
 
   final ApiExecutor _api;
   final Uuid _uuid;
@@ -61,26 +61,23 @@ class SupabaseFinanceRepository implements FinanceRepository {
   Future<List<TransactionCategory>> fetchCategories({
     bool includeInactive = false,
   }) async {
-    final List<dynamic> rows = await _api.run(
-      (SupabaseClient client) {
-        final PostgrestFilterBuilder<PostgrestList> query =
-            client.from('transaction_categories').select(
-                  'id, profile_id, code, label, default_flow, '
-                  'is_active, is_custom, created_at, updated_at',
-                );
-        if (!includeInactive) {
-          query.eq('is_active', true);
-        }
-        query.order('label');
-        return query;
-      },
-      label: 'finance.fetchCategories',
-    );
+    final List<dynamic> rows = await _api.run((SupabaseClient client) {
+      final PostgrestFilterBuilder<PostgrestList> query = client
+          .from('transaction_categories')
+          .select(
+            'id, profile_id, code, label, default_flow, '
+            'is_active, is_custom, created_at, updated_at',
+          );
+      if (!includeInactive) {
+        query.eq('is_active', true);
+      }
+      query.order('label');
+      return query;
+    }, label: 'finance.fetchCategories');
     return rows
         .map(
-          (dynamic row) => TransactionCategory.fromJson(
-            row as Map<String, dynamic>,
-          ),
+          (dynamic row) =>
+              TransactionCategory.fromJson(row as Map<String, dynamic>),
         )
         .toList(growable: false);
   }
@@ -101,16 +98,19 @@ class SupabaseFinanceRepository implements FinanceRepository {
 
   @override
   Future<Contact> createContact(Contact contact) async {
-    final Contact payload = (contact.id.isEmpty ? contact : contact.copyWith(id: ''))
-        .copyWith(profileId: _requireProfileId());
-    final Map<String, dynamic> row = await _api.run(
-      (SupabaseClient client) => client
-          .from('contacts')
-          .insert(payload.toInsertPayload())
-          .select()
-          .single(),
-      label: 'finance.createContact',
-    ) as Map<String, dynamic>;
+    final Contact payload =
+        (contact.id.isEmpty ? contact : contact.copyWith(id: '')).copyWith(
+          profileId: _requireProfileId(),
+        );
+    final Map<String, dynamic> row =
+        await _api.run(
+              (SupabaseClient client) => client
+                  .from('contacts')
+                  .insert(payload.toInsertPayload())
+                  .select()
+                  .single(),
+              label: 'finance.createContact',
+            );
     return Contact.fromJson(row);
   }
 
@@ -119,23 +119,23 @@ class SupabaseFinanceRepository implements FinanceRepository {
     final Contact payload = contact.profileId.isEmpty
         ? contact.copyWith(profileId: _requireProfileId())
         : contact;
-    final Map<String, dynamic> row = await _api.run(
-      (SupabaseClient client) => client
-          .from('contacts')
-          .update(payload.toUpdatePayload())
-          .eq('id', payload.id)
-          .select()
-          .single(),
-      label: 'finance.updateContact',
-    ) as Map<String, dynamic>;
+    final Map<String, dynamic> row =
+        await _api.run(
+              (SupabaseClient client) => client
+                  .from('contacts')
+                  .update(payload.toUpdatePayload())
+                  .eq('id', payload.id)
+                  .select()
+                  .single(),
+              label: 'finance.updateContact',
+            );
     return Contact.fromJson(row);
   }
 
   @override
   Future<void> deleteContact(String id) async {
     await _api.run(
-      (SupabaseClient client) =>
-          client.from('contacts').delete().eq('id', id),
+      (SupabaseClient client) => client.from('contacts').delete().eq('id', id),
       label: 'finance.deleteContact',
     );
   }
@@ -145,8 +145,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
     final List<dynamic> rows = await _api.run(
       (SupabaseClient client) => client
           .from('financial_transactions')
-          .select(
-            '''
+          .select('''
 id,
 profile_id,
 category_id,
@@ -185,17 +184,15 @@ contact:contacts(
   created_at,
   updated_at
 )
-''',
-          )
+''')
           .order('occured_on', ascending: false)
           .order('created_at', ascending: false),
       label: 'finance.fetchTransactions',
     );
     return rows
         .map(
-          (dynamic row) => FinancialTransaction.fromJson(
-            row as Map<String, dynamic>,
-          ),
+          (dynamic row) =>
+              FinancialTransaction.fromJson(row as Map<String, dynamic>),
         )
         .toList(growable: false);
   }
@@ -207,20 +204,19 @@ contact:contacts(
     final FinancialTransaction payload =
         (transaction.id.isEmpty ? transaction : transaction.copyWith(id: ''))
             .copyWith(profileId: _requireProfileId());
-    final Map<String, dynamic> row = await _api.run(
-      (SupabaseClient client) => client
-          .from('financial_transactions')
-          .insert(payload.toInsertPayload())
-          .select(
-            '''
+    final Map<String, dynamic> row =
+        await _api.run(
+              (SupabaseClient client) => client
+                  .from('financial_transactions')
+                  .insert(payload.toInsertPayload())
+                  .select('''
 *,
 category:transaction_categories(*),
 contact:contacts(*)
-''',
-          )
-          .single(),
-      label: 'finance.createTransaction',
-    ) as Map<String, dynamic>;
+''')
+                  .single(),
+              label: 'finance.createTransaction',
+            );
     return FinancialTransaction.fromJson(row);
   }
 
@@ -231,21 +227,20 @@ contact:contacts(*)
     final FinancialTransaction payload = transaction.profileId.isEmpty
         ? transaction.copyWith(profileId: _requireProfileId())
         : transaction;
-    final Map<String, dynamic> row = await _api.run(
-      (SupabaseClient client) => client
-          .from('financial_transactions')
-          .update(payload.toUpdatePayload())
-          .eq('id', payload.id)
-          .select(
-            '''
+    final Map<String, dynamic> row =
+        await _api.run(
+              (SupabaseClient client) => client
+                  .from('financial_transactions')
+                  .update(payload.toUpdatePayload())
+                  .eq('id', payload.id)
+                  .select('''
 *,
 category:transaction_categories(*),
 contact:contacts(*)
-''',
-          )
-          .single(),
-      label: 'finance.updateTransaction',
-    ) as Map<String, dynamic>;
+''')
+                  .single(),
+              label: 'finance.updateTransaction',
+            );
     return FinancialTransaction.fromJson(row);
   }
 
@@ -265,20 +260,21 @@ contact:contacts(*)
     required Uint8List bytes,
     String contentType = 'image/jpeg',
   }) async {
-    final String sanitized =
-        fileName.replaceAll(RegExp(r'[^A-Za-z0-9\.\-_]'), '_');
-    final String path =
-        '$profileId/${_uuid.v4()}-$sanitized'.replaceAll('//', '/');
+    final String sanitized = fileName.replaceAll(
+      RegExp(r'[^A-Za-z0-9\.\-_]'),
+      '_',
+    );
+    final String path = '$profileId/${_uuid.v4()}-$sanitized'.replaceAll(
+      '//',
+      '/',
+    );
     await _api.run(
       (SupabaseClient client) => client.storage
           .from(_bucket)
           .uploadBinary(
             path,
             bytes,
-            fileOptions: FileOptions(
-              contentType: contentType,
-              upsert: true,
-            ),
+            fileOptions: FileOptions(contentType: contentType, upsert: true),
           ),
       label: 'finance.uploadReceipt',
     );
@@ -308,7 +304,7 @@ contact:contacts(*)
 
 class InMemoryFinanceRepository implements FinanceRepository {
   InMemoryFinanceRepository({String profileId = 'local-profile'})
-      : _profileId = profileId {
+    : _profileId = profileId {
     _seedDefaultCategories();
   }
 
@@ -357,8 +353,10 @@ class InMemoryFinanceRepository implements FinanceRepository {
     if (index == -1) {
       throw StateError('Contact not found: ${contact.id}');
     }
-    final Contact updated =
-        contact.copyWith(updatedAt: DateTime.now(), profileId: _profileId);
+    final Contact updated = contact.copyWith(
+      updatedAt: DateTime.now(),
+      profileId: _profileId,
+    );
     _contacts[index] = updated;
     _updateTransactionsWithContact(updated);
     return updated;
@@ -375,12 +373,11 @@ class InMemoryFinanceRepository implements FinanceRepository {
 
   @override
   Future<void> deleteContact(String id) async {
-    final bool hasTransaction =
-        _transactions.any((FinancialTransaction tx) => tx.contactId == id);
+    final bool hasTransaction = _transactions.any(
+      (FinancialTransaction tx) => tx.contactId == id,
+    );
     if (hasTransaction) {
-      throw StateError(
-        'Contact $id is linked to existing transactions.',
-      );
+      throw StateError('Contact $id is linked to existing transactions.');
     }
     _contacts.removeWhere((Contact contact) => contact.id == id);
   }
@@ -388,11 +385,10 @@ class InMemoryFinanceRepository implements FinanceRepository {
   @override
   Future<List<FinancialTransaction>> fetchTransactions() async {
     final List<FinancialTransaction> copy =
-        List<FinancialTransaction>.from(_transactions)
-          ..sort(
-            (FinancialTransaction a, FinancialTransaction b) =>
-                b.occuredOn.compareTo(a.occuredOn),
-          );
+        List<FinancialTransaction>.from(_transactions)..sort(
+          (FinancialTransaction a, FinancialTransaction b) =>
+              b.occuredOn.compareTo(a.occuredOn),
+        );
     return copy;
   }
 
@@ -400,10 +396,12 @@ class InMemoryFinanceRepository implements FinanceRepository {
   Future<FinancialTransaction> createTransaction(
     FinancialTransaction transaction,
   ) async {
-    final TransactionCategory? category = _categories
-        .firstWhereOrNull((TransactionCategory cat) => cat.id == transaction.categoryId);
-    final Contact? contact =
-        _contacts.firstWhereOrNull((Contact c) => c.id == transaction.contactId);
+    final TransactionCategory? category = _categories.firstWhereOrNull(
+      (TransactionCategory cat) => cat.id == transaction.categoryId,
+    );
+    final Contact? contact = _contacts.firstWhereOrNull(
+      (Contact c) => c.id == transaction.contactId,
+    );
     final FinancialTransaction created = transaction.copyWith(
       id: _uuid.v4(),
       profileId: _profileId,
@@ -420,15 +418,18 @@ class InMemoryFinanceRepository implements FinanceRepository {
   Future<FinancialTransaction> updateTransaction(
     FinancialTransaction transaction,
   ) async {
-    final int index =
-        _transactions.indexWhere((FinancialTransaction tx) => tx.id == transaction.id);
+    final int index = _transactions.indexWhere(
+      (FinancialTransaction tx) => tx.id == transaction.id,
+    );
     if (index == -1) {
       throw StateError('Transaction not found: ${transaction.id}');
     }
-    final TransactionCategory? category = _categories
-        .firstWhereOrNull((TransactionCategory cat) => cat.id == transaction.categoryId);
-    final Contact? contact =
-        _contacts.firstWhereOrNull((Contact c) => c.id == transaction.contactId);
+    final TransactionCategory? category = _categories.firstWhereOrNull(
+      (TransactionCategory cat) => cat.id == transaction.categoryId,
+    );
+    final Contact? contact = _contacts.firstWhereOrNull(
+      (Contact c) => c.id == transaction.contactId,
+    );
     final FinancialTransaction updated = transaction.copyWith(
       profileId: _profileId,
       updatedAt: DateTime.now(),
@@ -452,8 +453,7 @@ class InMemoryFinanceRepository implements FinanceRepository {
     String contentType = 'image/jpeg',
   }) async {
     final String key = 'memory-${_uuid.v4()}';
-    final String dataUrl =
-        'data:$contentType;base64,${base64Encode(bytes)}';
+    final String dataUrl = 'data:$contentType;base64,${base64Encode(bytes)}';
     _attachments[key] = dataUrl;
     return key;
   }

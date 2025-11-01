@@ -18,6 +18,7 @@ import '../../features/events/presentation/cubit/breeding_cubit.dart';
 import '../../features/planning/presentation/screens/planning_screen.dart';
 import '../../features/planning/presentation/screens/task_templates_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
+import '../../features/finances/presentation/screens/finance_screen.dart';
 import '../../features/settings/presentation/screens/settings_about_screen.dart';
 import '../../features/settings/presentation/screens/settings_contact_support_screen.dart';
 import '../../features/settings/presentation/screens/settings_knowledge_base_screen.dart';
@@ -125,6 +126,12 @@ class KhodanRouter {
                         label: l10n.navHealth,
                         description: l10n.navHealthDescription,
                         icon: Icons.health_and_safety_outlined,
+                      ),
+                      KhodanShellExtraDestination(
+                        route: const FinanceRoute().location,
+                        label: 'Finances',
+                        description: 'Ledger et contacts',
+                        icon: Icons.account_balance_wallet_outlined,
                       ),
                       KhodanShellExtraDestination(
                         route: const SettingsKnowledgeBaseRoute().location,
@@ -277,6 +284,11 @@ class KhodanRouter {
             ],
           ),
           GoRoute(
+            path: const FinanceRoute().path,
+            builder: (BuildContext context, GoRouterState state) =>
+                const FinancePage(),
+          ),
+          GoRoute(
             path: const PlanningRoute().path,
             builder: (BuildContext context, GoRouterState state) {
               return const PlanningScreen();
@@ -422,6 +434,10 @@ class SettingsLogsRoute extends KhodanRoute {
 
 class SettingsAboutRoute extends KhodanRoute {
   const SettingsAboutRoute() : super('/settings/support/about');
+}
+
+class FinanceRoute extends KhodanRoute {
+  const FinanceRoute() : super('/finances');
 }
 
 class PlanningRoute extends KhodanRoute {

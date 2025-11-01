@@ -39,11 +39,17 @@ class FinanceState extends Equatable {
 
   double get totalIncome => filteredTransactions
       .where((FinancialTransaction tx) => tx.flow.isIncome)
-      .fold<double>(0, (double sum, FinancialTransaction tx) => sum + tx.amount);
+      .fold<double>(
+        0,
+        (double sum, FinancialTransaction tx) => sum + tx.amount,
+      );
 
   double get totalExpense => filteredTransactions
       .where((FinancialTransaction tx) => tx.flow.isExpense)
-      .fold<double>(0, (double sum, FinancialTransaction tx) => sum + tx.amount);
+      .fold<double>(
+        0,
+        (double sum, FinancialTransaction tx) => sum + tx.amount,
+      );
 
   double get netBalance => totalIncome - totalExpense;
 
@@ -65,6 +71,7 @@ class FinanceState extends Equatable {
     bool clearFlow = false,
     String? searchQuery,
     String? errorMessage,
+    bool clearError = false,
   }) {
     return FinanceState(
       isLoading: isLoading ?? this.isLoading,
@@ -79,24 +86,24 @@ class FinanceState extends Equatable {
       contactId: clearContact ? null : (contactId ?? this.contactId),
       flow: clearFlow ? null : (flow ?? this.flow),
       searchQuery: searchQuery ?? this.searchQuery,
-      errorMessage: errorMessage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 
   @override
   List<Object?> get props => <Object?>[
-        isLoading,
-        isSaving,
-        isExporting,
-        transactions,
-        filteredTransactions,
-        contacts,
-        categories,
-        dateRange,
-        categoryId,
-        contactId,
-        flow,
-        searchQuery,
-        errorMessage,
-      ];
+    isLoading,
+    isSaving,
+    isExporting,
+    transactions,
+    filteredTransactions,
+    contacts,
+    categories,
+    dateRange,
+    categoryId,
+    contactId,
+    flow,
+    searchQuery,
+    errorMessage,
+  ];
 }

@@ -83,7 +83,7 @@ Derniere mise a jour : 2025-11-01 (Plan2 - tache 09).
   notifications_outbox
   ```
 
-  **Exécuté le 01/11/2025 – OK**
+  **Execute le 01/11/2025 - OK**
 
 ```text
 task_template_assignment_events
@@ -97,7 +97,7 @@ notification_preferences
 notifications_outbox
 ```
 
-**Migration 20251101103000 (01/11/2025) – OK via SQL Editor**
+**Migration 20251101103000 (01/11/2025) - OK via SQL Editor**
 
 ```text
 health_records
@@ -108,7 +108,7 @@ health_treatments
 ailments
 ```
 
-_Remarque : LIKE utilise `_` comme joker, remplacer par `LIKE 'health%'` pour vérifier les tables._
+_Remarque : LIKE utilise `_` comme joker, remplacer par `LIKE 'health%'` pour verifier les tables._
 
 ## SQL de controle apres migration
 

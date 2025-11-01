@@ -152,15 +152,15 @@ class Contact extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        id,
-        profileId,
-        displayName,
-        type,
-        email,
-        phone,
-        address,
-        notes,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    profileId,
+    displayName,
+    type,
+    email,
+    phone,
+    address,
+    notes,
+    createdAt,
+    updatedAt,
+  ];
 }

@@ -102,14 +102,14 @@ class TransactionCategory extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        id,
-        profileId,
-        code,
-        label,
-        defaultFlow,
-        isActive,
-        isCustom,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    profileId,
+    code,
+    label,
+    defaultFlow,
+    isActive,
+    isCustom,
+    createdAt,
+    updatedAt,
+  ];
 }
