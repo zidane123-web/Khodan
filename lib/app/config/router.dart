@@ -17,7 +17,7 @@ import '../../features/events/presentation/screens/add_event_screen.dart';
 import '../../features/events/presentation/cubit/breeding_cubit.dart';
 import '../../features/planning/presentation/screens/planning_screen.dart';
 import '../../features/planning/presentation/screens/task_templates_screen.dart';
-import '../../features/reports/presentation/screens/reports_screen.dart';
+import '../../features/reports/presentation/screens/reports_page.dart';
 import '../../features/finances/presentation/screens/finance_screen.dart';
 import '../../features/settings/presentation/screens/settings_about_screen.dart';
 import '../../features/settings/presentation/screens/settings_contact_support_screen.dart';
@@ -231,7 +231,7 @@ class KhodanRouter {
                   GoRoute(
                     path: const ReportsRoute().path,
                     builder: (BuildContext context, GoRouterState state) =>
-                        const ReportsScreen(),
+                        const ReportsPage(),
                   ),
                 ],
               ),

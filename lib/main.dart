@@ -34,7 +34,7 @@ import 'data/repositories/finance_repository.dart';
 import 'data/services/api_client.dart';
 import 'data/services/connectivity_watcher.dart';
 import 'data/services/offline_sync_manager.dart';
-import 'data/services/reporting_service.dart';
+import 'features/reports/services/reports_service.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 import 'features/notifications/services/local_notification_service.dart';
 
@@ -327,12 +327,9 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<FinanceRepository>(
         create: (_) => InMemoryFinanceRepository(),
       ),
-      RepositoryProvider<ReportingService>(
-        create: (BuildContext context) => ReportingService(
-          breedingRepository: context.read<BreedingRepository>(),
-          animalRepository: context.read<AnimalRepository>(),
-          eventRepository: context.read<EventRepository>(),
-          inventoryRepository: context.read<FoodInventoryRepository>(),
+      RepositoryProvider<ReportsService>(
+        create: (BuildContext context) => ReportsService(
+          apiClient: context.read<ApiExecutor>(),
         ),
       ),
     ];
@@ -520,12 +517,9 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<FinanceRepository>(
         create: (_) => remoteFinance,
       ),
-      RepositoryProvider<ReportingService>(
-        create: (BuildContext context) => ReportingService(
-          breedingRepository: context.read<BreedingRepository>(),
-          animalRepository: context.read<AnimalRepository>(),
-          eventRepository: context.read<EventRepository>(),
-          inventoryRepository: context.read<FoodInventoryRepository>(),
+      RepositoryProvider<ReportsService>(
+        create: (BuildContext context) => ReportsService(
+          apiClient: context.read<ApiExecutor>(),
         ),
       ),
     ];

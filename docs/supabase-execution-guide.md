@@ -1,4 +1,4 @@
-# Guide d'execution des migrations Supabase
+﻿# Guide d'execution des migrations Supabase
 
 Derniere mise a jour : 2025-11-01 (Plan2 - tache 09).
 
@@ -239,7 +239,24 @@ Comptes `codex-agent+*@example.com` supprimes le 30/10/2025 (Auth > Users).
   VALUES ('20251101120000', '20251101120000_finances_and_contacts.sql')
   ON CONFLICT (version) DO NOTHING;
   ```
-- Statut : en attente d'application distante (non lance depuis la CLI locale).
+**Ex�cut� le 01/11/2025 � OK via SQL Editor**
+
+```text
+contacts
+financial_transactions
+transaction_categories
+```
+
+```text
+contact_owner_all
+financial_transactions_owner_all
+transaction_categories_owner_all
+```
+
+```text
+financial_transactions_profile_idx
+transaction_categories_profile_idx
+```
 
 ## Creation rapide d'un token `authenticated` pour tests API
 
@@ -273,3 +290,35 @@ flutter run -d chrome
 - **Pedigrees** : table `pedigree_exports` + fonction recursive pour l'arbre genealogique.
 - **Cartes de clapier / QR** : table `cage_card_templates`, stockage des exports generes.
 - **Personnalisation** : etendre `user_preferences` (langue, unite, theme) si besoin.
+
+### Journal 2025-11-02 (Plan2 tache 12)
+
+- Migration a appliquer : `supabase/migrations/20251101143000_reports_views.sql`.
+- Contexte : ajoute trois vues (`view_reports_reproduction`, `view_reports_growth`, `view_reports_finances`) et la fonction `fn_report_finance_summary`.
+- Si la CLI reste instable, utiliser **Methode B** (SQL Editor) : coller le script complet, executer, puis enregistrer la version via
+  ```sql
+  INSERT INTO supabase_migrations.schema_migrations (version, name)
+  VALUES ('20251101143000', '20251101143000_reports_views.sql')
+  ON CONFLICT (version) DO NOTHING;
+  ```
+- Requetes de verification :
+  ```sql
+  SELECT table_schema, table_name
+  FROM information_schema.views
+  WHERE table_schema = 'public'
+    AND table_name IN (
+      'view_reports_reproduction',
+      'view_reports_growth',
+      'view_reports_finances'
+    );
+
+  SELECT proname
+  FROM pg_proc
+  WHERE proname = 'fn_report_finance_summary';
+
+  SELECT *
+  FROM view_reports_reproduction
+  WHERE period_start >= date_trunc('month', CURRENT_DATE) - INTERVAL '1 month'
+  LIMIT 10;
+  ```
+- Resultats attendus : trois vues retournees + fonction. Archiver les extraits SQL Editor dans le rapport de tache.
