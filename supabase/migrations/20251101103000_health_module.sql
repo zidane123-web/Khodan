@@ -9,6 +9,32 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 ------------------------------------------------------------------------
+-- Helper functions
+------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.is_valid_reminder_offsets(p_offsets INTEGER[])
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  v_value INTEGER;
+BEGIN
+  IF p_offsets IS NULL THEN
+    RETURN TRUE;
+  END IF;
+
+  FOREACH v_value IN ARRAY p_offsets LOOP
+    IF v_value < -4320 OR v_value > 4320 THEN
+      RETURN FALSE;
+    END IF;
+  END LOOP;
+
+  RETURN TRUE;
+END;
+$$;
+
+------------------------------------------------------------------------
 -- Ailments library
 ------------------------------------------------------------------------
 
@@ -114,13 +140,7 @@ CREATE TABLE IF NOT EXISTS public.health_treatments (
   CONSTRAINT health_treatments_duration_chk
     CHECK (end_at IS NULL OR end_at >= start_at),
   CONSTRAINT health_treatments_reminder_range_chk
-    CHECK (
-      reminder_minutes IS NULL
-      OR COALESCE((
-        SELECT bool_and(value BETWEEN -4320 AND 4320)
-        FROM unnest(reminder_minutes) AS value
-      ), TRUE)
-    )
+    CHECK (public.is_valid_reminder_offsets(reminder_minutes))
 );
 
 COMMENT ON TABLE public.health_treatments IS

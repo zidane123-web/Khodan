@@ -30,6 +30,7 @@ import 'data/repositories/litter_repository.dart';
 import 'data/repositories/hutch_repository.dart';
 import 'data/repositories/task_template_repository.dart';
 import 'data/repositories/health_repository.dart';
+import 'data/repositories/finance_repository.dart';
 import 'data/services/api_client.dart';
 import 'data/services/connectivity_watcher.dart';
 import 'data/services/offline_sync_manager.dart';
@@ -323,6 +324,9 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<DashboardRepository>(
         create: (_) => InMemoryDashboardRepository(),
       ),
+      RepositoryProvider<FinanceRepository>(
+        create: (_) => InMemoryFinanceRepository(),
+      ),
       RepositoryProvider<ReportingService>(
         create: (BuildContext context) => ReportingService(
           breedingRepository: context.read<BreedingRepository>(),
@@ -368,6 +372,9 @@ class _KhodanAppState extends State<KhodanApp> {
     final TaskTemplateRepository remoteTaskTemplates =
         SupabaseTaskTemplateRepository(apiClient: apiClient);
     final HealthRepository remoteHealth = SupabaseHealthRepository(
+      apiClient: apiClient,
+    );
+    final FinanceRepository remoteFinance = SupabaseFinanceRepository(
       apiClient: apiClient,
     );
 
@@ -509,6 +516,9 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<SupportRepository>(create: (_) => syncedSupport),
       RepositoryProvider<DashboardRepository>(
         create: (_) => dashboardRepository,
+      ),
+      RepositoryProvider<FinanceRepository>(
+        create: (_) => remoteFinance,
       ),
       RepositoryProvider<ReportingService>(
         create: (BuildContext context) => ReportingService(

@@ -97,6 +97,19 @@ notification_preferences
 notifications_outbox
 ```
 
+**Migration 20251101103000 (01/11/2025) – OK via SQL Editor**
+
+```text
+health_records
+health_treatments
+```
+
+```text
+ailments
+```
+
+_Remarque : LIKE utilise `_` comme joker, remplacer par `LIKE 'health%'` pour vérifier les tables._
+
 ## SQL de controle apres migration
 
 Executer les requetes suivantes dans le SQL Editor (ou `psql`) et archiver les sorties.
@@ -197,6 +210,36 @@ Comptes `codex-agent+*@example.com` supprimes le 30/10/2025 (Auth > Users).
     AND tablename IN ('ailments', 'health_records', 'health_treatments');
   ```
 - Statut : a executer via SQL Editor (copier le fichier + insertion dans `schema_migrations` avec la version `20251101103000`).
+
+### Journal 2025-11-01 (Plan2 tache 11)
+
+- Migration a appliquer : `supabase/migrations/20251101120000_finances_and_contacts.sql`.
+- Instructions : utiliser **Methode B** (SQL Editor) si `supabase db push` continue d'echouer sur PowerShell.
+- Requetes de verification :
+  ```sql
+  SELECT table_name
+  FROM information_schema.tables
+  WHERE table_schema = 'public'
+    AND table_name IN ('contacts', 'transaction_categories', 'financial_transactions');
+
+  SELECT policyname, tablename
+  FROM pg_policies
+  WHERE schemaname = 'public'
+    AND tablename IN ('contacts', 'transaction_categories', 'financial_transactions')
+  ORDER BY tablename, policyname;
+
+  SELECT indexname, tablename
+  FROM pg_indexes
+  WHERE schemaname = 'public'
+    AND tablename IN ('contacts', 'transaction_categories', 'financial_transactions');
+  ```
+- Enregistrer le resultat du SQL Editor ici une fois applique. Inclure la commande d'insertion dans `supabase_migrations.schema_migrations` :
+  ```sql
+  INSERT INTO supabase_migrations.schema_migrations (version, name)
+  VALUES ('20251101120000', '20251101120000_finances_and_contacts.sql')
+  ON CONFLICT (version) DO NOTHING;
+  ```
+- Statut : en attente d'application distante (non lance depuis la CLI locale).
 
 ## Creation rapide d'un token `authenticated` pour tests API
 
