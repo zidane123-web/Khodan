@@ -83,6 +83,20 @@ Derniere mise a jour : 2025-11-01 (Plan2 - tache 09).
   notifications_outbox
   ```
 
+  **Exécuté le 01/11/2025 – OK**
+
+```text
+task_template_assignment_events
+task_template_assignments
+task_template_steps
+task_templates
+```
+
+```text
+notification_preferences
+notifications_outbox
+```
+
 ## SQL de controle apres migration
 
 Executer les requetes suivantes dans le SQL Editor (ou `psql`) et archiver les sorties.
