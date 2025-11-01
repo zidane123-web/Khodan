@@ -28,11 +28,13 @@ import 'data/repositories/support_repository.dart';
 import 'data/repositories/species_repository.dart';
 import 'data/repositories/litter_repository.dart';
 import 'data/repositories/hutch_repository.dart';
+import 'data/repositories/task_template_repository.dart';
 import 'data/services/api_client.dart';
 import 'data/services/connectivity_watcher.dart';
 import 'data/services/offline_sync_manager.dart';
 import 'data/services/reporting_service.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
+import 'features/notifications/services/local_notification_service.dart';
 
 void main() {
   runZonedGuarded(
@@ -110,6 +112,9 @@ class _KhodanAppState extends State<KhodanApp> {
   late final LocalEventDataSource _localEventDataSource;
   late final LocalSpeciesDataSource _localSpeciesDataSource;
   late final LocalEventTemplateDataSource _localEventTemplateDataSource;
+  late final LocalTaskTemplateDataSource _localTaskTemplateDataSource;
+  late final LocalTaskTemplateAssignmentDataSource
+      _localTaskTemplateAssignmentDataSource;
   late final LocalFoodTypeDataSource _localFoodTypeDataSource;
   late final LocalFoodStockDataSource _localFoodStockDataSource;
   late final LocalProfileDataSource _localProfileDataSource;
@@ -129,6 +134,9 @@ class _KhodanAppState extends State<KhodanApp> {
     _localEventDataSource = LocalEventDataSource(_localDb);
     _localSpeciesDataSource = LocalSpeciesDataSource(_localDb);
     _localEventTemplateDataSource = LocalEventTemplateDataSource(_localDb);
+    _localTaskTemplateDataSource = LocalTaskTemplateDataSource(_localDb);
+    _localTaskTemplateAssignmentDataSource =
+        LocalTaskTemplateAssignmentDataSource(_localDb);
     _localFoodTypeDataSource = LocalFoodTypeDataSource(_localDb);
     _localFoodStockDataSource = LocalFoodStockDataSource(_localDb);
     _localProfileDataSource = LocalProfileDataSource(_localDb);
@@ -147,6 +155,7 @@ class _KhodanAppState extends State<KhodanApp> {
     );
     _connectivityWatcher = ConnectivityWatcher();
     unawaited(_connectivityWatcher!.initialize());
+    unawaited(LocalNotificationService.instance.initialize());
   }
 
   @override
@@ -221,6 +230,12 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<LocalEventTemplateDataSource>.value(
         value: _localEventTemplateDataSource,
       ),
+      RepositoryProvider<LocalTaskTemplateDataSource>.value(
+        value: _localTaskTemplateDataSource,
+      ),
+      RepositoryProvider<LocalTaskTemplateAssignmentDataSource>.value(
+        value: _localTaskTemplateAssignmentDataSource,
+      ),
       RepositoryProvider<LocalFoodTypeDataSource>.value(
         value: _localFoodTypeDataSource,
       ),
@@ -268,6 +283,9 @@ class _KhodanAppState extends State<KhodanApp> {
           local: _localEventTemplateDataSource,
           offlineManager: OfflineSyncManager.instance,
         ),
+      ),
+      RepositoryProvider<TaskTemplateRepository>(
+        create: (_) => InMemoryTaskTemplateRepository(),
       ),
       RepositoryProvider<FoodInventoryRepository>(
         create: (_) => SyncedFoodInventoryRepository(
@@ -333,6 +351,8 @@ class _KhodanAppState extends State<KhodanApp> {
         SupabaseEventTemplateRepository(apiClient: apiClient);
     final FoodInventoryRepository remoteInventory =
         SupabaseFoodInventoryRepository(apiClient: apiClient);
+    final TaskTemplateRepository remoteTaskTemplates =
+        SupabaseTaskTemplateRepository(apiClient: apiClient);
 
     final AnimalRepository syncedAnimal = SyncedAnimalRepository(
       remote: remoteAnimal,
@@ -381,6 +401,13 @@ class _KhodanAppState extends State<KhodanApp> {
           localStock: _localFoodStockDataSource,
           offlineManager: offlineManager,
         );
+    final TaskTemplateRepository syncedTaskTemplates =
+        SyncedTaskTemplateRepository(
+          remote: remoteTaskTemplates,
+          localTemplates: _localTaskTemplateDataSource,
+          localAssignments: _localTaskTemplateAssignmentDataSource,
+          offlineManager: offlineManager,
+        );
     final DashboardRepository dashboardRepository = SupabaseDashboardRepository(
       localPreferences: _localDashboardPreferencesDataSource,
       apiClient: apiClient,
@@ -408,6 +435,12 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<LocalEventTemplateDataSource>.value(
         value: _localEventTemplateDataSource,
       ),
+      RepositoryProvider<LocalTaskTemplateDataSource>.value(
+        value: _localTaskTemplateDataSource,
+      ),
+      RepositoryProvider<LocalTaskTemplateAssignmentDataSource>.value(
+        value: _localTaskTemplateAssignmentDataSource,
+      ),
       RepositoryProvider<LocalFoodTypeDataSource>.value(
         value: _localFoodTypeDataSource,
       ),
@@ -429,6 +462,9 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<ProfileRepository>(create: (_) => syncedProfile),
       RepositoryProvider<EventTemplateRepository>(
         create: (_) => syncedTemplate,
+      ),
+      RepositoryProvider<TaskTemplateRepository>(
+        create: (_) => syncedTaskTemplates,
       ),
       RepositoryProvider<FoodInventoryRepository>(
         create: (_) => syncedInventory,

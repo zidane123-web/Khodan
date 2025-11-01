@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
@@ -11,6 +12,7 @@ import '../cubit/planning_state.dart';
 import '../widgets/planning_calendar_view.dart';
 import '../widgets/planning_chain_view.dart';
 import '../widgets/planning_list_view.dart';
+import '../../../../app/config/router.dart';
 
 class PlanningScreen extends StatelessWidget {
   const PlanningScreen({super.key});
@@ -69,6 +71,12 @@ class _PlanningViewState extends State<_PlanningView>
                   : l10n.planningTitle,
             ),
             actions: <Widget>[
+              IconButton(
+                icon: const Icon(Icons.auto_awesome_motion_outlined),
+                tooltip: 'Modeles',
+                onPressed: () =>
+                    context.push(const PlanningTemplatesRoute().location),
+              ),
               IconButton(
                 icon: const Icon(Icons.download),
                 tooltip: l10n.planningExportCsv,

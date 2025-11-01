@@ -994,6 +994,1571 @@ class EventTemplatesTableCompanion
   }
 }
 
+class $TaskTemplatesTableTable extends TaskTemplatesTable
+    with TableInfo<$TaskTemplatesTableTable, TaskTemplatesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TaskTemplatesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _payloadMeta =
+      const VerificationMeta('payload');
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+      'payload', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _syncStateMeta =
+      const VerificationMeta('syncState');
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+      'sync_state', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('synced'));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, profileId, payload, updatedAt, syncState];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'task_templates_table';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<TaskTemplatesTableData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(_payloadMeta,
+          payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta));
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(_syncStateMeta,
+          syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TaskTemplatesTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TaskTemplatesTableData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}profile_id'])!,
+      payload: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      syncState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_state'])!,
+    );
+  }
+
+  @override
+  $TaskTemplatesTableTable createAlias(String alias) {
+    return $TaskTemplatesTableTable(attachedDatabase, alias);
+  }
+}
+
+class TaskTemplatesTableData extends DataClass
+    implements Insertable<TaskTemplatesTableData> {
+  final String id;
+  final String profileId;
+  final String payload;
+  final DateTime updatedAt;
+  final String syncState;
+  const TaskTemplatesTableData(
+      {required this.id,
+      required this.profileId,
+      required this.payload,
+      required this.updatedAt,
+      required this.syncState});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['profile_id'] = Variable<String>(profileId);
+    map['payload'] = Variable<String>(payload);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['sync_state'] = Variable<String>(syncState);
+    return map;
+  }
+
+  TaskTemplatesTableCompanion toCompanion(bool nullToAbsent) {
+    return TaskTemplatesTableCompanion(
+      id: Value(id),
+      profileId: Value(profileId),
+      payload: Value(payload),
+      updatedAt: Value(updatedAt),
+      syncState: Value(syncState),
+    );
+  }
+
+  factory TaskTemplatesTableData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TaskTemplatesTableData(
+      id: serializer.fromJson<String>(json['id']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      payload: serializer.fromJson<String>(json['payload']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'profileId': serializer.toJson<String>(profileId),
+      'payload': serializer.toJson<String>(payload),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'syncState': serializer.toJson<String>(syncState),
+    };
+  }
+
+  TaskTemplatesTableData copyWith(
+          {String? id,
+          String? profileId,
+          String? payload,
+          DateTime? updatedAt,
+          String? syncState}) =>
+      TaskTemplatesTableData(
+        id: id ?? this.id,
+        profileId: profileId ?? this.profileId,
+        payload: payload ?? this.payload,
+        updatedAt: updatedAt ?? this.updatedAt,
+        syncState: syncState ?? this.syncState,
+      );
+  TaskTemplatesTableData copyWithCompanion(TaskTemplatesTableCompanion data) {
+    return TaskTemplatesTableData(
+      id: data.id.present ? data.id.value : this.id,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TaskTemplatesTableData(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, profileId, payload, updatedAt, syncState);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TaskTemplatesTableData &&
+          other.id == this.id &&
+          other.profileId == this.profileId &&
+          other.payload == this.payload &&
+          other.updatedAt == this.updatedAt &&
+          other.syncState == this.syncState);
+}
+
+class TaskTemplatesTableCompanion
+    extends UpdateCompanion<TaskTemplatesTableData> {
+  final Value<String> id;
+  final Value<String> profileId;
+  final Value<String> payload;
+  final Value<DateTime> updatedAt;
+  final Value<String> syncState;
+  final Value<int> rowid;
+  const TaskTemplatesTableCompanion({
+    this.id = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TaskTemplatesTableCompanion.insert({
+    required String id,
+    required String profileId,
+    required String payload,
+    required DateTime updatedAt,
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        profileId = Value(profileId),
+        payload = Value(payload),
+        updatedAt = Value(updatedAt);
+  static Insertable<TaskTemplatesTableData> custom({
+    Expression<String>? id,
+    Expression<String>? profileId,
+    Expression<String>? payload,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? syncState,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (profileId != null) 'profile_id': profileId,
+      if (payload != null) 'payload': payload,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncState != null) 'sync_state': syncState,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TaskTemplatesTableCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? profileId,
+      Value<String>? payload,
+      Value<DateTime>? updatedAt,
+      Value<String>? syncState,
+      Value<int>? rowid}) {
+    return TaskTemplatesTableCompanion(
+      id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
+      payload: payload ?? this.payload,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncState: syncState ?? this.syncState,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TaskTemplatesTableCompanion(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TaskTemplateStepsTableTable extends TaskTemplateStepsTable
+    with TableInfo<$TaskTemplateStepsTableTable, TaskTemplateStepsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TaskTemplateStepsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _templateIdMeta =
+      const VerificationMeta('templateId');
+  @override
+  late final GeneratedColumn<String> templateId = GeneratedColumn<String>(
+      'template_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _positionMeta =
+      const VerificationMeta('position');
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+      'position', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _payloadMeta =
+      const VerificationMeta('payload');
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+      'payload', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _syncStateMeta =
+      const VerificationMeta('syncState');
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+      'sync_state', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('synced'));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, templateId, profileId, position, payload, updatedAt, syncState];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'task_template_steps_table';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<TaskTemplateStepsTableData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('template_id')) {
+      context.handle(
+          _templateIdMeta,
+          templateId.isAcceptableOrUnknown(
+              data['template_id']!, _templateIdMeta));
+    } else if (isInserting) {
+      context.missing(_templateIdMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(_positionMeta,
+          position.isAcceptableOrUnknown(data['position']!, _positionMeta));
+    } else if (isInserting) {
+      context.missing(_positionMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(_payloadMeta,
+          payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta));
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(_syncStateMeta,
+          syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TaskTemplateStepsTableData map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TaskTemplateStepsTableData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      templateId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}template_id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}profile_id'])!,
+      position: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}position'])!,
+      payload: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      syncState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_state'])!,
+    );
+  }
+
+  @override
+  $TaskTemplateStepsTableTable createAlias(String alias) {
+    return $TaskTemplateStepsTableTable(attachedDatabase, alias);
+  }
+}
+
+class TaskTemplateStepsTableData extends DataClass
+    implements Insertable<TaskTemplateStepsTableData> {
+  final int id;
+  final String templateId;
+  final String profileId;
+  final int position;
+  final String payload;
+  final DateTime updatedAt;
+  final String syncState;
+  const TaskTemplateStepsTableData(
+      {required this.id,
+      required this.templateId,
+      required this.profileId,
+      required this.position,
+      required this.payload,
+      required this.updatedAt,
+      required this.syncState});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['template_id'] = Variable<String>(templateId);
+    map['profile_id'] = Variable<String>(profileId);
+    map['position'] = Variable<int>(position);
+    map['payload'] = Variable<String>(payload);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['sync_state'] = Variable<String>(syncState);
+    return map;
+  }
+
+  TaskTemplateStepsTableCompanion toCompanion(bool nullToAbsent) {
+    return TaskTemplateStepsTableCompanion(
+      id: Value(id),
+      templateId: Value(templateId),
+      profileId: Value(profileId),
+      position: Value(position),
+      payload: Value(payload),
+      updatedAt: Value(updatedAt),
+      syncState: Value(syncState),
+    );
+  }
+
+  factory TaskTemplateStepsTableData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TaskTemplateStepsTableData(
+      id: serializer.fromJson<int>(json['id']),
+      templateId: serializer.fromJson<String>(json['templateId']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      position: serializer.fromJson<int>(json['position']),
+      payload: serializer.fromJson<String>(json['payload']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'templateId': serializer.toJson<String>(templateId),
+      'profileId': serializer.toJson<String>(profileId),
+      'position': serializer.toJson<int>(position),
+      'payload': serializer.toJson<String>(payload),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'syncState': serializer.toJson<String>(syncState),
+    };
+  }
+
+  TaskTemplateStepsTableData copyWith(
+          {int? id,
+          String? templateId,
+          String? profileId,
+          int? position,
+          String? payload,
+          DateTime? updatedAt,
+          String? syncState}) =>
+      TaskTemplateStepsTableData(
+        id: id ?? this.id,
+        templateId: templateId ?? this.templateId,
+        profileId: profileId ?? this.profileId,
+        position: position ?? this.position,
+        payload: payload ?? this.payload,
+        updatedAt: updatedAt ?? this.updatedAt,
+        syncState: syncState ?? this.syncState,
+      );
+  TaskTemplateStepsTableData copyWithCompanion(
+      TaskTemplateStepsTableCompanion data) {
+    return TaskTemplateStepsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      templateId:
+          data.templateId.present ? data.templateId.value : this.templateId,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      position: data.position.present ? data.position.value : this.position,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TaskTemplateStepsTableData(')
+          ..write('id: $id, ')
+          ..write('templateId: $templateId, ')
+          ..write('profileId: $profileId, ')
+          ..write('position: $position, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, templateId, profileId, position, payload, updatedAt, syncState);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TaskTemplateStepsTableData &&
+          other.id == this.id &&
+          other.templateId == this.templateId &&
+          other.profileId == this.profileId &&
+          other.position == this.position &&
+          other.payload == this.payload &&
+          other.updatedAt == this.updatedAt &&
+          other.syncState == this.syncState);
+}
+
+class TaskTemplateStepsTableCompanion
+    extends UpdateCompanion<TaskTemplateStepsTableData> {
+  final Value<int> id;
+  final Value<String> templateId;
+  final Value<String> profileId;
+  final Value<int> position;
+  final Value<String> payload;
+  final Value<DateTime> updatedAt;
+  final Value<String> syncState;
+  const TaskTemplateStepsTableCompanion({
+    this.id = const Value.absent(),
+    this.templateId = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncState = const Value.absent(),
+  });
+  TaskTemplateStepsTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String templateId,
+    required String profileId,
+    required int position,
+    required String payload,
+    required DateTime updatedAt,
+    this.syncState = const Value.absent(),
+  })  : templateId = Value(templateId),
+        profileId = Value(profileId),
+        position = Value(position),
+        payload = Value(payload),
+        updatedAt = Value(updatedAt);
+  static Insertable<TaskTemplateStepsTableData> custom({
+    Expression<int>? id,
+    Expression<String>? templateId,
+    Expression<String>? profileId,
+    Expression<int>? position,
+    Expression<String>? payload,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? syncState,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (templateId != null) 'template_id': templateId,
+      if (profileId != null) 'profile_id': profileId,
+      if (position != null) 'position': position,
+      if (payload != null) 'payload': payload,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncState != null) 'sync_state': syncState,
+    });
+  }
+
+  TaskTemplateStepsTableCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? templateId,
+      Value<String>? profileId,
+      Value<int>? position,
+      Value<String>? payload,
+      Value<DateTime>? updatedAt,
+      Value<String>? syncState}) {
+    return TaskTemplateStepsTableCompanion(
+      id: id ?? this.id,
+      templateId: templateId ?? this.templateId,
+      profileId: profileId ?? this.profileId,
+      position: position ?? this.position,
+      payload: payload ?? this.payload,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncState: syncState ?? this.syncState,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (templateId.present) {
+      map['template_id'] = Variable<String>(templateId.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TaskTemplateStepsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('templateId: $templateId, ')
+          ..write('profileId: $profileId, ')
+          ..write('position: $position, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TaskTemplateAssignmentsTableTable extends TaskTemplateAssignmentsTable
+    with
+        TableInfo<$TaskTemplateAssignmentsTableTable,
+            TaskTemplateAssignmentsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TaskTemplateAssignmentsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _templateIdMeta =
+      const VerificationMeta('templateId');
+  @override
+  late final GeneratedColumn<String> templateId = GeneratedColumn<String>(
+      'template_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _scopeTypeMeta =
+      const VerificationMeta('scopeType');
+  @override
+  late final GeneratedColumn<String> scopeType = GeneratedColumn<String>(
+      'scope_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _scopeIdMeta =
+      const VerificationMeta('scopeId');
+  @override
+  late final GeneratedColumn<String> scopeId = GeneratedColumn<String>(
+      'scope_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _anchorDateMeta =
+      const VerificationMeta('anchorDate');
+  @override
+  late final GeneratedColumn<DateTime> anchorDate = GeneratedColumn<DateTime>(
+      'anchor_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _payloadMeta =
+      const VerificationMeta('payload');
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+      'payload', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _syncStateMeta =
+      const VerificationMeta('syncState');
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+      'sync_state', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('synced'));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        profileId,
+        templateId,
+        scopeType,
+        scopeId,
+        anchorDate,
+        payload,
+        updatedAt,
+        syncState
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'task_template_assignments_table';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<TaskTemplateAssignmentsTableData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('template_id')) {
+      context.handle(
+          _templateIdMeta,
+          templateId.isAcceptableOrUnknown(
+              data['template_id']!, _templateIdMeta));
+    } else if (isInserting) {
+      context.missing(_templateIdMeta);
+    }
+    if (data.containsKey('scope_type')) {
+      context.handle(_scopeTypeMeta,
+          scopeType.isAcceptableOrUnknown(data['scope_type']!, _scopeTypeMeta));
+    } else if (isInserting) {
+      context.missing(_scopeTypeMeta);
+    }
+    if (data.containsKey('scope_id')) {
+      context.handle(_scopeIdMeta,
+          scopeId.isAcceptableOrUnknown(data['scope_id']!, _scopeIdMeta));
+    }
+    if (data.containsKey('anchor_date')) {
+      context.handle(
+          _anchorDateMeta,
+          anchorDate.isAcceptableOrUnknown(
+              data['anchor_date']!, _anchorDateMeta));
+    } else if (isInserting) {
+      context.missing(_anchorDateMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(_payloadMeta,
+          payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta));
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(_syncStateMeta,
+          syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TaskTemplateAssignmentsTableData map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TaskTemplateAssignmentsTableData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}profile_id'])!,
+      templateId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}template_id'])!,
+      scopeType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}scope_type'])!,
+      scopeId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}scope_id']),
+      anchorDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}anchor_date'])!,
+      payload: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      syncState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_state'])!,
+    );
+  }
+
+  @override
+  $TaskTemplateAssignmentsTableTable createAlias(String alias) {
+    return $TaskTemplateAssignmentsTableTable(attachedDatabase, alias);
+  }
+}
+
+class TaskTemplateAssignmentsTableData extends DataClass
+    implements Insertable<TaskTemplateAssignmentsTableData> {
+  final String id;
+  final String profileId;
+  final String templateId;
+  final String scopeType;
+  final String? scopeId;
+  final DateTime anchorDate;
+  final String payload;
+  final DateTime updatedAt;
+  final String syncState;
+  const TaskTemplateAssignmentsTableData(
+      {required this.id,
+      required this.profileId,
+      required this.templateId,
+      required this.scopeType,
+      this.scopeId,
+      required this.anchorDate,
+      required this.payload,
+      required this.updatedAt,
+      required this.syncState});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['profile_id'] = Variable<String>(profileId);
+    map['template_id'] = Variable<String>(templateId);
+    map['scope_type'] = Variable<String>(scopeType);
+    if (!nullToAbsent || scopeId != null) {
+      map['scope_id'] = Variable<String>(scopeId);
+    }
+    map['anchor_date'] = Variable<DateTime>(anchorDate);
+    map['payload'] = Variable<String>(payload);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['sync_state'] = Variable<String>(syncState);
+    return map;
+  }
+
+  TaskTemplateAssignmentsTableCompanion toCompanion(bool nullToAbsent) {
+    return TaskTemplateAssignmentsTableCompanion(
+      id: Value(id),
+      profileId: Value(profileId),
+      templateId: Value(templateId),
+      scopeType: Value(scopeType),
+      scopeId: scopeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scopeId),
+      anchorDate: Value(anchorDate),
+      payload: Value(payload),
+      updatedAt: Value(updatedAt),
+      syncState: Value(syncState),
+    );
+  }
+
+  factory TaskTemplateAssignmentsTableData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TaskTemplateAssignmentsTableData(
+      id: serializer.fromJson<String>(json['id']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      templateId: serializer.fromJson<String>(json['templateId']),
+      scopeType: serializer.fromJson<String>(json['scopeType']),
+      scopeId: serializer.fromJson<String?>(json['scopeId']),
+      anchorDate: serializer.fromJson<DateTime>(json['anchorDate']),
+      payload: serializer.fromJson<String>(json['payload']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'profileId': serializer.toJson<String>(profileId),
+      'templateId': serializer.toJson<String>(templateId),
+      'scopeType': serializer.toJson<String>(scopeType),
+      'scopeId': serializer.toJson<String?>(scopeId),
+      'anchorDate': serializer.toJson<DateTime>(anchorDate),
+      'payload': serializer.toJson<String>(payload),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'syncState': serializer.toJson<String>(syncState),
+    };
+  }
+
+  TaskTemplateAssignmentsTableData copyWith(
+          {String? id,
+          String? profileId,
+          String? templateId,
+          String? scopeType,
+          Value<String?> scopeId = const Value.absent(),
+          DateTime? anchorDate,
+          String? payload,
+          DateTime? updatedAt,
+          String? syncState}) =>
+      TaskTemplateAssignmentsTableData(
+        id: id ?? this.id,
+        profileId: profileId ?? this.profileId,
+        templateId: templateId ?? this.templateId,
+        scopeType: scopeType ?? this.scopeType,
+        scopeId: scopeId.present ? scopeId.value : this.scopeId,
+        anchorDate: anchorDate ?? this.anchorDate,
+        payload: payload ?? this.payload,
+        updatedAt: updatedAt ?? this.updatedAt,
+        syncState: syncState ?? this.syncState,
+      );
+  TaskTemplateAssignmentsTableData copyWithCompanion(
+      TaskTemplateAssignmentsTableCompanion data) {
+    return TaskTemplateAssignmentsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      templateId:
+          data.templateId.present ? data.templateId.value : this.templateId,
+      scopeType: data.scopeType.present ? data.scopeType.value : this.scopeType,
+      scopeId: data.scopeId.present ? data.scopeId.value : this.scopeId,
+      anchorDate:
+          data.anchorDate.present ? data.anchorDate.value : this.anchorDate,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TaskTemplateAssignmentsTableData(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('templateId: $templateId, ')
+          ..write('scopeType: $scopeType, ')
+          ..write('scopeId: $scopeId, ')
+          ..write('anchorDate: $anchorDate, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, profileId, templateId, scopeType, scopeId,
+      anchorDate, payload, updatedAt, syncState);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TaskTemplateAssignmentsTableData &&
+          other.id == this.id &&
+          other.profileId == this.profileId &&
+          other.templateId == this.templateId &&
+          other.scopeType == this.scopeType &&
+          other.scopeId == this.scopeId &&
+          other.anchorDate == this.anchorDate &&
+          other.payload == this.payload &&
+          other.updatedAt == this.updatedAt &&
+          other.syncState == this.syncState);
+}
+
+class TaskTemplateAssignmentsTableCompanion
+    extends UpdateCompanion<TaskTemplateAssignmentsTableData> {
+  final Value<String> id;
+  final Value<String> profileId;
+  final Value<String> templateId;
+  final Value<String> scopeType;
+  final Value<String?> scopeId;
+  final Value<DateTime> anchorDate;
+  final Value<String> payload;
+  final Value<DateTime> updatedAt;
+  final Value<String> syncState;
+  final Value<int> rowid;
+  const TaskTemplateAssignmentsTableCompanion({
+    this.id = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.templateId = const Value.absent(),
+    this.scopeType = const Value.absent(),
+    this.scopeId = const Value.absent(),
+    this.anchorDate = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TaskTemplateAssignmentsTableCompanion.insert({
+    required String id,
+    required String profileId,
+    required String templateId,
+    required String scopeType,
+    this.scopeId = const Value.absent(),
+    required DateTime anchorDate,
+    required String payload,
+    required DateTime updatedAt,
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        profileId = Value(profileId),
+        templateId = Value(templateId),
+        scopeType = Value(scopeType),
+        anchorDate = Value(anchorDate),
+        payload = Value(payload),
+        updatedAt = Value(updatedAt);
+  static Insertable<TaskTemplateAssignmentsTableData> custom({
+    Expression<String>? id,
+    Expression<String>? profileId,
+    Expression<String>? templateId,
+    Expression<String>? scopeType,
+    Expression<String>? scopeId,
+    Expression<DateTime>? anchorDate,
+    Expression<String>? payload,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? syncState,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (profileId != null) 'profile_id': profileId,
+      if (templateId != null) 'template_id': templateId,
+      if (scopeType != null) 'scope_type': scopeType,
+      if (scopeId != null) 'scope_id': scopeId,
+      if (anchorDate != null) 'anchor_date': anchorDate,
+      if (payload != null) 'payload': payload,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncState != null) 'sync_state': syncState,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TaskTemplateAssignmentsTableCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? profileId,
+      Value<String>? templateId,
+      Value<String>? scopeType,
+      Value<String?>? scopeId,
+      Value<DateTime>? anchorDate,
+      Value<String>? payload,
+      Value<DateTime>? updatedAt,
+      Value<String>? syncState,
+      Value<int>? rowid}) {
+    return TaskTemplateAssignmentsTableCompanion(
+      id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
+      templateId: templateId ?? this.templateId,
+      scopeType: scopeType ?? this.scopeType,
+      scopeId: scopeId ?? this.scopeId,
+      anchorDate: anchorDate ?? this.anchorDate,
+      payload: payload ?? this.payload,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncState: syncState ?? this.syncState,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (templateId.present) {
+      map['template_id'] = Variable<String>(templateId.value);
+    }
+    if (scopeType.present) {
+      map['scope_type'] = Variable<String>(scopeType.value);
+    }
+    if (scopeId.present) {
+      map['scope_id'] = Variable<String>(scopeId.value);
+    }
+    if (anchorDate.present) {
+      map['anchor_date'] = Variable<DateTime>(anchorDate.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TaskTemplateAssignmentsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('templateId: $templateId, ')
+          ..write('scopeType: $scopeType, ')
+          ..write('scopeId: $scopeId, ')
+          ..write('anchorDate: $anchorDate, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TaskTemplateAssignmentEventsTableTable
+    extends TaskTemplateAssignmentEventsTable
+    with
+        TableInfo<$TaskTemplateAssignmentEventsTableTable,
+            TaskTemplateAssignmentEventsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TaskTemplateAssignmentEventsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _assignmentIdMeta =
+      const VerificationMeta('assignmentId');
+  @override
+  late final GeneratedColumn<String> assignmentId = GeneratedColumn<String>(
+      'assignment_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _stepIdMeta = const VerificationMeta('stepId');
+  @override
+  late final GeneratedColumn<int> stepId = GeneratedColumn<int>(
+      'step_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _eventIdMeta =
+      const VerificationMeta('eventId');
+  @override
+  late final GeneratedColumn<String> eventId = GeneratedColumn<String>(
+      'event_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _payloadMeta =
+      const VerificationMeta('payload');
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+      'payload', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _syncStateMeta =
+      const VerificationMeta('syncState');
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+      'sync_state', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('synced'));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [assignmentId, stepId, eventId, profileId, payload, updatedAt, syncState];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'task_template_assignment_events_table';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<TaskTemplateAssignmentEventsTableData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('assignment_id')) {
+      context.handle(
+          _assignmentIdMeta,
+          assignmentId.isAcceptableOrUnknown(
+              data['assignment_id']!, _assignmentIdMeta));
+    } else if (isInserting) {
+      context.missing(_assignmentIdMeta);
+    }
+    if (data.containsKey('step_id')) {
+      context.handle(_stepIdMeta,
+          stepId.isAcceptableOrUnknown(data['step_id']!, _stepIdMeta));
+    } else if (isInserting) {
+      context.missing(_stepIdMeta);
+    }
+    if (data.containsKey('event_id')) {
+      context.handle(_eventIdMeta,
+          eventId.isAcceptableOrUnknown(data['event_id']!, _eventIdMeta));
+    } else if (isInserting) {
+      context.missing(_eventIdMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(_payloadMeta,
+          payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta));
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(_syncStateMeta,
+          syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {assignmentId, stepId, eventId};
+  @override
+  TaskTemplateAssignmentEventsTableData map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TaskTemplateAssignmentEventsTableData(
+      assignmentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}assignment_id'])!,
+      stepId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}step_id'])!,
+      eventId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}event_id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}profile_id'])!,
+      payload: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      syncState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_state'])!,
+    );
+  }
+
+  @override
+  $TaskTemplateAssignmentEventsTableTable createAlias(String alias) {
+    return $TaskTemplateAssignmentEventsTableTable(attachedDatabase, alias);
+  }
+}
+
+class TaskTemplateAssignmentEventsTableData extends DataClass
+    implements Insertable<TaskTemplateAssignmentEventsTableData> {
+  final String assignmentId;
+  final int stepId;
+  final String eventId;
+  final String profileId;
+  final String payload;
+  final DateTime updatedAt;
+  final String syncState;
+  const TaskTemplateAssignmentEventsTableData(
+      {required this.assignmentId,
+      required this.stepId,
+      required this.eventId,
+      required this.profileId,
+      required this.payload,
+      required this.updatedAt,
+      required this.syncState});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['assignment_id'] = Variable<String>(assignmentId);
+    map['step_id'] = Variable<int>(stepId);
+    map['event_id'] = Variable<String>(eventId);
+    map['profile_id'] = Variable<String>(profileId);
+    map['payload'] = Variable<String>(payload);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['sync_state'] = Variable<String>(syncState);
+    return map;
+  }
+
+  TaskTemplateAssignmentEventsTableCompanion toCompanion(bool nullToAbsent) {
+    return TaskTemplateAssignmentEventsTableCompanion(
+      assignmentId: Value(assignmentId),
+      stepId: Value(stepId),
+      eventId: Value(eventId),
+      profileId: Value(profileId),
+      payload: Value(payload),
+      updatedAt: Value(updatedAt),
+      syncState: Value(syncState),
+    );
+  }
+
+  factory TaskTemplateAssignmentEventsTableData.fromJson(
+      Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TaskTemplateAssignmentEventsTableData(
+      assignmentId: serializer.fromJson<String>(json['assignmentId']),
+      stepId: serializer.fromJson<int>(json['stepId']),
+      eventId: serializer.fromJson<String>(json['eventId']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      payload: serializer.fromJson<String>(json['payload']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'assignmentId': serializer.toJson<String>(assignmentId),
+      'stepId': serializer.toJson<int>(stepId),
+      'eventId': serializer.toJson<String>(eventId),
+      'profileId': serializer.toJson<String>(profileId),
+      'payload': serializer.toJson<String>(payload),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'syncState': serializer.toJson<String>(syncState),
+    };
+  }
+
+  TaskTemplateAssignmentEventsTableData copyWith(
+          {String? assignmentId,
+          int? stepId,
+          String? eventId,
+          String? profileId,
+          String? payload,
+          DateTime? updatedAt,
+          String? syncState}) =>
+      TaskTemplateAssignmentEventsTableData(
+        assignmentId: assignmentId ?? this.assignmentId,
+        stepId: stepId ?? this.stepId,
+        eventId: eventId ?? this.eventId,
+        profileId: profileId ?? this.profileId,
+        payload: payload ?? this.payload,
+        updatedAt: updatedAt ?? this.updatedAt,
+        syncState: syncState ?? this.syncState,
+      );
+  TaskTemplateAssignmentEventsTableData copyWithCompanion(
+      TaskTemplateAssignmentEventsTableCompanion data) {
+    return TaskTemplateAssignmentEventsTableData(
+      assignmentId: data.assignmentId.present
+          ? data.assignmentId.value
+          : this.assignmentId,
+      stepId: data.stepId.present ? data.stepId.value : this.stepId,
+      eventId: data.eventId.present ? data.eventId.value : this.eventId,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TaskTemplateAssignmentEventsTableData(')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('stepId: $stepId, ')
+          ..write('eventId: $eventId, ')
+          ..write('profileId: $profileId, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      assignmentId, stepId, eventId, profileId, payload, updatedAt, syncState);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TaskTemplateAssignmentEventsTableData &&
+          other.assignmentId == this.assignmentId &&
+          other.stepId == this.stepId &&
+          other.eventId == this.eventId &&
+          other.profileId == this.profileId &&
+          other.payload == this.payload &&
+          other.updatedAt == this.updatedAt &&
+          other.syncState == this.syncState);
+}
+
+class TaskTemplateAssignmentEventsTableCompanion
+    extends UpdateCompanion<TaskTemplateAssignmentEventsTableData> {
+  final Value<String> assignmentId;
+  final Value<int> stepId;
+  final Value<String> eventId;
+  final Value<String> profileId;
+  final Value<String> payload;
+  final Value<DateTime> updatedAt;
+  final Value<String> syncState;
+  final Value<int> rowid;
+  const TaskTemplateAssignmentEventsTableCompanion({
+    this.assignmentId = const Value.absent(),
+    this.stepId = const Value.absent(),
+    this.eventId = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TaskTemplateAssignmentEventsTableCompanion.insert({
+    required String assignmentId,
+    required int stepId,
+    required String eventId,
+    required String profileId,
+    required String payload,
+    required DateTime updatedAt,
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : assignmentId = Value(assignmentId),
+        stepId = Value(stepId),
+        eventId = Value(eventId),
+        profileId = Value(profileId),
+        payload = Value(payload),
+        updatedAt = Value(updatedAt);
+  static Insertable<TaskTemplateAssignmentEventsTableData> custom({
+    Expression<String>? assignmentId,
+    Expression<int>? stepId,
+    Expression<String>? eventId,
+    Expression<String>? profileId,
+    Expression<String>? payload,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? syncState,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (assignmentId != null) 'assignment_id': assignmentId,
+      if (stepId != null) 'step_id': stepId,
+      if (eventId != null) 'event_id': eventId,
+      if (profileId != null) 'profile_id': profileId,
+      if (payload != null) 'payload': payload,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncState != null) 'sync_state': syncState,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TaskTemplateAssignmentEventsTableCompanion copyWith(
+      {Value<String>? assignmentId,
+      Value<int>? stepId,
+      Value<String>? eventId,
+      Value<String>? profileId,
+      Value<String>? payload,
+      Value<DateTime>? updatedAt,
+      Value<String>? syncState,
+      Value<int>? rowid}) {
+    return TaskTemplateAssignmentEventsTableCompanion(
+      assignmentId: assignmentId ?? this.assignmentId,
+      stepId: stepId ?? this.stepId,
+      eventId: eventId ?? this.eventId,
+      profileId: profileId ?? this.profileId,
+      payload: payload ?? this.payload,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncState: syncState ?? this.syncState,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (assignmentId.present) {
+      map['assignment_id'] = Variable<String>(assignmentId.value);
+    }
+    if (stepId.present) {
+      map['step_id'] = Variable<int>(stepId.value);
+    }
+    if (eventId.present) {
+      map['event_id'] = Variable<String>(eventId.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TaskTemplateAssignmentEventsTableCompanion(')
+          ..write('assignmentId: $assignmentId, ')
+          ..write('stepId: $stepId, ')
+          ..write('eventId: $eventId, ')
+          ..write('profileId: $profileId, ')
+          ..write('payload: $payload, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $FoodTypesTableTable extends FoodTypesTable
     with TableInfo<$FoodTypesTableTable, FoodTypesTableData> {
   @override
@@ -4391,6 +5956,15 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
       $SpeciesConfigsTableTable(this);
   late final $EventTemplatesTableTable eventTemplatesTable =
       $EventTemplatesTableTable(this);
+  late final $TaskTemplatesTableTable taskTemplatesTable =
+      $TaskTemplatesTableTable(this);
+  late final $TaskTemplateStepsTableTable taskTemplateStepsTable =
+      $TaskTemplateStepsTableTable(this);
+  late final $TaskTemplateAssignmentsTableTable taskTemplateAssignmentsTable =
+      $TaskTemplateAssignmentsTableTable(this);
+  late final $TaskTemplateAssignmentEventsTableTable
+      taskTemplateAssignmentEventsTable =
+      $TaskTemplateAssignmentEventsTableTable(this);
   late final $FoodTypesTableTable foodTypesTable = $FoodTypesTableTable(this);
   late final $FoodStockTableTable foodStockTable = $FoodStockTableTable(this);
   late final $DashboardPreferencesTableTable dashboardPreferencesTable =
@@ -4413,6 +5987,10 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
         profilesTable,
         speciesConfigsTable,
         eventTemplatesTable,
+        taskTemplatesTable,
+        taskTemplateStepsTable,
+        taskTemplateAssignmentsTable,
+        taskTemplateAssignmentEventsTable,
         foodTypesTable,
         foodStockTable,
         dashboardPreferencesTable,
@@ -4818,6 +6396,650 @@ class $$EventTemplatesTableTableOrderingComposer
 
   ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
       column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+typedef $$TaskTemplatesTableTableCreateCompanionBuilder
+    = TaskTemplatesTableCompanion Function({
+  required String id,
+  required String profileId,
+  required String payload,
+  required DateTime updatedAt,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+typedef $$TaskTemplatesTableTableUpdateCompanionBuilder
+    = TaskTemplatesTableCompanion Function({
+  Value<String> id,
+  Value<String> profileId,
+  Value<String> payload,
+  Value<DateTime> updatedAt,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+
+class $$TaskTemplatesTableTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $TaskTemplatesTableTable,
+    TaskTemplatesTableData,
+    $$TaskTemplatesTableTableFilterComposer,
+    $$TaskTemplatesTableTableOrderingComposer,
+    $$TaskTemplatesTableTableCreateCompanionBuilder,
+    $$TaskTemplatesTableTableUpdateCompanionBuilder> {
+  $$TaskTemplatesTableTableTableManager(
+      _$LocalDatabase db, $TaskTemplatesTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$TaskTemplatesTableTableFilterComposer(ComposerState(db, table)),
+          orderingComposer: $$TaskTemplatesTableTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> profileId = const Value.absent(),
+            Value<String> payload = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TaskTemplatesTableCompanion(
+            id: id,
+            profileId: profileId,
+            payload: payload,
+            updatedAt: updatedAt,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String profileId,
+            required String payload,
+            required DateTime updatedAt,
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TaskTemplatesTableCompanion.insert(
+            id: id,
+            profileId: profileId,
+            payload: payload,
+            updatedAt: updatedAt,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$TaskTemplatesTableTableFilterComposer
+    extends FilterComposer<_$LocalDatabase, $TaskTemplatesTableTable> {
+  $$TaskTemplatesTableTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$TaskTemplatesTableTableOrderingComposer
+    extends OrderingComposer<_$LocalDatabase, $TaskTemplatesTableTable> {
+  $$TaskTemplatesTableTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+typedef $$TaskTemplateStepsTableTableCreateCompanionBuilder
+    = TaskTemplateStepsTableCompanion Function({
+  Value<int> id,
+  required String templateId,
+  required String profileId,
+  required int position,
+  required String payload,
+  required DateTime updatedAt,
+  Value<String> syncState,
+});
+typedef $$TaskTemplateStepsTableTableUpdateCompanionBuilder
+    = TaskTemplateStepsTableCompanion Function({
+  Value<int> id,
+  Value<String> templateId,
+  Value<String> profileId,
+  Value<int> position,
+  Value<String> payload,
+  Value<DateTime> updatedAt,
+  Value<String> syncState,
+});
+
+class $$TaskTemplateStepsTableTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $TaskTemplateStepsTableTable,
+    TaskTemplateStepsTableData,
+    $$TaskTemplateStepsTableTableFilterComposer,
+    $$TaskTemplateStepsTableTableOrderingComposer,
+    $$TaskTemplateStepsTableTableCreateCompanionBuilder,
+    $$TaskTemplateStepsTableTableUpdateCompanionBuilder> {
+  $$TaskTemplateStepsTableTableTableManager(
+      _$LocalDatabase db, $TaskTemplateStepsTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$TaskTemplateStepsTableTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$TaskTemplateStepsTableTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> templateId = const Value.absent(),
+            Value<String> profileId = const Value.absent(),
+            Value<int> position = const Value.absent(),
+            Value<String> payload = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+          }) =>
+              TaskTemplateStepsTableCompanion(
+            id: id,
+            templateId: templateId,
+            profileId: profileId,
+            position: position,
+            payload: payload,
+            updatedAt: updatedAt,
+            syncState: syncState,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String templateId,
+            required String profileId,
+            required int position,
+            required String payload,
+            required DateTime updatedAt,
+            Value<String> syncState = const Value.absent(),
+          }) =>
+              TaskTemplateStepsTableCompanion.insert(
+            id: id,
+            templateId: templateId,
+            profileId: profileId,
+            position: position,
+            payload: payload,
+            updatedAt: updatedAt,
+            syncState: syncState,
+          ),
+        ));
+}
+
+class $$TaskTemplateStepsTableTableFilterComposer
+    extends FilterComposer<_$LocalDatabase, $TaskTemplateStepsTableTable> {
+  $$TaskTemplateStepsTableTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get templateId => $state.composableBuilder(
+      column: $state.table.templateId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get position => $state.composableBuilder(
+      column: $state.table.position,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$TaskTemplateStepsTableTableOrderingComposer
+    extends OrderingComposer<_$LocalDatabase, $TaskTemplateStepsTableTable> {
+  $$TaskTemplateStepsTableTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get templateId => $state.composableBuilder(
+      column: $state.table.templateId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get position => $state.composableBuilder(
+      column: $state.table.position,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+typedef $$TaskTemplateAssignmentsTableTableCreateCompanionBuilder
+    = TaskTemplateAssignmentsTableCompanion Function({
+  required String id,
+  required String profileId,
+  required String templateId,
+  required String scopeType,
+  Value<String?> scopeId,
+  required DateTime anchorDate,
+  required String payload,
+  required DateTime updatedAt,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+typedef $$TaskTemplateAssignmentsTableTableUpdateCompanionBuilder
+    = TaskTemplateAssignmentsTableCompanion Function({
+  Value<String> id,
+  Value<String> profileId,
+  Value<String> templateId,
+  Value<String> scopeType,
+  Value<String?> scopeId,
+  Value<DateTime> anchorDate,
+  Value<String> payload,
+  Value<DateTime> updatedAt,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+
+class $$TaskTemplateAssignmentsTableTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $TaskTemplateAssignmentsTableTable,
+    TaskTemplateAssignmentsTableData,
+    $$TaskTemplateAssignmentsTableTableFilterComposer,
+    $$TaskTemplateAssignmentsTableTableOrderingComposer,
+    $$TaskTemplateAssignmentsTableTableCreateCompanionBuilder,
+    $$TaskTemplateAssignmentsTableTableUpdateCompanionBuilder> {
+  $$TaskTemplateAssignmentsTableTableTableManager(
+      _$LocalDatabase db, $TaskTemplateAssignmentsTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$TaskTemplateAssignmentsTableTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$TaskTemplateAssignmentsTableTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> profileId = const Value.absent(),
+            Value<String> templateId = const Value.absent(),
+            Value<String> scopeType = const Value.absent(),
+            Value<String?> scopeId = const Value.absent(),
+            Value<DateTime> anchorDate = const Value.absent(),
+            Value<String> payload = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TaskTemplateAssignmentsTableCompanion(
+            id: id,
+            profileId: profileId,
+            templateId: templateId,
+            scopeType: scopeType,
+            scopeId: scopeId,
+            anchorDate: anchorDate,
+            payload: payload,
+            updatedAt: updatedAt,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String profileId,
+            required String templateId,
+            required String scopeType,
+            Value<String?> scopeId = const Value.absent(),
+            required DateTime anchorDate,
+            required String payload,
+            required DateTime updatedAt,
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TaskTemplateAssignmentsTableCompanion.insert(
+            id: id,
+            profileId: profileId,
+            templateId: templateId,
+            scopeType: scopeType,
+            scopeId: scopeId,
+            anchorDate: anchorDate,
+            payload: payload,
+            updatedAt: updatedAt,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$TaskTemplateAssignmentsTableTableFilterComposer extends FilterComposer<
+    _$LocalDatabase, $TaskTemplateAssignmentsTableTable> {
+  $$TaskTemplateAssignmentsTableTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get templateId => $state.composableBuilder(
+      column: $state.table.templateId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get scopeType => $state.composableBuilder(
+      column: $state.table.scopeType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get scopeId => $state.composableBuilder(
+      column: $state.table.scopeId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get anchorDate => $state.composableBuilder(
+      column: $state.table.anchorDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$TaskTemplateAssignmentsTableTableOrderingComposer
+    extends OrderingComposer<_$LocalDatabase,
+        $TaskTemplateAssignmentsTableTable> {
+  $$TaskTemplateAssignmentsTableTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get templateId => $state.composableBuilder(
+      column: $state.table.templateId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get scopeType => $state.composableBuilder(
+      column: $state.table.scopeType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get scopeId => $state.composableBuilder(
+      column: $state.table.scopeId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get anchorDate => $state.composableBuilder(
+      column: $state.table.anchorDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+typedef $$TaskTemplateAssignmentEventsTableTableCreateCompanionBuilder
+    = TaskTemplateAssignmentEventsTableCompanion Function({
+  required String assignmentId,
+  required int stepId,
+  required String eventId,
+  required String profileId,
+  required String payload,
+  required DateTime updatedAt,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+typedef $$TaskTemplateAssignmentEventsTableTableUpdateCompanionBuilder
+    = TaskTemplateAssignmentEventsTableCompanion Function({
+  Value<String> assignmentId,
+  Value<int> stepId,
+  Value<String> eventId,
+  Value<String> profileId,
+  Value<String> payload,
+  Value<DateTime> updatedAt,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+
+class $$TaskTemplateAssignmentEventsTableTableTableManager
+    extends RootTableManager<
+        _$LocalDatabase,
+        $TaskTemplateAssignmentEventsTableTable,
+        TaskTemplateAssignmentEventsTableData,
+        $$TaskTemplateAssignmentEventsTableTableFilterComposer,
+        $$TaskTemplateAssignmentEventsTableTableOrderingComposer,
+        $$TaskTemplateAssignmentEventsTableTableCreateCompanionBuilder,
+        $$TaskTemplateAssignmentEventsTableTableUpdateCompanionBuilder> {
+  $$TaskTemplateAssignmentEventsTableTableTableManager(
+      _$LocalDatabase db, $TaskTemplateAssignmentEventsTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$TaskTemplateAssignmentEventsTableTableFilterComposer(
+                  ComposerState(db, table)),
+          orderingComposer:
+              $$TaskTemplateAssignmentEventsTableTableOrderingComposer(
+                  ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> assignmentId = const Value.absent(),
+            Value<int> stepId = const Value.absent(),
+            Value<String> eventId = const Value.absent(),
+            Value<String> profileId = const Value.absent(),
+            Value<String> payload = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TaskTemplateAssignmentEventsTableCompanion(
+            assignmentId: assignmentId,
+            stepId: stepId,
+            eventId: eventId,
+            profileId: profileId,
+            payload: payload,
+            updatedAt: updatedAt,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String assignmentId,
+            required int stepId,
+            required String eventId,
+            required String profileId,
+            required String payload,
+            required DateTime updatedAt,
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TaskTemplateAssignmentEventsTableCompanion.insert(
+            assignmentId: assignmentId,
+            stepId: stepId,
+            eventId: eventId,
+            profileId: profileId,
+            payload: payload,
+            updatedAt: updatedAt,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$TaskTemplateAssignmentEventsTableTableFilterComposer
+    extends FilterComposer<_$LocalDatabase,
+        $TaskTemplateAssignmentEventsTableTable> {
+  $$TaskTemplateAssignmentEventsTableTableFilterComposer(super.$state);
+  ColumnFilters<String> get assignmentId => $state.composableBuilder(
+      column: $state.table.assignmentId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get stepId => $state.composableBuilder(
+      column: $state.table.stepId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get eventId => $state.composableBuilder(
+      column: $state.table.eventId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$TaskTemplateAssignmentEventsTableTableOrderingComposer
+    extends OrderingComposer<_$LocalDatabase,
+        $TaskTemplateAssignmentEventsTableTable> {
+  $$TaskTemplateAssignmentEventsTableTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get assignmentId => $state.composableBuilder(
+      column: $state.table.assignmentId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get stepId => $state.composableBuilder(
+      column: $state.table.stepId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get eventId => $state.composableBuilder(
+      column: $state.table.eventId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -6228,6 +8450,19 @@ class $LocalDatabaseManager {
       $$SpeciesConfigsTableTableTableManager(_db, _db.speciesConfigsTable);
   $$EventTemplatesTableTableTableManager get eventTemplatesTable =>
       $$EventTemplatesTableTableTableManager(_db, _db.eventTemplatesTable);
+  $$TaskTemplatesTableTableTableManager get taskTemplatesTable =>
+      $$TaskTemplatesTableTableTableManager(_db, _db.taskTemplatesTable);
+  $$TaskTemplateStepsTableTableTableManager get taskTemplateStepsTable =>
+      $$TaskTemplateStepsTableTableTableManager(
+          _db, _db.taskTemplateStepsTable);
+  $$TaskTemplateAssignmentsTableTableTableManager
+      get taskTemplateAssignmentsTable =>
+          $$TaskTemplateAssignmentsTableTableTableManager(
+              _db, _db.taskTemplateAssignmentsTable);
+  $$TaskTemplateAssignmentEventsTableTableTableManager
+      get taskTemplateAssignmentEventsTable =>
+          $$TaskTemplateAssignmentEventsTableTableTableManager(
+              _db, _db.taskTemplateAssignmentEventsTable);
   $$FoodTypesTableTableTableManager get foodTypesTable =>
       $$FoodTypesTableTableTableManager(_db, _db.foodTypesTable);
   $$FoodStockTableTableTableManager get foodStockTable =>

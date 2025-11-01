@@ -42,6 +42,66 @@ class EventTemplatesTable extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
+class TaskTemplatesTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get profileId => text()();
+  TextColumn get payload => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get syncState =>
+      text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+class TaskTemplateStepsTable extends Table {
+  IntColumn get id => integer()();
+  TextColumn get templateId => text()();
+  TextColumn get profileId => text()();
+  IntColumn get position => integer()();
+  TextColumn get payload => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get syncState =>
+      text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+class TaskTemplateAssignmentsTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get profileId => text()();
+  TextColumn get templateId => text()();
+  TextColumn get scopeType => text()();
+  TextColumn get scopeId => text().nullable()();
+  DateTimeColumn get anchorDate => dateTime()();
+  TextColumn get payload => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get syncState =>
+      text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
+class TaskTemplateAssignmentEventsTable extends Table {
+  TextColumn get assignmentId => text()();
+  IntColumn get stepId => integer()();
+  TextColumn get eventId => text()();
+  TextColumn get profileId => text()();
+  TextColumn get payload => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get syncState =>
+      text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{
+        assignmentId,
+        stepId,
+        eventId,
+      };
+}
+
 class FoodTypesTable extends Table {
   IntColumn get id => integer()();
   TextColumn get profileId => text()();
@@ -167,6 +227,10 @@ class QueuedActionsTable extends Table {
     ProfilesTable,
     SpeciesConfigsTable,
     EventTemplatesTable,
+    TaskTemplatesTable,
+    TaskTemplateStepsTable,
+    TaskTemplateAssignmentsTable,
+    TaskTemplateAssignmentEventsTable,
     FoodTypesTable,
     FoodStockTable,
     DashboardPreferencesTable,
@@ -186,7 +250,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -210,6 +274,21 @@ class LocalDatabase extends _$LocalDatabase {
           if (from < 6) {
             await migrator.createTable(animalMediaTable);
           }
+          if (from < 7) {
+            await migrator.createTable(taskTemplatesTable);
+            await migrator.createTable(taskTemplateStepsTable);
+            await migrator.createTable(taskTemplateAssignmentsTable);
+            await migrator.createTable(taskTemplateAssignmentEventsTable);
+          }
+          if (from < 8) {
+            await migrator.alterTable(
+              TableMigration(
+                taskTemplateAssignmentsTable,
+                columnTransformer:
+                    <GeneratedColumn<Object>, Expression<Object>>{},
+              ),
+            );
+          }
         },
       );
 
@@ -220,6 +299,10 @@ class LocalDatabase extends _$LocalDatabase {
       await delete(breedingRecordsTable).go();
       await delete(animalsTable).go();
       await delete(animalMediaTable).go();
+      await delete(taskTemplateAssignmentEventsTable).go();
+      await delete(taskTemplateAssignmentsTable).go();
+      await delete(taskTemplateStepsTable).go();
+      await delete(taskTemplatesTable).go();
       await delete(speciesConfigsTable).go();
       await delete(eventTemplatesTable).go();
       await delete(foodStockTable).go();

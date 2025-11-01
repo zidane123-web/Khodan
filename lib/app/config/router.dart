@@ -16,6 +16,7 @@ import '../../features/events/presentation/screens/add_breeding_record_screen.da
 import '../../features/events/presentation/screens/add_event_screen.dart';
 import '../../features/events/presentation/cubit/breeding_cubit.dart';
 import '../../features/planning/presentation/screens/planning_screen.dart';
+import '../../features/planning/presentation/screens/task_templates_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
 import '../../features/settings/presentation/screens/settings_about_screen.dart';
 import '../../features/settings/presentation/screens/settings_contact_support_screen.dart';
@@ -273,6 +274,15 @@ class KhodanRouter {
             builder: (BuildContext context, GoRouterState state) {
               return const PlanningScreen();
             },
+            routes: <RouteBase>[
+              GoRoute(
+                path: const PlanningTemplatesRoute().subPath,
+                name: const PlanningTemplatesRoute().name,
+                builder: (BuildContext context, GoRouterState state) {
+                  return const TaskTemplatesScreen();
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: const NotificationsRoute().path,
@@ -404,6 +414,14 @@ class SettingsAboutRoute extends KhodanRoute {
 
 class PlanningRoute extends KhodanRoute {
   const PlanningRoute() : super('/planning');
+}
+
+class PlanningTemplatesRoute extends KhodanRoute {
+  const PlanningTemplatesRoute() : super('/planning/templates');
+
+  String get subPath => 'templates';
+
+  String get name => 'planning-templates';
 }
 
 class NotificationsRoute extends KhodanRoute {

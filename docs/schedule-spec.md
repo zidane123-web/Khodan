@@ -1,125 +1,191 @@
 # Module Planning - Specification de reference
 
-Ce document formalise la refonte du module Planning en suivant les parcours observes dans Everbreed (captures et enregistrement video du 30/10/2025). Il couvre la structure de donnees, les vues attendues (Liste, Calendrier, Chaine), les workflows clefs, le mode hors-ligne et les exports.
+Ce document formalise la refonte du module Planning en s'appuyant sur les parcours observes dans Everbreed (captures et enregistrement du 30/10/2025). Il couvre la structure de donnees, les vues attendues (liste, calendrier, chaine), les workflows clefs, le mode hors-ligne et les exports.
 
 ## Modele de donnees des taches
 
-Chaque tache planifiee est normalisee a partir des evenements (`events`) et des rappels reproduction (`breeding_records.tasks`). Les champs exposes au front sont :
+Chaque tache planifiee est normalisee a partir des evenements (`events`) et des rappels de reproduction (`breeding_records.tasks`). Les champs exposes au front sont :
 
 | Champ | Description | Source / Notes |
 | --- | --- | --- |
-| `taskId` | Identifiant unique (UUID) | Cle de l evenement ou identifiant synthetique derive du rappel |
-| `profileId` | Profil utilisateur | Transmis tel quel depuis la table d origine |
-| `taskType` | Type fonctionnel (`mating`, `palpation`, `kindling`, `feeding`, `inventory`, `health_check`, etc.) | Liste basee sur Everbreed Schedule (carte Type + icons) |
-| `category` | `reproduction`, `sante`, `logistique`, `suivi` | Regroupement pour filtres rapides |
-| `title` | Intitule court affiche en liste | Compose a partir du type + animaux |
-| `description` | Texte libre (notes) | Facultatif |
-| `dueDate` | Date d echeance | Obligatoire |
-| `dueTime` | Heure cible (optionnelle) | Null si non precisee |
-| `timeSpan` | Fenetre horaire (`morning`, `afternoon`, `evening`) ou minute start/end | Legacy Everbreed pour planifier les tournAes |
-| `status` | `planned`, `completed`, `skipped`, `cancelled` | `planned` par defaut, `completed` lorsque marque comme fait |
-| `priority` | `normal`, `important`, `critical` | Pilotage badge rouge en liste |
-| `animalIds` | Liste des animaux lies | Utilisee pour tags et filtres |
-| `subjects` | Noms + tatouages concatAnes (`F01 Fiona`) | Deduit en front pour ne pas dupliquer les donnees |
-| `litterId` | Id portee concerne (optionnel) | Pour vue chaine |
-| `relatedTasks` | Ids des taches dependantes (palpation -> kindling -> sevrage) | Permet l affichage de timeline |
-| `origin` | `manual`, `template`, `auto_breeding` | Historique Everbreed (Quick Schedule, Recurring Tasks) |
-| `syncState` | `synced`, `pending`, `failed` | Lie a la file hors-ligne |
-| `createdAt` / `updatedAt` | Horodatage | Audit |
-| `completedAt` | Date marquage fait | Utilisee pour statistiques |
-| `assignedTo` | Nom ou identifiant utilisateur | Everbreed permet l affectation a un employe |
-| `recurrenceRule` | RRULE compatible iCal (optionnel) | Sert pour export iCal futur |
+| `taskId` | Identifiant unique (UUID). | Cle de l'evenement ou identifiant synthetique derive du rappel. |
+| `profileId` | Profil utilisateur. | Transmis tel quel depuis la table d'origine. |
+| `taskType` | Type fonctionnel (`mating`, `palpation`, `kindling`, `feeding`, `inventory`, `health_check`, etc.). | Liste alignes sur Everbreed Schedule (carte Type + icones). |
+| `category` | `reproduction`, `health`, `logistics`, `monitoring`. | Regroupement pour filtres rapides. |
+| `title` | Intitule court. | Compose a partir du type + animaux. |
+| `description` | Notes libres. | Facultatif. |
+| `dueDate` | Date d'echeance. | Obligatoire. |
+| `dueTime` | Heure cible. | Optionnelle. |
+| `timeSpan` | Fenetre horaire (`morning`, `afternoon`, `evening`) ou fenetre minute. | Legacy Everbreed pour planifier les tournees. |
+| `status` | `planned`, `completed`, `skipped`, `cancelled`. | `planned` par defaut, `completed` quand l'utilisateur marque comme fait. |
+| `priority` | `normal`, `important`, `critical`. | Conduit l'affichage des badges rouges. |
+| `animalIds` | Liste des animaux lies. | Pour tags et filtres. |
+| `subjects` | Noms + tatouages concatentes (`F01 Fiona`). | Derive en front pour eviter la duplication. |
+| `litterId` | Identifiant de portee. | Optionnel, alimente la vue chaine. |
+| `relatedTasks` | Ids des taches dependantes. | Palpation -> kindling -> sevrage. |
+| `origin` | `manual`, `template`, `auto_breeding`. | Historique Everbreed (Quick Schedule, Recurring Tasks). |
+| `syncState` | `synced`, `pending`, `failed`. | Lie a la file hors-ligne. |
+| `createdAt` / `updatedAt` | Horodatage. | Audit. |
+| `completedAt` | Date de marquage. | Utilisee pour les statistiques. |
+| `assignedTo` | Nom ou identifiant d'utilisateur. | Everbreed permet l'affectation a un employe. |
+| `recurrenceRule` | RRULE compatible iCal. | Sert pour le futur export iCal. |
 
-## Vues cibles
+## Modeles de taches
+
+Les elevages preparent des gabarits pour automatiser les sequences observees dans Everbreed (`Mating -> Palpation -> Kindling`). Un modele encapsule des metadonnees communes et une liste ordonnee d'etapes generees lors de l'application.
+
+### Champs d'un modele
+
+| Champ | Type | Description |
+| --- | --- | --- |
+| `templateId` | UUID | Identifiant unique. |
+| `profileId` | UUID | Proprietaire du gabarit (policy RLS). |
+| `name` | text | Libelle affiche dans la bibliotheque (`Gestation standard 31 j`, `Soin vermifuge 45 j`). |
+| `slug` | text (optionnel) | Cle technique pour import/export rapide. |
+| `category` | enum | `reproduction`, `health`, `logistics`, `monitoring`. |
+| `scopeType` | enum | `litter`, `treatment`, `custom`. Conditionne l'ecran d'attribution (Everbreed: `Apply to Breeding` vs `Apply to Task Queue`). |
+| `speciesId` | bigint (optionnel) | Restreint aux animaux d'une espece (Everbreed distingue lapin / chevre). |
+| `defaultAnchor` | enum | Point de depart `template_start`, `mating_date`, `kindling_date`, `custom_date`. Utilise quand aucun evenement n'est precise. |
+| `visibility` | enum | `private`, `shared_team`, `library`. |
+| `isActive` | boolean | Masque le modele sans le supprimer (toggle Everbreed). |
+| `tags` | text[] | Mots cles (`Quick Schedule`, `Weaning`, `Health`). |
+| `notes` | text | Instructions internes. |
+| `createdAt` / `updatedAt` / `archivedAt` | timestamptz | Suivi audit. |
+
+### Champs d'une etape
+
+Chaque etape correspond a une tache planifiee generee lors de l'application.
+
+| Champ | Type | Description |
+| --- | --- | --- |
+| `stepId` | bigint | Identifiant sequentiel. |
+| `templateId` | UUID | Reference au modele parent. |
+| `profileId` | UUID | Proprietaire, facilite RLS. |
+| `position` | int | Ordre d'execution (Everbreed affiche une timeline triee). |
+| `title` | text | Libelle visible (`Palpation`, `Vermifuge`). |
+| `taskType` | text | Type fonctionnel (`palpation`, `treatment`, `checkup`, etc.). |
+| `category` | enum | Meme mapping que les taches planifiees. |
+| `description` | text | Instructions operatoires (optionnelles). |
+| `offsetDays` | int | Decalage en jours par rapport a l'ancre (`+12` jours apres saillie pour la palpation). |
+| `offsetMinutes` | int | Ajustement intra-journee (peut etre negatif pour preparation la veille). |
+| `anchor` | enum | `template_start`, `previous_step`, `mating_date`, `palpation_date`, `kindling_date`, `weaning_date`, `custom_date`. |
+| `autoCompleteRule` | jsonb | Automatismes Everbreed (ex: marquer comme complete quand l'evenement amont est termine). |
+| `notificationOffsets` | int[] | Minutes relatives a `eventDate` pour programmer les rappels (J-1, J0, J+1). |
+| `priority` | enum | `normal`, `important`, `critical`. |
+| `assignTo` | text | Utilisateur cible ou role d'equipe. |
+| `createdAt` / `updatedAt` | timestamptz | Maintenus via trigger. |
+
+### Workflow d'application
+
+1. L'utilisateur choisit un modele puis selectionne une portee, un traitement ou une liste libre d'animaux (captures Everbreed 21, 35).
+2. L'ancre proposee suit `defaultAnchor`. Le formulaire permet de la remplacer par une date precise (saillie, palpation, mise bas) ou par une date custom.
+3. `TaskTemplateService.applyTemplate` calcule la date de chaque etape a partir de `anchor` et des offsets. Les etapes sont triees par `position` pour respecter la timeline.
+4. Chaque etape genere un `LivestockEvent` rattache aux animaux concernes et cree un lien `task_template_assignment_event` pour le suivi.
+5. Pour chaque `notificationOffset`, `LocalNotificationService.scheduleTaskReminder` enregistre un rappel local. Les cibles email/SMS facultatives alimentent `notifications_outbox` pour traitement externe.
+6. Les evenements sont sauvegardes en local puis synchronises via Supabase. En mode hors-ligne, les actions rejoignent la queue `SyncActionType.createEvent` et sont rejouees des que la connexion revient.
+
+### Alignement Everbreed et UX
+
+- Les categories et types reprennent les cartes `Schedule > Quick Schedule`.
+- `scopeType` couvre `Apply to Breeding` (portee) et `Apply to Task Queue` (traitement generique).
+- `isActive` permet de masquer un modele tout en conservant les historiques, comme le toggle Active d'Everbreed.
+- Les etapes respectent une contrainte d'unicite `(template_id, position)` pour reproduire la timeline et autoriser le drag & drop.
+- Les rappels multiples (J-1, J0, J+1) suivent les options Email/SMS observees sur les captures 43-48.
+- `anchorMetadata` (JSON) stocke les IDs de breeding ou de traitement afin d'expliquer la provenance quand on re-ouvre la fiche d'attribution.
+
+## Vues planification
 
 ### Vue Liste
-- Barre de recherche globale (nom/tatouage animal, type, note) avec highlight des correspondances.
-- Filtres persistants en haut (chips) :
-  - Statut (A faire, En retard, Termine)
-  - Periode (Aujourd hui, 7 jours, 30 jours, plage custom)
-  - Type (Palpation, Mise bas, Traitement, Nettoyage, Inventaire, Custom)
-  - Especes / cages / operateurs (multi selection)
+
+- Header avec segments `Taches`, `Modeles`, `Assignments`.
+- Barre de recherche texte sur `title`, `description`, `subjects`.
+- Filtres persistants (chips) :
+  - Statut (`A faire`, `En retard`, `Terminees`).
+  - Periode (`Aujourd'hui`, `7 jours`, `30 jours`, plage custom).
+  - Type (`Palpation`, `Mise bas`, `Traitement`, `Nettoyage`, `Inventaire`, `Custom`).
+  - Especes, cages, operateurs (multi-selection).
 - Compteurs Everbreed-like : `A faire`, `En retard`, `Terminees` dans un header compact.
 - Ligne de tache :
-  - Badge couleur par categorie (Reproduction violet, Sante vert, Logistique gris, Suivi bleu).
-  - Tag animaux (ex. `F01 Fiona`, `M01 Jasper`).
-  - Horaire si precise, sinon `Toute la journee`.
-  - Indicateur offline si action en attente (`syncState == pending`).
-- Actions rapides (icones alignes a droite) :
-  - Marquer comme termine
-  - Reprogrammer (ouvre bottom sheet date + heure)
-  - Exporter vers CSV (selection multiple)
-  - Supprimer / Ignorer (selon droits)
+- Badge couleur par categorie (Reproduction violet, Health vert, Logistics gris, Monitoring bleu).
+  - Tags animaux (`F01 Fiona`, `M01 Jasper`).
+  - Horaire ou mention `Toute la journee`.
+  - Indicateur hors-ligne si `syncState == pending`.
+- Actions rapides (icones a droite) :
+  - Marquer comme termine.
+  - Reprogrammer (bottom sheet date + heure).
+  - Exporter CSV (selection multiple).
+  - Supprimer / Ignorer (suivant les droits).
 
 ### Vue Calendrier
-- Toggle `Mois` / `Semaine` (Everbreed affiche un switch en haut a droite).
-- Calendrier mensuel a cases fermee avec comptage par jour (`3 taches`).
-- Panneau lateral (ou bottom sheet sur mobile) listant les taches du jour selectionne.
-- Drag & drop desktop pour replanifier (MVP : picker date + heure via dialog).
-- Filtre "Afficher seulement reproduction" active un overlay couleur (Everbreed reproduction rings).
-- Bandeau recap du jour : `Taches du 12 nov` + quick actions (`Terminer la selection`, `Exporter`).
-- Icals gArAs par slot (non implAmentA -> message info).
+
+- Toggle `Mois` / `Semaine` (placement haut droite).
+- Calendrier mensuel en cases fermees avec comptage (`3 taches`).
+- Panneau lateral (ou bottom sheet mobile) listant les taches du jour choisi.
+- Drag & drop desktop pour reprogrammer (MVP: dialog date + heure).
+- Filtre "Afficher reproduction uniquement" ajoute un overlay couleur.
+- Bandeau recap du jour : `Taches du 12 nov` + actions `Terminer la selection`, `Exporter`.
+- Slots iCal prepares (placeholder, bouton desactive `Export iCal (bientot)`).
 
 ### Vue Chaine (timeline reproduction)
+
 - Timeline verticale par portee :
-  1. Saillie
-  2. Palpation (12 jours)
-  3. Mise bas
-  4. Sevrage
-  5. Post-sevrage (suivi poids)
-- Chaque etape affiche : date prevue, date effectuee, statut (planifie, fait, en retard).
-- Bouton `Marquer etape faite` -> met a jour `completedAt`.
-- Bouton `Planifier etapes` -> genere les taches manquantes selon gabarit Everbreed (`Mating + Kindling + Weaning`).
-- Affiche badges animaux (lapine, lapin, portee).
+  1. Saillie.
+  2. Palpation (J+12).
+  3. Mise bas.
+  4. Sevrage.
+  5. Post-sevrage (suivi poids).
+- Chaque etape affiche : date prevue, date effectuee, statut (`planifie`, `fait`, `retard`).
+- Bouton `Marquer etape faite` met a jour `completedAt`.
+- Bouton `Planifier etapes` genere les taches manquantes selon le gabarit.
+- Affichage des badges animaux (lapine, lapin, portee).
 - Filtre lateral : `Toutes`, `En retard`, `Cette semaine`, `A configurer`.
 
 ## Workflows utilisateur
 
-1. **Creation rapide** : FAB ouvre un formulaire concis (type, date, animaux, notes, assignation). Si offline, insertion locale + queue `event.create`.
-2. **Modale detail** : tap sur une tache ouvre detail (informations, historique, boutons Marquer termine, Reprogrammer, Dupliquer).
+1. **Creation rapide** : FAB ouvre un formulaire concis (type, date, animaux, notes, assignation). Hors-ligne, insertion locale + queue `event.create`.
+2. **Modale detail** : ouverture d'une tache -> informations, historique, boutons `Marquer termine`, `Reprogrammer`, `Dupliquer`.
 3. **Marquage termine** :
-   - Si connecte : `event.update` immediate.
-   - Si offline : `sync_queue` enregistre `event.update` avec rollback -> restauration du statut initial si echecs.
-4. **Reprogrammer** : modifie `dueDate`/`dueTime`, re-calcule `status` (en retard si < now).
-5. **Filtre sauvegarde** : MVP stocke dernier filtre dans `SharedPreferences` (clavier).
+   - Connecte : `event.update` immediat.
+   - Hors-ligne : enregistre `event.update` dans la queue avec rollback possible.
+4. **Reprogrammer** : modifie `dueDate` / `dueTime` et recalcule `status` (`overdue` si date < now).
+5. **Filtre sauvegarde** : le MVP conserve le dernier filtre dans `SharedPreferences`.
 6. **Export** :
-   - CSV : selection multiple -> bouton `Exporter CSV`. Fichier genere localement via package `csv`, partage via `share_plus`. Format colonnes `Date;Heure;Type;Animaux;Statut;Notes`.
-   - iCal : non implAmente dans cette itAration. UI affiche lien `Export iCal (soon)` avec tooltip `Priorite basse, a livrer apres integration Supabase`.
+   - CSV : selection multiple -> bouton `Exporter CSV` (package `csv`, partage via `share_plus`).
+   - iCal : placeholder (UI desactivee). Message `Priorite basse, arrive apres integration Supabase`.
 
 ## Mode hors-ligne
 
-- Utilise `OfflineSyncManager` + `LocalEventDataSource` (deja en place pour events).
-- Actions offline prevues :
+- Utilise `OfflineSyncManager` + `LocalEventDataSource`.
+- Actions hors-ligne :
   - Creation tache -> `SyncActionType.createEvent`.
-  - Mise a jour statut / dates -> ajouter `updateEvent` (nouvelle methode).
+  - Mise a jour statut / dates -> `updateEvent`.
   - Suppression -> `deleteEvent`.
-- La vue liste affiche badge `Hors-ligne (3 actions en attente)` dans l entete avec bouton `Voir les actions` ouvrant un dialog listant la queue.
-- Les reprogrammations effectuees hors ligne sont appliquees localement et planifiees pour sync automatique.
-- Historique sync (comme Everbreed) : message toast `Planifie pour synchronisation` + `Voir la file`.
+- La vue liste affiche un badge `Hors-ligne (3 actions en attente)` dans l'entete avec bouton `Voir les actions`.
+- Les reprogrammations hors-ligne s'appliquent localement puis se synchronisent automatiquement.
+- Historique sync : toast `Planifie pour synchronisation` + lien `Voir la file`.
 
 ## Gestion des filtres et recherche
 
-- Recherche texte appliquee sur `title`, `description`, `subjects`.
-- Filtres se combinent (statut + periode + type + animal).
+- Recherche texte sur `title`, `description`, `subjects`.
+- Filtres combinables (statut + periode + type + animal).
 - Calcul derive :
-  - `isOverdue` si `status == planned && dueDate < today`.
-  - `isToday` si `dueDate` = date courante.
+  - `isOverdue` si `status == planned` et `dueDate < today`.
+  - `isToday` si `dueDate` == date courante.
   - `timeBucket` pour regroupement (`Matin`, `Apres-midi`, `Soiree`).
-- Le cubit expose `filteredTasks`, `calendarSlots` et `breedingChains`.
+- Le cubit expose `filteredTasks`, `calendarSlots`, `breedingChains`.
 - Tests unitaires sur la fonction de filtrage (selection, tri, regroupement).
 
 ## Export et synchronisation externe
 
 - **CSV** : MVP livre.
-- **iCal** : placeholder dans UI (bouton desactive + message). Spec indique de reutiliser `recurrenceRule` lorsque l integration sera priorisee.
-- **Sync externe** : Etape future pour publier vers Google Calendar ou ics. Noter dependance a Supabase (webhook ou API server).
+- **iCal** : placeholder UI (bouton desactive + message). Reutiliser `recurrenceRule` quand priorise.
+- **Synchronisation externe** : futur webhook/worker pour Google Calendar ou ICS. Depend de Supabase (edge functions).
 
 ## Commandes a executer pour verifier le module
 
-- `flutter pub get` (des que de nouvelles dependances sont ajoutees).
-- `flutter analyze`
-- `flutter test`
-- `dart run tools/generate_mocks.dart` (si on ajoute de nouveaux stubs pour tests).
+- `flutter pub get` (apres ajout de dependances).
+- `flutter analyze`.
+- `flutter test`.
+- `dart run tools/generate_mocks.dart` (si de nouveaux stubs sont requis).
 
-Les deux dernieres commandes sont a rejouer avant livraison. L export iCal et l integration Supabase restent des travaux manuels (voir liste de suivi dans la conclusion).
-
+Les deux dernieres commandes sont a rejouer avant livraison. L'export iCal et l'integration Supabase restent des travaux manuels (voir backlog).

@@ -8,6 +8,8 @@ class LivestockEvent extends Equatable {
     required this.eventDate,
     required this.details,
     this.notes,
+    this.taskTemplateAssignmentId,
+    this.taskTemplateStepId,
   });
 
   final String id;
@@ -16,6 +18,8 @@ class LivestockEvent extends Equatable {
   final DateTime eventDate;
   final Map<String, dynamic> details;
   final String? notes;
+  final String? taskTemplateAssignmentId;
+  final int? taskTemplateStepId;
 
   LivestockEvent copyWith({
     String? id,
@@ -24,6 +28,8 @@ class LivestockEvent extends Equatable {
     DateTime? eventDate,
     Map<String, dynamic>? details,
     String? notes,
+    String? taskTemplateAssignmentId,
+    int? taskTemplateStepId,
   }) {
     return LivestockEvent(
       id: id ?? this.id,
@@ -32,6 +38,9 @@ class LivestockEvent extends Equatable {
       eventDate: eventDate ?? this.eventDate,
       details: details ?? this.details,
       notes: notes ?? this.notes,
+      taskTemplateAssignmentId:
+          taskTemplateAssignmentId ?? this.taskTemplateAssignmentId,
+      taskTemplateStepId: taskTemplateStepId ?? this.taskTemplateStepId,
     );
   }
 
@@ -45,6 +54,10 @@ class LivestockEvent extends Equatable {
         (json['details'] as Map?) ?? <String, dynamic>{},
       ),
       notes: json['notes'] as String?,
+      taskTemplateAssignmentId:
+          json['task_template_assignment_id'] as String?,
+      taskTemplateStepId:
+          (json['task_template_step_id'] as num?)?.toInt(),
     );
   }
 
@@ -56,6 +69,8 @@ class LivestockEvent extends Equatable {
       'event_date': eventDate.toIso8601String(),
       'details': details,
       'notes': notes,
+      'task_template_assignment_id': taskTemplateAssignmentId,
+      'task_template_step_id': taskTemplateStepId,
     };
   }
 
@@ -67,5 +82,7 @@ class LivestockEvent extends Equatable {
         eventDate,
         details,
         notes,
+        taskTemplateAssignmentId,
+        taskTemplateStepId,
       ];
 }

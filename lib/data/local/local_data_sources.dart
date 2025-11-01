@@ -6,10 +6,11 @@ import '../models/animal.dart';
 import '../models/animal_event.dart';
 import '../models/animal_media.dart';
 import '../models/breeding_record.dart';
-import '../models/event.dart';
 import '../models/event_template.dart';
+import '../models/event.dart';
 import '../models/food_stock.dart';
 import '../models/food_type.dart';
+import '../models/task_template.dart';
 import '../models/dashboard_preferences.dart';
 import '../models/profile.dart';
 import '../models/species_config.dart';
@@ -767,6 +768,344 @@ class LocalEventTemplateDataSource {
     final Map<String, dynamic> json =
         jsonDecode(row.payload) as Map<String, dynamic>;
     return EventTemplate.fromJson(json);
+  }
+}
+
+class LocalTaskTemplateDataSource {
+  LocalTaskTemplateDataSource(this._db);
+
+  final LocalDatabase _db;
+
+  Future<void> replaceTemplates(
+    List<TaskTemplate> templates, {
+    required String profileId,
+  }) async {
+    await _db.transaction(() async {
+      final List<String> ids =
+          templates.map((TaskTemplate template) => template.id).toList();
+      await (_db.delete(_db.taskTemplateStepsTable)
+            ..where(
+              (TaskTemplateStepsTable tbl) =>
+                  tbl.profileId.equals(profileId) &
+                  (ids.isEmpty
+                      ? const Constant<bool>(true)
+                      : tbl.templateId.isNotIn(ids)),
+            ))
+          .go();
+      await (_db.delete(_db.taskTemplatesTable)
+            ..where(
+              (TaskTemplatesTable tbl) =>
+                  tbl.profileId.equals(profileId) &
+                  (ids.isEmpty
+                      ? const Constant<bool>(true)
+                      : tbl.id.isNotIn(ids)),
+            ))
+          .go();
+      if (templates.isEmpty) {
+        return;
+      }
+      await upsertTemplates(templates, syncState: kSyncStateSynced);
+    });
+  }
+
+  Future<void> upsertTemplates(
+    List<TaskTemplate> templates, {
+    String syncState = kSyncStateSynced,
+  }) async {
+    if (templates.isEmpty) {
+      return;
+    }
+    final DateTime now = DateTime.now();
+    await _db.transaction(() async {
+      await _db.batch((Batch batch) {
+        batch.insertAllOnConflictUpdate(
+          _db.taskTemplatesTable,
+          templates.map((TaskTemplate template) {
+            return TaskTemplatesTableCompanion(
+              id: Value(template.id),
+              profileId: Value(template.profileId),
+              payload: Value(
+                jsonEncode(template.toJson(includeSteps: false)),
+              ),
+              updatedAt: Value(now),
+              syncState: Value(syncState),
+            );
+          }).toList(),
+        );
+      });
+      for (final TaskTemplate template in templates) {
+        await (_db.delete(_db.taskTemplateStepsTable)
+              ..where(
+                (TaskTemplateStepsTable tbl) =>
+                    tbl.templateId.equals(template.id),
+              ))
+            .go();
+        if (template.steps.isEmpty) {
+          continue;
+        }
+        await _db.batch((Batch batch) {
+          batch.insertAllOnConflictUpdate(
+            _db.taskTemplateStepsTable,
+            template.steps.map((TaskTemplateStep step) {
+              return TaskTemplateStepsTableCompanion(
+                id: Value(step.id),
+                templateId: Value(step.templateId),
+                profileId: Value(step.profileId),
+                position: Value(step.position),
+                payload: Value(jsonEncode(step.toJson())),
+                updatedAt: Value(now),
+                syncState: Value(syncState),
+              );
+            }).toList(),
+          );
+        });
+      }
+    });
+  }
+
+  Future<List<TaskTemplate>> fetchTemplates(String profileId) async {
+    final List<TaskTemplatesTableData> templateRows =
+        await (_db.select(_db.taskTemplatesTable)
+              ..where(
+                (TaskTemplatesTable tbl) => tbl.profileId.equals(profileId),
+              ))
+            .get();
+    if (templateRows.isEmpty) {
+      return <TaskTemplate>[];
+    }
+    final List<TaskTemplateStepsTableData> stepRows =
+        await (_db.select(_db.taskTemplateStepsTable)
+              ..where(
+                (TaskTemplateStepsTable tbl) => tbl.profileId.equals(profileId),
+              ))
+            .get();
+    final Map<String, List<TaskTemplateStep>> stepsByTemplate =
+        <String, List<TaskTemplateStep>>{};
+    for (final TaskTemplateStepsTableData row in stepRows) {
+      final Map<String, dynamic> json =
+          jsonDecode(row.payload) as Map<String, dynamic>;
+      final TaskTemplateStep step = TaskTemplateStep.fromJson(json);
+      final List<TaskTemplateStep> list = stepsByTemplate.putIfAbsent(
+        step.templateId,
+        () => <TaskTemplateStep>[],
+      );
+      list.add(step);
+    }
+    final List<TaskTemplate> templates = templateRows.map((TaskTemplatesTableData row) {
+      final Map<String, dynamic> json =
+          jsonDecode(row.payload) as Map<String, dynamic>;
+      final TaskTemplate template = TaskTemplate.fromJson(json);
+      final List<TaskTemplateStep> steps =
+          List<TaskTemplateStep>.from(stepsByTemplate[template.id] ?? <TaskTemplateStep>[]);
+      steps.sort((TaskTemplateStep a, TaskTemplateStep b) => a.position.compareTo(b.position));
+      return template.copyWith(steps: steps);
+    }).toList();
+    templates.sort((TaskTemplate a, TaskTemplate b) => a.name.compareTo(b.name));
+    return templates;
+  }
+
+  Future<TaskTemplate?> fetchTemplateById(String id) async {
+    final TaskTemplatesTableData? row =
+        await (_db.select(_db.taskTemplatesTable)
+              ..where((TaskTemplatesTable tbl) => tbl.id.equals(id)))
+            .getSingleOrNull();
+    if (row == null) {
+      return null;
+    }
+    final Map<String, dynamic> json =
+        jsonDecode(row.payload) as Map<String, dynamic>;
+    final TaskTemplate template = TaskTemplate.fromJson(json);
+    final List<TaskTemplateStepsTableData> stepRows =
+        await (_db.select(_db.taskTemplateStepsTable)
+              ..where((TaskTemplateStepsTable tbl) => tbl.templateId.equals(id)))
+            .get();
+    final List<TaskTemplateStep> steps = stepRows.map((TaskTemplateStepsTableData data) {
+      final Map<String, dynamic> stepJson =
+          jsonDecode(data.payload) as Map<String, dynamic>;
+      return TaskTemplateStep.fromJson(stepJson);
+    }).toList()
+      ..sort((TaskTemplateStep a, TaskTemplateStep b) => a.position.compareTo(b.position));
+    return template.copyWith(steps: steps);
+  }
+
+  Future<void> deleteTemplate(String id) async {
+    await _db.transaction(() async {
+      await (_db.delete(_db.taskTemplateStepsTable)
+            ..where((TaskTemplateStepsTable tbl) => tbl.templateId.equals(id)))
+          .go();
+      await (_db.delete(_db.taskTemplatesTable)
+            ..where((TaskTemplatesTable tbl) => tbl.id.equals(id)))
+          .go();
+    });
+  }
+}
+
+class LocalTaskTemplateAssignmentDataSource {
+  LocalTaskTemplateAssignmentDataSource(this._db);
+
+  final LocalDatabase _db;
+
+  Future<void> replaceAssignments(
+    List<TaskTemplateAssignment> assignments, {
+    required String profileId,
+    Map<String, List<TaskTemplateAssignmentEvent>> eventsByAssignment =
+        const <String, List<TaskTemplateAssignmentEvent>>{},
+  }) async {
+    await _db.transaction(() async {
+      final List<String> ids =
+          assignments.map((TaskTemplateAssignment a) => a.id).toList();
+      await (_db.delete(_db.taskTemplateAssignmentEventsTable)
+            ..where(
+              (TaskTemplateAssignmentEventsTable tbl) =>
+                  tbl.profileId.equals(profileId) &
+                  (ids.isEmpty
+                      ? const Constant<bool>(true)
+                      : tbl.assignmentId.isNotIn(ids)),
+            ))
+          .go();
+      await (_db.delete(_db.taskTemplateAssignmentsTable)
+            ..where(
+              (TaskTemplateAssignmentsTable tbl) =>
+                  tbl.profileId.equals(profileId) &
+                  (ids.isEmpty
+                      ? const Constant<bool>(true)
+                      : tbl.id.isNotIn(ids)),
+            ))
+          .go();
+      if (assignments.isEmpty) {
+        return;
+      }
+      for (final TaskTemplateAssignment assignment in assignments) {
+        await upsertAssignment(
+          assignment,
+          events:
+              eventsByAssignment[assignment.id] ?? const <TaskTemplateAssignmentEvent>[],
+          syncState: kSyncStateSynced,
+        );
+      }
+    });
+  }
+
+  Future<void> upsertAssignment(
+    TaskTemplateAssignment assignment, {
+    List<TaskTemplateAssignmentEvent> events =
+        const <TaskTemplateAssignmentEvent>[],
+    String syncState = kSyncStateSynced,
+  }) async {
+    final DateTime now = DateTime.now();
+    await _db.transaction(() async {
+      await _db.into(_db.taskTemplateAssignmentsTable).insertOnConflictUpdate(
+            TaskTemplateAssignmentsTableCompanion(
+              id: Value(assignment.id),
+              profileId: Value(assignment.profileId),
+              templateId: Value(assignment.templateId),
+              scopeType: Value(assignment.scopeType),
+              scopeId: Value(assignment.scopeId),
+              anchorDate: Value(
+                DateTime.utc(
+                  assignment.anchorDate.year,
+                  assignment.anchorDate.month,
+                  assignment.anchorDate.day,
+                ),
+              ),
+              payload: Value(jsonEncode(assignment.toJson())),
+              updatedAt: Value(now),
+              syncState: Value(syncState),
+            ),
+          );
+      await (_db.delete(_db.taskTemplateAssignmentEventsTable)
+            ..where(
+              (TaskTemplateAssignmentEventsTable tbl) =>
+                  tbl.assignmentId.equals(assignment.id),
+            ))
+          .go();
+      if (events.isEmpty) {
+        return;
+      }
+      await _db.batch((Batch batch) {
+        batch.insertAllOnConflictUpdate(
+          _db.taskTemplateAssignmentEventsTable,
+          events.map((TaskTemplateAssignmentEvent event) {
+            return TaskTemplateAssignmentEventsTableCompanion(
+              assignmentId: Value(event.assignmentId),
+              stepId: Value(event.stepId),
+              eventId: Value(event.eventId),
+              profileId: Value(event.profileId),
+              payload: Value(jsonEncode(event.toJson())),
+              updatedAt: Value(now),
+              syncState: Value(syncState),
+            );
+          }).toList(),
+        );
+      });
+    });
+  }
+
+  Future<List<TaskTemplateAssignment>> fetchAssignments(String profileId) async {
+    final List<TaskTemplateAssignmentsTableData> rows =
+        await (_db.select(_db.taskTemplateAssignmentsTable)
+              ..where(
+                (TaskTemplateAssignmentsTable tbl) =>
+                    tbl.profileId.equals(profileId),
+              ))
+            .get();
+    final List<TaskTemplateAssignment> assignments = rows.map((TaskTemplateAssignmentsTableData row) {
+      final Map<String, dynamic> json =
+          jsonDecode(row.payload) as Map<String, dynamic>;
+      return TaskTemplateAssignment.fromJson(json);
+    }).toList()
+      ..sort((TaskTemplateAssignment a, TaskTemplateAssignment b) => b.updatedAt.compareTo(a.updatedAt));
+    return assignments;
+  }
+
+  Future<TaskTemplateAssignment?> fetchAssignment(String id) async {
+    final TaskTemplateAssignmentsTableData? row =
+        await (_db.select(_db.taskTemplateAssignmentsTable)
+              ..where((TaskTemplateAssignmentsTable tbl) => tbl.id.equals(id)))
+            .getSingleOrNull();
+    if (row == null) {
+      return null;
+    }
+    final Map<String, dynamic> json =
+        jsonDecode(row.payload) as Map<String, dynamic>;
+    return TaskTemplateAssignment.fromJson(json);
+  }
+
+  Future<List<TaskTemplateAssignmentEvent>> fetchAssignmentEvents(
+    String assignmentId,
+  ) async {
+    final List<TaskTemplateAssignmentEventsTableData> rows =
+        await (_db.select(_db.taskTemplateAssignmentEventsTable)
+              ..where(
+                (TaskTemplateAssignmentEventsTable tbl) =>
+                    tbl.assignmentId.equals(assignmentId),
+              ))
+            .get();
+    final List<TaskTemplateAssignmentEvent> events =
+        rows.map((TaskTemplateAssignmentEventsTableData row) {
+      final Map<String, dynamic> json =
+          jsonDecode(row.payload) as Map<String, dynamic>;
+      return TaskTemplateAssignmentEvent.fromJson(json);
+    }).toList()
+          ..sort(
+            (TaskTemplateAssignmentEvent a, TaskTemplateAssignmentEvent b) =>
+                a.stepId.compareTo(b.stepId),
+          );
+    return events;
+  }
+
+  Future<void> deleteAssignment(String id) async {
+    await _db.transaction(() async {
+      await (_db.delete(_db.taskTemplateAssignmentEventsTable)
+            ..where(
+              (TaskTemplateAssignmentEventsTable tbl) =>
+                  tbl.assignmentId.equals(id),
+            ))
+          .go();
+      await (_db.delete(_db.taskTemplateAssignmentsTable)
+            ..where((TaskTemplateAssignmentsTable tbl) => tbl.id.equals(id)))
+          .go();
+    });
   }
 }
 
