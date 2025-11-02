@@ -33,6 +33,7 @@ import 'data/repositories/health_repository.dart';
 import 'data/repositories/finance_repository.dart';
 import 'data/services/api_client.dart';
 import 'data/services/connectivity_watcher.dart';
+import 'data/services/pedigree_service.dart';
 import 'data/services/offline_sync_manager.dart';
 import 'features/reports/services/reports_service.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
@@ -440,6 +441,9 @@ class _KhodanAppState extends State<KhodanApp> {
       localPreferences: _localDashboardPreferencesDataSource,
       apiClient: apiClient,
     );
+    final PedigreeService pedigreeService = PedigreeService(
+      apiClient: apiClient,
+    );
     final LitterRepository litterRepository = InMemoryLitterRepository();
     final HutchRepository hutchRepository = InMemoryHutchRepository();
 
@@ -521,6 +525,9 @@ class _KhodanAppState extends State<KhodanApp> {
         create: (BuildContext context) => ReportsService(
           apiClient: context.read<ApiExecutor>(),
         ),
+      ),
+      RepositoryProvider<PedigreeService>(
+        create: (_) => pedigreeService,
       ),
     ];
   }

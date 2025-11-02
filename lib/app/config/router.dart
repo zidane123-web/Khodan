@@ -28,6 +28,7 @@ import '../../features/settings/presentation/screens/settings_profile_screen.dar
 import '../../features/settings/presentation/screens/settings_referentials_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/health/presentation/screens/health_screen.dart';
+import '../../features/pedigrees/presentation/pages/pedigree_page.dart';
 import '../../data/models/animal.dart';
 import '../../l10n/app_localizations.dart';
 import '../core/widgets/khodan_placeholder_screen.dart';
@@ -134,6 +135,12 @@ class KhodanRouter {
                         icon: Icons.account_balance_wallet_outlined,
                       ),
                       KhodanShellExtraDestination(
+                        route: const PedigreeRoute().location,
+                        label: 'Pedigrees',
+                        description: 'Generer pedigree et certificat',
+                        icon: Icons.account_tree_outlined,
+                      ),
+                      KhodanShellExtraDestination(
                         route: const SettingsKnowledgeBaseRoute().location,
                         label: l10n.navHelpCenter,
                         description: l10n.navHelpCenterDescription,
@@ -160,6 +167,13 @@ class KhodanRouter {
                       // The local Animals screen doesn't support quickFilter param.
                       return const AnimalListScreen();
                     },
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'pedigrees',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const PedigreePage(),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -394,6 +408,10 @@ class DashboardRoute extends KhodanRoute {
 
 class AnimalsRoute extends KhodanRoute {
   const AnimalsRoute() : super('/animals');
+}
+
+class PedigreeRoute extends KhodanRoute {
+  const PedigreeRoute() : super('/animals/pedigrees');
 }
 
 class EventsRoute extends KhodanRoute {
