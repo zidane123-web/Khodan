@@ -61,3 +61,21 @@ Les boutons “Enregistrer le poids”, “Mise à jour groupée”, etc. appell
 
 Compléter les tests
 Dès que les données réelles seront branchées, il faudra enrichir les tests (intégration/widget) pour couvrir les dialogues et la grille des clapiers.
+
+
+
+Nom : SUPABASE_URL
+Valeur : https://rmtkvalfhbhhqczwvtoz.supabase.co (copie/colle exactement cette URL).
+
+Nom : SUPABASE_ANON_KEY
+Valeur : reprends la clé déjà présente dans ton fichier .env (ligne SUPABASE_ANON_KEY=...). Copie uniquement la valeur après le = puis colle-la dans Supabase.
+
+Nom : SUPABASE_SERVICE_ROLE_KEY
+Valeur : va dans Supabase Studio → Settings → API → section “Service key (service_role)”, clique sur “Copy” et colle cette clé ici.
+
+
+flutter run -d chrome ^
+  --dart-define=SUPABASE_URL=https://rmtkvalfhbhhqczwvtoz.supabase.co ^
+  --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtdGt2YWxmaGJoaHFjend2dG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMjc3MjAsImV4cCI6MjA3MzcwMzcyMH0.iCunOEha0B-Lxz4y2I94tzqNs3UqlQdNMUa7mM7fsHE
+
+  flutter run -d chrome --dart-define=SUPABASE_URL=https://rmtkvalfhbhhqczwvtoz.supabase.co --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtdGt2YWxmaGJoaHFjend2dG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMjc3MjAsImV4cCI6MjA3MzcwMzcyMH0.iCunOEha0B-Lxz4y2I94tzqNs3UqlQdNMUa7mM7fsHE

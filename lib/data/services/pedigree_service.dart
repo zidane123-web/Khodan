@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/pedigree.dart';
 import 'api_client.dart';
@@ -104,16 +105,55 @@ class PedigreeService {
     return doc.save();
   }
 
-  /// Cree une URL partageable a partir du profil et de l identifiant animal.
-  Uri buildShareLink(
-    String breederId, {
-    String? profileId,
-    String baseUrl = 'https://khodan.app/share/pedigree',
-  }) {
-    final String suffix = profileId == null
-        ? breederId
-        : '$profileId/$breederId';
-    return Uri.parse('$baseUrl/$suffix');
+  Future<String> uploadPdf({
+    required Uint8List bytes,
+    required String profileId,
+    required String breederId,
+  }) async {
+    final String path = 'pedigrees/$profileId/$breederId.pdf';
+    await _api.run(
+      (client) => client.storage.from('pedigrees').uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'application/pdf',
+              upsert: true,
+            ),
+          ),
+      label: 'pedigree.uploadPdf',
+    );
+    return path;
+  }
+
+  Future<Uri> createShareLink({
+    required String profileId,
+    required String breederId,
+    required String storagePath,
+    Duration expiresIn = const Duration(days: 1),
+  }) async {
+    final int expiresInSeconds = expiresIn.inSeconds.clamp(60, 60 * 60 * 24 * 7);
+    final FunctionResponse response = await _api.run(
+      (client) => client.functions.invoke(
+        'create-pedigree-share',
+        body: <String, dynamic>{
+          'profileId': profileId,
+          'breederId': breederId,
+          'storagePath': storagePath,
+          'expiresIn': expiresInSeconds,
+        },
+      ),
+      label: 'pedigree.createShareLink',
+    );
+
+    final Map<String, dynamic>? data =
+        response.data as Map<String, dynamic>?;
+    final String? url = data?['shareUrl'] as String?;
+    if (url == null || url.isEmpty) {
+      throw DataLayerException(
+        'Edge Function create-pedigree-share did not return a signed URL.',
+      );
+    }
+    return Uri.parse(url);
   }
 
   pw.Widget _buildHeader({

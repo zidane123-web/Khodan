@@ -115,12 +115,6 @@ void main() {
       when(
         () => service.fetchTree(breederId: sampleAnimal.id, generations: 4),
       ).thenAnswer((_) async => tree);
-      when(
-        () => service.buildShareLink(
-          sampleAnimal.id,
-          profileId: 'profile-1',
-        ),
-      ).thenReturn(Uri.parse('https://khodan.app/mock-share'));
     });
 
     testWidgets('affiche un pedigree simple avec message manquant', (

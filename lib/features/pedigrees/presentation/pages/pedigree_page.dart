@@ -62,12 +62,10 @@ class _PedigreePageState extends State<PedigreePage> {
         breederId: animal.id,
         generations: 4,
       );
-      final String? profileId = tree.subject.profileId;
-      final Uri link = _service.buildShareLink(animal.id, profileId: profileId);
       if (!mounted) return;
       setState(() {
         _tree = tree;
-        _shareLink = link;
+        _shareLink = null;
       });
     } catch (error) {
       if (!mounted) return;
@@ -101,17 +99,35 @@ class _PedigreePageState extends State<PedigreePage> {
       _isGeneratingPdf = true;
     });
     try {
-      Future<Uint8List> onLayout(PdfPageFormat _) async {
-        final String farmName = 'Elevage ${animal.profileId.substring(0, 8)}';
-        return _service.buildPdf(
-          tree: tree,
-          farmName: farmName,
-          theme: _currentTheme,
-          shareLink: _shareLink,
-        );
-      }
+      final String farmName = 'Elevage ${animal.profileId.substring(0, 8)}';
+      final Uint8List pdfBytes = await _service.buildPdf(
+        tree: tree,
+        farmName: farmName,
+        theme: _currentTheme,
+        shareLink: _shareLink,
+      );
 
-      await Printing.layoutPdf(onLayout: onLayout);
+      await Printing.layoutPdf(onLayout: (PdfPageFormat _) async => pdfBytes);
+
+      final String storagePath = await _service.uploadPdf(
+        bytes: pdfBytes,
+        profileId: animal.profileId,
+        breederId: animal.id,
+      );
+      final Uri shareUri = await _service.createShareLink(
+        profileId: animal.profileId,
+        breederId: animal.id,
+        storagePath: storagePath,
+      );
+      if (!mounted) return;
+      setState(() {
+        _shareLink = shareUri;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Lien partageable mis à jour.'),
+        ),
+      );
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -132,7 +148,7 @@ class _PedigreePageState extends State<PedigreePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Lien non pret. Configurez l Edge Function de partage.',
+            'Générez et chargez un PDF pour créer un lien partageable.',
           ),
         ),
       );
@@ -618,7 +634,7 @@ class _CertificateCard extends StatelessWidget {
                 else
                   Expanded(
                     child: Text(
-                      'Configurer une Edge Function ou un stockage partage pour activer le QR code.',
+                      'Générez un PDF pour activer le QR code et obtenir un lien partageable.',
                       style: theme.textTheme.bodySmall,
                     ),
                   ),

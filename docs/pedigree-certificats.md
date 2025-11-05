@@ -56,16 +56,16 @@ Personnalisation :
 3. Pour impressions noir/blanc, forcer contraste (bordures #B0B0B0).
 
 ## Partage numerique et QR code
-- Generer URL partageable : `https://khodan.app/share/pedigree/{breeder_id}` (stub). Prevoir Edge Function `create_pedigree_share` qui :
-  1. Recupere PDF (storage `pedigrees/{profile}/{id}.pdf`).
-  2. Retourne URL signe (expiration configurable).
-  3. Enregistre audit (`pedigree_shares`).
-- Flow manuel actuel :
-  1. Generer PDF localement (bouton `Telecharger PDF`).
-  2. Uploader vers Supabase Storage (`pedigrees/`) via console si besoin.
-  3. Copier URL signe et mettre a jour QR code.
-- QR code affiche dans l application via `qr_flutter` et encode l URL retournee.
-- Mention dans UI : `Lien partage a configurer (voir doc)`.
+- Bucket prive Supabase : `pedigrees`, chemin par fichier `pedigrees/{profile_id}/{breeder_id}.pdf` (politique RLS limitant l'acces a `auth.uid()`).
+- Edge Function `create-pedigree-share` (voir `supabase/functions/create-pedigree-share/index.ts`) :
+  1. Verifie que le token (`Authorization: Bearer <jwt>`) correspond bien a `profileId`.
+  2. Cree une URL signee (`storage.createSignedUrl`) valable 24 h (min 60 s, max 7 jours).
+  3. Retourne `{ shareUrl, storagePath, expiresAt }` pour rafraichir le QR code.
+- Flow applicatif :
+  1. Bouton `Telecharger PDF` genere localement le PDF (avec le theme et les donnees en cache).
+  2. Le service `PedigreeService.uploadPdf` envoie le PDF dans `pedigrees/{profile_id}/{breeder_id}.pdf` (upsert).
+  3. `PedigreeService.createShareLink` appelle l'Edge Function pour recuperer l'URL partageable, qui est sauvegardee dans l'UI et encodee dans le QR code.
+- Les textes UI indiquent maintenant : `Generez un PDF pour activer le QR code et obtenir un lien partageable.` (plus de message "configurer Edge Function").
 
 ## Execution Supabase
 1. Ouvrir editeur SQL Supabase.

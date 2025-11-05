@@ -1,4 +1,4 @@
-﻿# Guide d'execution des migrations Supabase
+# Guide d'execution des migrations Supabase
 
 Derniere mise a jour : 2025-11-01 (Plan2 - tache 09).
 
@@ -8,6 +8,7 @@ Derniere mise a jour : 2025-11-01 (Plan2 - tache 09).
 - Disposer du `SUPABASE_ACCESS_TOKEN` lie au projet `rmtkvalfhbhhqczwvtoz`.
 - Conserver le fichier `.env` a jour (`SUPABASE_URL`, `SUPABASE_ANON_KEY`).
 - Activer une session `authenticated` lors des verifications PostgREST (commande de creation d'utilisateur jetable plus bas).
+- Profil de demonstration pour les seeds : utilisateur Auth `c96b2fdb-7a54-492c-a5fa-44bab270b27b` (remplacer tout ancien UUID `11111111-2222-3333-4444-555555555555` dans les scripts si encore present).
 
 ## Methode A : CLI (`supabase db push`)
 
@@ -109,6 +110,77 @@ ailments
 ```
 
 _Remarque : LIKE utilise `_` comme joker, remplacer par `LIKE 'health%'` pour verifier les tables._
+
+### Journal 2025-11-04 (Plan2 tâche 13)
+
+- Migration appliquée via SQL Editor : `supabase/migrations/20251102131500_fn_pedigree_tree.sql`.
+- Vérifications :
+  - `SELECT oid::regprocedure FROM pg_proc WHERE proname='fn_pedigree_tree';` → `public.fn_pedigree_tree(uuid, integer)`.
+  - `SELECT generation, relation_path, display_name, missing FROM public.fn_pedigree_tree('<ID>',4);`
+    - Génération 0 : sujet (`missing=false`)
+    - Génération 1/2 : parents + placeholders (`missing=true` quand absent)
+- Capture sauvegardée dans “Finance Ledger and Contacts Schema” (SQL Editor) + sortie texte ci-dessus.
+R�alignement 2025-11-04 :
+- Conversion `public.species_config.events_schema` de `text[]` vers `jsonb` (`ALTER TABLE ... USING to_jsonb(events_schema)`) puis ajout du `DEFAULT '[]'::jsonb` et `SET NOT NULL`.
+- Ajout/reconstruction des colonnes manquantes et index sur `public.profiles`, `public.species_config`, `public.animals` (contacts, timestamps, g�n�alogie).
+- Cr�ation conditionnelle des tables absentes + index : `public.breeding_records`, `public.breeding_metrics`, `public.sync_queue`, `breeding_records_profile_mating_idx`, `breeding_records_animals_idx`, `breeding_metrics_unique_period`.
+- Mise � niveau de `public.events` et `public.animal_events` (colonnes `profile_id`, `event_type`, `role`, timestamps).
+- Seed de d�monstration avec l'UUID Auth `c96b2fdb-7a54-492c-a5fa-44bab270b27b` : profil, esp�ce Lapin, animaux `demo-f-001`, `demo-m-001`, `demo-kit-001`, enregistrement `breeding_records` (`dddddddd-dddd-dddd-dddd-dddddddd0001`).
+- Requ�tes de validation archiv�es :  
+  `SELECT column_name,data_type FROM information_schema.columns WHERE table_name='species_config';`  
+  `SELECT generation, relation_path, display_name, missing FROM public.fn_pedigree_tree('cccccccc-cccc-cccc-cccc-cccccccc0001',4);`  
+  `SELECT generation, COUNT(*) FROM public.fn_pedigree_tree('cccccccc-cccc-cccc-cccc-cccccccc0001',4) GROUP BY generation;`  
+  `SELECT id, tag_id, profile_id FROM public.animals LIMIT 5;`
+
+### Edge Function `create-pedigree-share` & bucket Storage
+
+- Bucket prive `pedigrees` :  
+  ```sql
+  INSERT INTO storage.buckets (id, name, public)
+  VALUES ('pedigrees', 'pedigrees', FALSE)
+  ON CONFLICT (id) DO NOTHING;
+
+  CREATE POLICY "pedigrees_owner_select"
+    ON storage.objects FOR SELECT
+    USING (
+      bucket_id = 'pedigrees'
+      AND split_part(name, '/', 1) = auth.uid()::text
+    );
+
+  CREATE POLICY "pedigrees_owner_write"
+    ON storage.objects FOR INSERT
+    WITH CHECK (
+      bucket_id = 'pedigrees'
+      AND split_part(name, '/', 1) = auth.uid()::text
+    );
+
+  CREATE POLICY "pedigrees_owner_update"
+    ON storage.objects FOR UPDATE
+    USING (
+      bucket_id = 'pedigrees'
+      AND split_part(name, '/', 1) = auth.uid()::text
+    )
+    WITH CHECK (
+      bucket_id = 'pedigrees'
+      AND split_part(name, '/', 1) = auth.uid()::text
+    );
+  ```
+  Les chemins doivent suivre `pedigrees/{auth.uid}/{breeder_id}.pdf` pour que les policies soient valides.
+- Fonction Edge (`supabase/functions/create-pedigree-share/index.ts`) :  
+  1. Valide `profileId` vs `auth.getUser()`  
+  2. Cree un lien signe (expiration 60 s -> 7 jours, par defaut 24 h)  
+  3. Retourne `{ shareUrl, storagePath, expiresAt }`
+- Commandes :
+  ```bash
+  # test local
+  cd supabase
+  supabase functions serve create-pedigree-share
+
+  # deploiement
+  supabase functions deploy create-pedigree-share \
+    --project-ref rmtkvalfhbhhqczwvtoz
+  ```
+  Secrets (Edge Functions → *Secrets*) à renseigner : `EDGE_SUPABASE_URL`, `EDGE_SUPABASE_ANON_KEY`, `EDGE_SUPABASE_SERVICE_ROLE_KEY` (copier les mêmes valeurs que dans `.env`). Ces noms sont ceux utilisés par `create-pedigree-share`.
 
 ## SQL de controle apres migration
 
@@ -290,7 +362,9 @@ flutter run -d chrome
 - **Pedigrees** : table `pedigree_exports` + fonction recursive pour l'arbre genealogique.
 - **Cartes de clapier / QR** : table `cage_card_templates`, stockage des exports generes.
 - **Personnalisation** : etendre `user_preferences` (langue, unite, theme) si besoin.
-
+
+
+
 ### Journal 2025-11-02 (Plan2 tache 12)
 
 - Migration a appliquer : `supabase/migrations/20251101143000_reports_views.sql`.
