@@ -2,6 +2,23 @@
 
 Ce document synthÃ©tise la tÃ¢che _Plan2/task-14-cartes-clapier.md_, les captures Everbreed (`Info-de rÃ©fÃ©rence/Captures et formules Everbreed.pdf`), la roadmap Khodan (`Plan2/roadmap-khodan.md`) et la vidÃ©o de rÃ©fÃ©rence. L'objectif est de livrer une expÃ©rience proche d'Everbreed tout en gardant l'identitÃ© Khodan.
 
+## Accès dans l''application
+
+Les cartes sont accessibles depuis le raccourci `+` (plus) de la barre latérale grâce à la route `/animals/cage-cards`. Le `GoRouter` expose `CageCardsRoute` et la page est également listée dans le sous-menu Animaux (`lib/app/config/router.dart`).
+
+## Données consommées
+
+- `CageCardService` lit maintenant les éleveurs via `SyncedAnimalRepository` (Supabase + Drift) **et** les portées via `SyncedLitterRepository`.
+- Les poids récents proviennent des événements Supabase (`event_type = weight`). Le service croise les `AnimalEventLink` pour relier la pesée au reproducteur.
+- Les portées restent rafraîchies dans la base locale (`LocalLitterDataSource`) pour permettre l''usage hors ligne.
+
+## Actions PDF
+
+- **Télécharger** : enregistre un PDF dans `Documents/cage_cards/` (via `path_provider`).
+- **Imprimer** : ouvre le dialogue natif avec `printing.layoutPdf`.
+- **Exporter vers imprimeur** : charge le PDF dans Supabase Storage (`bucket cage_cards/{profileId}`) via `CageCardService.exportToStorage`.
+
+Les messages de succès sont affichés depuis l''UI et les erreurs (absence de session Supabase, stockage indisponible, etc.) sont remontées au Snackbar.
 ## Formats et gabarits
 
 | Format | Usage principal | Slots / feuille | ParticularitÃ©s alignÃ©es Everbreed |
@@ -62,4 +79,5 @@ flutter test
 ```
 
 Les tests incluent le service PDF (mock) et un widget test sur `CageCardsPage` pour garantir qu'aucune rÃ©gression n'est introduite.
+
 

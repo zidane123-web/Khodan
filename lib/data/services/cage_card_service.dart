@@ -1,14 +1,16 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/animal.dart';
+import '../models/animal_event.dart';
 import '../models/cage_card_template.dart';
+import '../models/event.dart';
 import '../models/litter.dart';
 import '../repositories/animal_repository.dart';
+import '../repositories/event_repository.dart';
 import '../repositories/litter_repository.dart';
 import 'api_client.dart';
 
@@ -17,16 +19,19 @@ class CageCardService {
   CageCardService({
     required AnimalRepository animalRepository,
     required LitterRepository litterRepository,
+    EventRepository? eventRepository,
     ApiExecutor? apiClient,
     Uri? fallbackDeepLinkBase,
   })  : _animalRepository = animalRepository,
         _litterRepository = litterRepository,
+        _eventRepository = eventRepository,
         _api = apiClient ?? ApiClient(),
         _baseDeepLink =
             fallbackDeepLinkBase ?? Uri.parse('https://app.khodan.africa');
 
   final AnimalRepository _animalRepository;
   final LitterRepository _litterRepository;
+  final EventRepository? _eventRepository;
   final ApiExecutor _api;
   final Uri _baseDeepLink;
   final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
@@ -42,19 +47,34 @@ class CageCardService {
         includeBreeders ? _animalRepository.fetchAnimals(speciesId: 1) : Future<List<Animal>>.value(<Animal>[]);
     final Future<List<Litter>> littersFuture =
         includeLitters ? _litterRepository.fetchLitters() : Future<List<Litter>>.value(<Litter>[]);
+    final Future<Map<String, _WeightMeasurement>> weightsFuture =
+        _eventRepository == null
+            ? Future<Map<String, _WeightMeasurement>>.value(
+                const <String, _WeightMeasurement>{},
+              )
+            : _loadLatestWeights();
 
     final List<dynamic> results = await Future.wait<dynamic>(<Future<dynamic>>[
       animalsFuture,
       littersFuture,
+      weightsFuture,
     ]);
 
     final List<Animal> animals = results[0] as List<Animal>;
     final List<Litter> litters = results[1] as List<Litter>;
+    final Map<String, _WeightMeasurement> weights =
+        results[2] as Map<String, _WeightMeasurement>;
 
     final List<CageCardRecord> records = <CageCardRecord>[
       ...animals
           .where(_isAnimalActive)
-          .map((Animal animal) => _mapAnimal(animal, resolvedBase)),
+          .map(
+            (Animal animal) => _mapAnimal(
+              animal,
+              resolvedBase,
+              weights[animal.id],
+            ),
+          ),
       ...litters
           .where(_isLitterActive)
           .map((Litter litter) => _mapLitter(litter, resolvedBase)),
@@ -150,8 +170,75 @@ class CageCardService {
     return 'cage_cards/$path';
   }
 
-  CageCardRecord _mapAnimal(Animal animal, Uri base) {
-    final double? estimatedWeightKg = _estimateWeight(animal);
+  Future<Map<String, _WeightMeasurement>> _loadLatestWeights() async {
+    final EventRepository? repository = _eventRepository;
+    if (repository == null) {
+      return const <String, _WeightMeasurement>{};
+    }
+    try {
+      final DateTime start =
+          DateTime.now().subtract(const Duration(days: 120));
+      final List<LivestockEvent> events =
+          await repository.fetchEvents(start: start);
+      if (events.isEmpty) {
+        return const <String, _WeightMeasurement>{};
+      }
+      final List<AnimalEventLink> links =
+          await repository.fetchEventLinks();
+      final Map<String, _WeightMeasurement> latest =
+          <String, _WeightMeasurement>{};
+      final Map<String, DateTime> latestDate = <String, DateTime>{};
+      for (final LivestockEvent event in events) {
+        if (event.eventType != 'weight') {
+          continue;
+        }
+        final double? weight = _extractWeight(event);
+        if (weight == null) {
+          continue;
+        }
+        final Iterable<String> animalIds = links
+            .where((AnimalEventLink link) => link.eventId == event.id)
+            .map((AnimalEventLink link) => link.animalId);
+        for (final String animalId in animalIds) {
+          final DateTime previous =
+              latestDate[animalId] ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+          if (event.eventDate.isBefore(previous)) {
+            continue;
+          }
+          latestDate[animalId] = event.eventDate;
+          latest[animalId] = _WeightMeasurement(
+            weightKg: weight,
+            eventDate: event.eventDate,
+          );
+        }
+      }
+      return latest;
+    } catch (error) {
+      debugPrint('Impossible de charger les pesées: $error');
+      return const <String, _WeightMeasurement>{};
+    }
+  }
+
+  double? _extractWeight(LivestockEvent event) {
+    final dynamic raw =
+        event.details['weightKg'] ?? event.details['weight'];
+    if (raw is num) {
+      return raw.toDouble();
+    }
+    if (raw is String) {
+      return double.tryParse(raw);
+    }
+    return null;
+  }
+
+  CageCardRecord _mapAnimal(
+    Animal animal,
+    Uri base,
+    _WeightMeasurement? measurement,
+  ) {
+    final double? estimatedWeightKg =
+        measurement?.weightKg ?? _estimateWeight(animal);
     final String name = (animal.name?.isNotEmpty ?? false)
         ? '${animal.name} ${animal.tagId}'
         : 'Lapin ${animal.tagId}';
@@ -170,7 +257,7 @@ class CageCardService {
       birthDate: animal.birthDate,
       breedingDate: animal.lastLitterDate,
       latestWeightKg: estimatedWeightKg,
-      latestWeightDate: animal.nextTaskDate,
+      latestWeightDate: measurement?.eventDate ?? animal.nextTaskDate,
       tags: tags,
       alert: _buildAlertFromNotes(animal.notes),
       sensitiveNote: animal.notes,
@@ -435,3 +522,14 @@ class CageCardService {
     return PdfColor.fromInt(intValue);
   }
 }
+
+class _WeightMeasurement {
+  const _WeightMeasurement({
+    required this.weightKg,
+    required this.eventDate,
+  });
+
+  final double weightKg;
+  final DateTime eventDate;
+}
+

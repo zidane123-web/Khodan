@@ -4,9 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:khodan/data/models/animal.dart';
+import 'package:khodan/data/models/animal_event.dart';
 import 'package:khodan/data/models/cage_card_template.dart';
+import 'package:khodan/data/models/event.dart';
 import 'package:khodan/data/models/litter.dart';
 import 'package:khodan/data/repositories/animal_repository.dart';
+import 'package:khodan/data/repositories/event_repository.dart';
 import 'package:khodan/data/repositories/litter_repository.dart';
 import 'package:khodan/data/services/api_client.dart';
 import 'package:khodan/data/services/cage_card_service.dart';
@@ -16,17 +19,31 @@ class _MockAnimalRepository extends Mock implements AnimalRepository {}
 
 class _MockLitterRepository extends Mock implements LitterRepository {}
 
+class _MockEventRepository extends Mock implements EventRepository {}
+
 void main() {
   late _MockAnimalRepository animalRepository;
   late _MockLitterRepository litterRepository;
+  late _MockEventRepository eventRepository;
   late CageCardService service;
 
   setUp(() {
     animalRepository = _MockAnimalRepository();
     litterRepository = _MockLitterRepository();
+    eventRepository = _MockEventRepository();
+    when(
+      () => eventRepository.fetchEvents(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer((_) async => <LivestockEvent>[]);
+    when(() => eventRepository.fetchEventLinks()).thenAnswer(
+      (_) async => <AnimalEventLink>[],
+    );
     service = CageCardService(
       animalRepository: animalRepository,
       litterRepository: litterRepository,
+      eventRepository: eventRepository,
       apiClient: _FakeApiExecutor(),
     );
   });
@@ -75,6 +92,50 @@ void main() {
           .firstWhere((CageCardRecord r) => r.subjectType == CageCardSubjectType.breeder);
       expect(breederRecord.title, contains('Neige'));
       expect(breederRecord.deepLink.toString(), 'https://test.local/breeders/doe-123');
+    });
+
+    test('loadActiveRecords renseigne les pesées réelles quand dispo', () async {
+      final Animal doe = Animal(
+        id: 'doe-123',
+        profileId: 'demo',
+        speciesId: 1,
+        tagId: 'F01',
+        name: 'Neige',
+        birthDate: DateTime(2024, 3, 2),
+        sex: 'Femelle',
+        status: 'Actif',
+        cageNumber: 'C12',
+      );
+      when(
+        () => animalRepository.fetchAnimals(speciesId: 1),
+      ).thenAnswer((_) async => <Animal>[doe]);
+      when(litterRepository.fetchLitters).thenAnswer(
+        (_) async => <Litter>[],
+      );
+
+      final LivestockEvent weightEvent = LivestockEvent(
+        id: 'evt-1',
+        profileId: 'demo',
+        eventType: 'weight',
+        eventDate: DateTime(2025, 10, 1),
+        details: <String, dynamic>{'weightKg': 4.2},
+      );
+      when(
+        () => eventRepository.fetchEvents(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer((_) async => <LivestockEvent>[weightEvent]);
+      when(() => eventRepository.fetchEventLinks()).thenAnswer(
+        (_) async => <AnimalEventLink>[
+          const AnimalEventLink(eventId: 'evt-1', animalId: 'doe-123', role: 'subject'),
+        ],
+      );
+
+      final List<CageCardRecord> records = await service.loadActiveRecords();
+      final CageCardRecord breederRecord = records.single;
+      expect(breederRecord.latestWeightKg, 4.2);
+      expect(breederRecord.latestWeightDate, DateTime(2025, 10, 1));
     });
 
     test('generatePdf returns valid PDF bytes', () async {

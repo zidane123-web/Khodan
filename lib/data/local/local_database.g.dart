@@ -6860,6 +6860,393 @@ class AnimalEventsTableCompanion
   }
 }
 
+class $LittersTableTable extends LittersTable
+    with TableInfo<$LittersTableTable, LittersTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LittersTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<String> profileId = GeneratedColumn<String>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _payloadMeta =
+      const VerificationMeta('payload');
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+      'payload', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _kindlingDateMeta =
+      const VerificationMeta('kindlingDate');
+  @override
+  late final GeneratedColumn<DateTime> kindlingDate = GeneratedColumn<DateTime>(
+      'kindling_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _syncStateMeta =
+      const VerificationMeta('syncState');
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+      'sync_state', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('synced'));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, profileId, payload, kindlingDate, status, updatedAt, syncState];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'litters_table';
+  @override
+  VerificationContext validateIntegrity(Insertable<LittersTableData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(_payloadMeta,
+          payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta));
+    } else if (isInserting) {
+      context.missing(_payloadMeta);
+    }
+    if (data.containsKey('kindling_date')) {
+      context.handle(
+          _kindlingDateMeta,
+          kindlingDate.isAcceptableOrUnknown(
+              data['kindling_date']!, _kindlingDateMeta));
+    } else if (isInserting) {
+      context.missing(_kindlingDateMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(_syncStateMeta,
+          syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LittersTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LittersTableData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}profile_id'])!,
+      payload: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payload'])!,
+      kindlingDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}kindling_date'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      syncState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_state'])!,
+    );
+  }
+
+  @override
+  $LittersTableTable createAlias(String alias) {
+    return $LittersTableTable(attachedDatabase, alias);
+  }
+}
+
+class LittersTableData extends DataClass
+    implements Insertable<LittersTableData> {
+  final String id;
+  final String profileId;
+  final String payload;
+  final DateTime kindlingDate;
+  final String status;
+  final DateTime updatedAt;
+  final String syncState;
+  const LittersTableData(
+      {required this.id,
+      required this.profileId,
+      required this.payload,
+      required this.kindlingDate,
+      required this.status,
+      required this.updatedAt,
+      required this.syncState});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['profile_id'] = Variable<String>(profileId);
+    map['payload'] = Variable<String>(payload);
+    map['kindling_date'] = Variable<DateTime>(kindlingDate);
+    map['status'] = Variable<String>(status);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['sync_state'] = Variable<String>(syncState);
+    return map;
+  }
+
+  LittersTableCompanion toCompanion(bool nullToAbsent) {
+    return LittersTableCompanion(
+      id: Value(id),
+      profileId: Value(profileId),
+      payload: Value(payload),
+      kindlingDate: Value(kindlingDate),
+      status: Value(status),
+      updatedAt: Value(updatedAt),
+      syncState: Value(syncState),
+    );
+  }
+
+  factory LittersTableData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LittersTableData(
+      id: serializer.fromJson<String>(json['id']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      payload: serializer.fromJson<String>(json['payload']),
+      kindlingDate: serializer.fromJson<DateTime>(json['kindlingDate']),
+      status: serializer.fromJson<String>(json['status']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'profileId': serializer.toJson<String>(profileId),
+      'payload': serializer.toJson<String>(payload),
+      'kindlingDate': serializer.toJson<DateTime>(kindlingDate),
+      'status': serializer.toJson<String>(status),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'syncState': serializer.toJson<String>(syncState),
+    };
+  }
+
+  LittersTableData copyWith(
+          {String? id,
+          String? profileId,
+          String? payload,
+          DateTime? kindlingDate,
+          String? status,
+          DateTime? updatedAt,
+          String? syncState}) =>
+      LittersTableData(
+        id: id ?? this.id,
+        profileId: profileId ?? this.profileId,
+        payload: payload ?? this.payload,
+        kindlingDate: kindlingDate ?? this.kindlingDate,
+        status: status ?? this.status,
+        updatedAt: updatedAt ?? this.updatedAt,
+        syncState: syncState ?? this.syncState,
+      );
+  LittersTableData copyWithCompanion(LittersTableCompanion data) {
+    return LittersTableData(
+      id: data.id.present ? data.id.value : this.id,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      kindlingDate: data.kindlingDate.present
+          ? data.kindlingDate.value
+          : this.kindlingDate,
+      status: data.status.present ? data.status.value : this.status,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LittersTableData(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('payload: $payload, ')
+          ..write('kindlingDate: $kindlingDate, ')
+          ..write('status: $status, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, profileId, payload, kindlingDate, status, updatedAt, syncState);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LittersTableData &&
+          other.id == this.id &&
+          other.profileId == this.profileId &&
+          other.payload == this.payload &&
+          other.kindlingDate == this.kindlingDate &&
+          other.status == this.status &&
+          other.updatedAt == this.updatedAt &&
+          other.syncState == this.syncState);
+}
+
+class LittersTableCompanion extends UpdateCompanion<LittersTableData> {
+  final Value<String> id;
+  final Value<String> profileId;
+  final Value<String> payload;
+  final Value<DateTime> kindlingDate;
+  final Value<String> status;
+  final Value<DateTime> updatedAt;
+  final Value<String> syncState;
+  final Value<int> rowid;
+  const LittersTableCompanion({
+    this.id = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.kindlingDate = const Value.absent(),
+    this.status = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LittersTableCompanion.insert({
+    required String id,
+    required String profileId,
+    required String payload,
+    required DateTime kindlingDate,
+    required String status,
+    required DateTime updatedAt,
+    this.syncState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        profileId = Value(profileId),
+        payload = Value(payload),
+        kindlingDate = Value(kindlingDate),
+        status = Value(status),
+        updatedAt = Value(updatedAt);
+  static Insertable<LittersTableData> custom({
+    Expression<String>? id,
+    Expression<String>? profileId,
+    Expression<String>? payload,
+    Expression<DateTime>? kindlingDate,
+    Expression<String>? status,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? syncState,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (profileId != null) 'profile_id': profileId,
+      if (payload != null) 'payload': payload,
+      if (kindlingDate != null) 'kindling_date': kindlingDate,
+      if (status != null) 'status': status,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncState != null) 'sync_state': syncState,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LittersTableCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? profileId,
+      Value<String>? payload,
+      Value<DateTime>? kindlingDate,
+      Value<String>? status,
+      Value<DateTime>? updatedAt,
+      Value<String>? syncState,
+      Value<int>? rowid}) {
+    return LittersTableCompanion(
+      id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
+      payload: payload ?? this.payload,
+      kindlingDate: kindlingDate ?? this.kindlingDate,
+      status: status ?? this.status,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncState: syncState ?? this.syncState,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (kindlingDate.present) {
+      map['kindling_date'] = Variable<DateTime>(kindlingDate.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LittersTableCompanion(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('payload: $payload, ')
+          ..write('kindlingDate: $kindlingDate, ')
+          ..write('status: $status, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $QueuedActionsTableTable extends QueuedActionsTable
     with TableInfo<$QueuedActionsTableTable, QueuedActionsTableData> {
   @override
@@ -7544,6 +7931,7 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
   late final $EventsTableTable eventsTable = $EventsTableTable(this);
   late final $AnimalEventsTableTable animalEventsTable =
       $AnimalEventsTableTable(this);
+  late final $LittersTableTable littersTable = $LittersTableTable(this);
   late final $QueuedActionsTableTable queuedActionsTable =
       $QueuedActionsTableTable(this);
   @override
@@ -7569,6 +7957,7 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
         breedingRecordsTable,
         eventsTable,
         animalEventsTable,
+        littersTable,
         queuedActionsTable
       ];
 }
@@ -10397,6 +10786,166 @@ class $$AnimalEventsTableTableOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
+typedef $$LittersTableTableCreateCompanionBuilder = LittersTableCompanion
+    Function({
+  required String id,
+  required String profileId,
+  required String payload,
+  required DateTime kindlingDate,
+  required String status,
+  required DateTime updatedAt,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+typedef $$LittersTableTableUpdateCompanionBuilder = LittersTableCompanion
+    Function({
+  Value<String> id,
+  Value<String> profileId,
+  Value<String> payload,
+  Value<DateTime> kindlingDate,
+  Value<String> status,
+  Value<DateTime> updatedAt,
+  Value<String> syncState,
+  Value<int> rowid,
+});
+
+class $$LittersTableTableTableManager extends RootTableManager<
+    _$LocalDatabase,
+    $LittersTableTable,
+    LittersTableData,
+    $$LittersTableTableFilterComposer,
+    $$LittersTableTableOrderingComposer,
+    $$LittersTableTableCreateCompanionBuilder,
+    $$LittersTableTableUpdateCompanionBuilder> {
+  $$LittersTableTableTableManager(_$LocalDatabase db, $LittersTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$LittersTableTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$LittersTableTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> profileId = const Value.absent(),
+            Value<String> payload = const Value.absent(),
+            Value<DateTime> kindlingDate = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LittersTableCompanion(
+            id: id,
+            profileId: profileId,
+            payload: payload,
+            kindlingDate: kindlingDate,
+            status: status,
+            updatedAt: updatedAt,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String profileId,
+            required String payload,
+            required DateTime kindlingDate,
+            required String status,
+            required DateTime updatedAt,
+            Value<String> syncState = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              LittersTableCompanion.insert(
+            id: id,
+            profileId: profileId,
+            payload: payload,
+            kindlingDate: kindlingDate,
+            status: status,
+            updatedAt: updatedAt,
+            syncState: syncState,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$LittersTableTableFilterComposer
+    extends FilterComposer<_$LocalDatabase, $LittersTableTable> {
+  $$LittersTableTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get kindlingDate => $state.composableBuilder(
+      column: $state.table.kindlingDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$LittersTableTableOrderingComposer
+    extends OrderingComposer<_$LocalDatabase, $LittersTableTable> {
+  $$LittersTableTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get profileId => $state.composableBuilder(
+      column: $state.table.profileId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get payload => $state.composableBuilder(
+      column: $state.table.payload,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get kindlingDate => $state.composableBuilder(
+      column: $state.table.kindlingDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get syncState => $state.composableBuilder(
+      column: $state.table.syncState,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
 typedef $$QueuedActionsTableTableCreateCompanionBuilder
     = QueuedActionsTableCompanion Function({
   required String id,
@@ -10699,6 +11248,8 @@ class $LocalDatabaseManager {
       $$EventsTableTableTableManager(_db, _db.eventsTable);
   $$AnimalEventsTableTableTableManager get animalEventsTable =>
       $$AnimalEventsTableTableTableManager(_db, _db.animalEventsTable);
+  $$LittersTableTableTableManager get littersTable =>
+      $$LittersTableTableTableManager(_db, _db.littersTable);
   $$QueuedActionsTableTableTableManager get queuedActionsTable =>
       $$QueuedActionsTableTableTableManager(_db, _db.queuedActionsTable);
 }

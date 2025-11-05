@@ -1,10 +1,18 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../data/models/cage_card_template.dart';
 import '../../../../data/repositories/animal_repository.dart';
+import '../../../../data/repositories/event_repository.dart';
 import '../../../../data/repositories/litter_repository.dart';
 import '../../../../data/services/cage_card_service.dart';
 import '../widgets/cage_card_preview.dart';
@@ -19,6 +27,8 @@ class CageCardsPage extends StatefulWidget {
 }
 
 class _CageCardsPageState extends State<CageCardsPage> {
+  static final DateFormat _fileNameFormatter =
+      DateFormat('yyyyMMdd_HHmmss');
   final List<CageCardTemplate> _templates = _demoTemplates;
   late CageCardTemplate _selectedTemplate;
   late CageCardService _service;
@@ -46,6 +56,7 @@ class _CageCardsPageState extends State<CageCardsPage> {
         CageCardService(
           animalRepository: context.read<AnimalRepository>(),
           litterRepository: context.read<LitterRepository>(),
+          eventRepository: context.read<EventRepository>(),
         );
     _initialized = true;
     _loadRecords();
@@ -300,28 +311,37 @@ class _CageCardsPageState extends State<CageCardsPage> {
 
   Future<void> _handleDownloadPdf() async {
     await _executeAction(
-      onSuccess: 'PDF généré (simulé).',
-      runner: (Uint8List pdfBytes) => onDownloadPdf(pdfBytes),
+      fallbackMessage: 'PDF sauvegarde.',
+      runner: (Uint8List pdfBytes) async {
+        final File file = await _savePdfLocally(pdfBytes);
+        return 'Enregistre dans ${file.path}';
+      },
     );
   }
 
   Future<void> _handlePrint() async {
     await _executeAction(
-      onSuccess: 'Envoi vers l\'imprimante à brancher.',
-      runner: (Uint8List pdfBytes) => onPrintPdf(pdfBytes),
+      fallbackMessage: 'Impression envoyee.',
+      runner: (Uint8List pdfBytes) async {
+        await _sendToPrint(pdfBytes);
+        return 'Apercu impression ouvert.';
+      },
     );
   }
 
   Future<void> _handleExportToPrinter() async {
     await _executeAction(
-      onSuccess: 'Export vers imprimeur (stub).',
-      runner: (Uint8List pdfBytes) => onExportToPrinter(pdfBytes),
+      fallbackMessage: 'Export Supabase pret.',
+      runner: (Uint8List pdfBytes) async {
+        final String path = await _exportToStorage(pdfBytes);
+        return 'Disponible sur $path';
+      },
     );
   }
 
   Future<void> _executeAction({
-    required String onSuccess,
-    required Future<void> Function(Uint8List bytes) runner,
+    required Future<String?> Function(Uint8List bytes) runner,
+    String? fallbackMessage,
   }) async {
     setState(() => _isProcessing = true);
     try {
@@ -330,17 +350,21 @@ class _CageCardsPageState extends State<CageCardsPage> {
         records: _selectedRecords,
         hideSensitiveData: _hideSensitive,
       );
-      await runner(bytes);
+      final String? customMessage = await runner(bytes);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(onSuccess)),
+          SnackBar(
+            content: Text(
+              customMessage ?? fallbackMessage ?? 'Action terminee.',
+            ),
+          ),
         );
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Échec : $error'),
+            content: Text('Echec : $error'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -351,21 +375,43 @@ class _CageCardsPageState extends State<CageCardsPage> {
       }
     }
   }
-}
 
-/// Stub pour la génération locale (à brancher sur Supabase Storage).
-Future<void> onDownloadPdf(Uint8List bytes) async {
-  debugPrint('TODO: sauvegarder ${bytes.length} octets en local.');
-}
+  Future<File> _savePdfLocally(Uint8List bytes) async {
+    final Directory baseDir = await getApplicationDocumentsDirectory();
+    final Directory target = Directory(p.join(baseDir.path, 'cage_cards'));
+    if (!await target.exists()) {
+      await target.create(recursive: true);
+    }
+    final String fileName =
+        'cage_cards_${_fileNameFormatter.format(DateTime.now())}.pdf';
+    final File file = File(p.join(target.path, fileName));
+    await file.writeAsBytes(bytes, flush: true);
+    return file;
+  }
 
-Future<void> onPrintPdf(Uint8List bytes) async {
-  debugPrint('TODO: déclencher impression (${bytes.length} octets).');
-}
+  Future<void> _sendToPrint(Uint8List bytes) {
+    return Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => bytes,
+    );
+  }
 
-Future<void> onExportToPrinter(Uint8List bytes) async {
-  debugPrint('TODO: uploader vers imprimeur / Supabase (${bytes.length} octets).');
+  Future<String> _exportToStorage(Uint8List bytes) async {
+    SupabaseClient client;
+    try {
+      client = Supabase.instance.client;
+    } catch (_) {
+      throw StateError('Supabase n\'est pas configure sur cet appareil.');
+    }
+    final String? profileId = client.auth.currentUser?.id;
+    if (profileId == null) {
+      throw StateError('Connecte-toi pour exporter vers Supabase Storage.');
+    }
+    return _service.exportToStorage(
+      pdfBytes: bytes,
+      profileId: profileId,
+    );
+  }
 }
-
 class _HelpBanner extends StatelessWidget {
   const _HelpBanner();
 
@@ -534,3 +580,11 @@ const List<CageCardTemplate> _demoTemplates = <CageCardTemplate>[
     },
   ),
 ];
+
+
+
+
+
+
+
+

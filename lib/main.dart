@@ -120,6 +120,7 @@ class _KhodanAppState extends State<KhodanApp> {
       _localTaskTemplateAssignmentDataSource;
   late final LocalAilmentDataSource _localAilmentDataSource;
   late final LocalHealthRecordDataSource _localHealthRecordDataSource;
+  late final LocalLitterDataSource _localLitterDataSource;
   late final LocalFoodTypeDataSource _localFoodTypeDataSource;
   late final LocalFoodStockDataSource _localFoodStockDataSource;
   late final LocalProfileDataSource _localProfileDataSource;
@@ -144,6 +145,7 @@ class _KhodanAppState extends State<KhodanApp> {
         LocalTaskTemplateAssignmentDataSource(_localDb);
     _localAilmentDataSource = LocalAilmentDataSource(_localDb);
     _localHealthRecordDataSource = LocalHealthRecordDataSource(_localDb);
+    _localLitterDataSource = LocalLitterDataSource(_localDb);
     _localFoodTypeDataSource = LocalFoodTypeDataSource(_localDb);
     _localFoodStockDataSource = LocalFoodStockDataSource(_localDb);
     _localProfileDataSource = LocalProfileDataSource(_localDb);
@@ -249,6 +251,12 @@ class _KhodanAppState extends State<KhodanApp> {
       RepositoryProvider<LocalHealthRecordDataSource>.value(
         value: _localHealthRecordDataSource,
       ),
+      RepositoryProvider<LocalLitterDataSource>.value(
+        value: _localLitterDataSource,
+      ),
+      RepositoryProvider<LocalLitterDataSource>.value(
+        value: _localLitterDataSource,
+      ),
       RepositoryProvider<LocalFoodTypeDataSource>.value(
         value: _localFoodTypeDataSource,
       ),
@@ -349,6 +357,9 @@ class _KhodanAppState extends State<KhodanApp> {
     final EventRepository remoteEvent = SupabaseEventRepository(
       apiClient: apiClient,
     );
+    final LitterRepository remoteLitter = SupabaseLitterRepository(
+      apiClient: apiClient,
+    );
     final SupabaseMediaRepository remoteMedia = SupabaseMediaRepository(
       apiClient: apiClient,
     );
@@ -389,6 +400,11 @@ class _KhodanAppState extends State<KhodanApp> {
     final EventRepository syncedEvent = SyncedEventRepository(
       remote: remoteEvent,
       local: _localEventDataSource,
+      offlineManager: offlineManager,
+    );
+    final LitterRepository syncedLitter = SyncedLitterRepository(
+      remote: remoteLitter,
+      local: _localLitterDataSource,
       offlineManager: offlineManager,
     );
     final HealthRepository syncedHealth = SyncedHealthRepository(
@@ -444,7 +460,7 @@ class _KhodanAppState extends State<KhodanApp> {
     final PedigreeService pedigreeService = PedigreeService(
       apiClient: apiClient,
     );
-    final LitterRepository litterRepository = InMemoryLitterRepository();
+    final LitterRepository litterRepository = syncedLitter;
     final HutchRepository hutchRepository = InMemoryHutchRepository();
 
     return <RepositoryProvider<dynamic>>[

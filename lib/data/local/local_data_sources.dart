@@ -421,14 +421,12 @@ class LocalLitterDataSource {
     final SimpleSelectStatement<LittersTable, LittersTableData> query =
         _db.select(_db.littersTable)
           ..where((LittersTable tbl) => tbl.profileId.equals(profileId))
-          ..orderBy(
-            <OrderingTerm>[
-              OrderingTerm(
-                expression: _db.littersTable.kindlingDate,
-                mode: OrderingMode.desc,
-              ),
-            ],
-          );
+          ..orderBy(<OrderingTerm Function(LittersTable)>[
+            (LittersTable tbl) => OrderingTerm(
+                  expression: tbl.kindlingDate,
+                  mode: OrderingMode.desc,
+                ),
+          ]);
     final List<LittersTableData> rows = await query.get();
     return rows.map(_mapRow).toList();
   }
@@ -437,14 +435,12 @@ class LocalLitterDataSource {
     final SimpleSelectStatement<LittersTable, LittersTableData> query =
         _db.select(_db.littersTable)
           ..where((LittersTable tbl) => tbl.profileId.equals(profileId))
-          ..orderBy(
-            <OrderingTerm>[
-              OrderingTerm(
-                expression: _db.littersTable.kindlingDate,
-                mode: OrderingMode.desc,
-              ),
-            ],
-          );
+          ..orderBy(<OrderingTerm Function(LittersTable)>[
+            (LittersTable tbl) => OrderingTerm(
+                  expression: tbl.kindlingDate,
+                  mode: OrderingMode.desc,
+                ),
+          ]);
     return query.watch().map((List<LittersTableData> rows) {
       return rows.map(_mapRow).toList();
     });
