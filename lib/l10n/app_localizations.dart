@@ -147,6 +147,18 @@ abstract class AppLocalizations {
   /// **'Planifie les tâches d\'élevage et visualise le calendrier.'**
   String get navPlanningDescription;
 
+  /// No description provided for @navCageCards.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cartes de clapier'**
+  String get navCageCards;
+
+  /// No description provided for @navCageCardsDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Imprime les PDF et étiquettes pour les cages.'**
+  String get navCageCardsDescription;
+
   /// No description provided for @navNotifications.
   ///
   /// In fr, this message translates to:

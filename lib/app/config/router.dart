@@ -29,6 +29,7 @@ import '../../features/settings/presentation/screens/settings_referentials_scree
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/health/presentation/screens/health_screen.dart';
 import '../../features/pedigrees/presentation/pages/pedigree_page.dart';
+import '../../features/cage_cards/presentation/screens/cage_cards_page.dart';
 import '../../data/models/animal.dart';
 import '../../l10n/app_localizations.dart';
 import '../core/widgets/khodan_placeholder_screen.dart';
@@ -117,6 +118,12 @@ class KhodanRouter {
                         icon: Icons.event_note_outlined,
                       ),
                       KhodanShellExtraDestination(
+                        route: const CageCardsRoute().location,
+                        label: l10n.navCageCards,
+                        description: l10n.navCageCardsDescription,
+                        icon: Icons.badge_outlined,
+                      ),
+                      KhodanShellExtraDestination(
                         route: const NotificationsRoute().location,
                         label: l10n.navNotifications,
                         description: l10n.navNotificationsDescription,
@@ -172,6 +179,11 @@ class KhodanRouter {
                         path: 'pedigrees',
                         builder: (BuildContext context, GoRouterState state) =>
                             const PedigreePage(),
+                      ),
+                      GoRoute(
+                        path: 'cage-cards',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const CageCardsPage(),
                       ),
                     ],
                   ),
@@ -412,6 +424,10 @@ class AnimalsRoute extends KhodanRoute {
 
 class PedigreeRoute extends KhodanRoute {
   const PedigreeRoute() : super('/animals/pedigrees');
+}
+
+class CageCardsRoute extends KhodanRoute {
+  const CageCardsRoute() : super('/animals/cage-cards');
 }
 
 class EventsRoute extends KhodanRoute {

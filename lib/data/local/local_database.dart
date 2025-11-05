@@ -191,6 +191,19 @@ class AnimalsTable extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
 
+class LittersTable extends Table {
+  TextColumn get id => text()();
+  TextColumn get profileId => text()();
+  TextColumn get payload => text()();
+  DateTimeColumn get kindlingDate => dateTime()();
+  TextColumn get status => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get syncState => text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{id};
+}
+
 class BreedingRecordsTable extends Table {
   TextColumn get id => text()();
   TextColumn get profileId => text()();
@@ -282,6 +295,7 @@ class QueuedActionsTable extends Table {
     BreedingRecordsTable,
     EventsTable,
     AnimalEventsTable,
+    LittersTable,
     QueuedActionsTable,
   ],
 )
@@ -293,7 +307,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -336,6 +350,9 @@ class LocalDatabase extends _$LocalDatabase {
         await migrator.createTable(healthRecordsTable);
         await migrator.createTable(healthTreatmentsTable);
       }
+      if (from < 10) {
+        await migrator.createTable(littersTable);
+      }
     },
   );
 
@@ -349,6 +366,7 @@ class LocalDatabase extends _$LocalDatabase {
       await delete(healthTreatmentsTable).go();
       await delete(healthRecordsTable).go();
       await delete(ailmentsTable).go();
+      await delete(littersTable).go();
       await delete(taskTemplateAssignmentEventsTable).go();
       await delete(taskTemplateAssignmentsTable).go();
       await delete(taskTemplateStepsTable).go();

@@ -36,6 +36,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Plan breeding tasks and review the agenda.';
 
   @override
+  String get navCageCards => 'Cage Cards';
+
+  @override
+  String get navCageCardsDescription => 'Print PDF cards and labels for cages.';
+
+  @override
   String get navNotifications => 'Notifications';
 
   @override

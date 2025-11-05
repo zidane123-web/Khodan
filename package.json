@@ -1,0 +1,29 @@
+{
+  "name": "khodan",
+  "version": "1.0.0",
+  "description": "[![CI](https://github.com/your-org/Khodan/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/Khodan/actions/workflows/ci.yml)",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zidane123-web/Khodan.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/zidane123-web/Khodan/issues"
+  },
+  "homepage": "https://github.com/zidane123-web/Khodan#readme",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

@@ -8,6 +8,8 @@
   "navSettings": "Settings",
   "navPlanning": "Schedule",
   "navPlanningDescription": "Plan breeding tasks and review the agenda.",
+  "navCageCards": "Cage Cards",
+  "navCageCardsDescription": "Print PDF cards and labels for cages.",
   "navNotifications": "Notifications",
   "navNotificationsDescription": "Track critical alerts and upcoming reminders.",
   "navHelpCenter": "Help Center",

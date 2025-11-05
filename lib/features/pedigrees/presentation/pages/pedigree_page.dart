@@ -125,7 +125,7 @@ class _PedigreePageState extends State<PedigreePage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Lien partageable mis à jour.'),
+          content: Text('Lien partageable mis a jour.'),
         ),
       );
     } catch (error) {
@@ -148,7 +148,7 @@ class _PedigreePageState extends State<PedigreePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Générez et chargez un PDF pour créer un lien partageable.',
+            'Generez et chargez un PDF pour creer un lien partageable.',
           ),
         ),
       );
@@ -634,7 +634,7 @@ class _CertificateCard extends StatelessWidget {
                 else
                   Expanded(
                     child: Text(
-                      'Générez un PDF pour activer le QR code et obtenir un lien partageable.',
+                      'Generez un PDF pour activer le QR code et obtenir un lien partageable.',
                       style: theme.textTheme.bodySmall,
                     ),
                   ),

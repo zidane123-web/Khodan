@@ -36,6 +36,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Planifie les tâches d\'élevage et visualise le calendrier.';
 
   @override
+  String get navCageCards => 'Cartes de clapier';
+
+  @override
+  String get navCageCardsDescription =>
+      'Imprime les PDF et étiquettes pour les cages.';
+
+  @override
   String get navNotifications => 'Notifications';
 
   @override

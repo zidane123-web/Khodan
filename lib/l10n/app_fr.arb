@@ -8,6 +8,8 @@
   "navSettings": "Paramètres",
   "navPlanning": "Planning",
   "navPlanningDescription": "Planifie les tâches d'élevage et visualise le calendrier.",
+  "navCageCards": "Cartes de clapier",
+  "navCageCardsDescription": "Imprime les PDF et étiquettes pour les cages.",
   "navNotifications": "Notifications",
   "navNotificationsDescription": "Suis les alertes critiques et rappels importants.",
   "navHelpCenter": "Centre d'aide",

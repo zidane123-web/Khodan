@@ -11,6 +11,7 @@ import '../models/event_template.dart';
 import '../models/event.dart';
 import '../models/food_stock.dart';
 import '../models/food_type.dart';
+import '../models/litter.dart';
 import '../models/health_record.dart';
 import '../models/health_treatment.dart';
 import '../models/task_template.dart';
@@ -377,6 +378,132 @@ class LocalBreedingDataSource {
     final Map<String, dynamic> json =
         jsonDecode(row.payload) as Map<String, dynamic>;
     return BreedingRecord.fromJson(json);
+  }
+}
+
+class LocalLitterDataSource {
+  LocalLitterDataSource(this._db);
+
+  final LocalDatabase _db;
+
+  Future<void> replaceLitters(
+    List<Litter> litters, {
+    required String profileId,
+  }) async {
+    final DateTime now = DateTime.now();
+    await _db.transaction(() async {
+      await (_db.delete(_db.littersTable)
+            ..where((LittersTable tbl) => tbl.profileId.equals(profileId)))
+          .go();
+      if (litters.isEmpty) {
+        return;
+      }
+      await _db.batch((Batch batch) {
+        batch.insertAllOnConflictUpdate(
+          _db.littersTable,
+          litters.map((Litter litter) {
+            return LittersTableCompanion.insert(
+              id: litter.id,
+              profileId: profileId,
+              payload: jsonEncode(litter.toJson()),
+              kindlingDate: litter.kindlingDate,
+              status: litter.status.storageValue,
+              updatedAt: now,
+              syncState: const Value(kSyncStateSynced),
+            );
+          }).toList(),
+        );
+      });
+    });
+  }
+
+  Future<List<Litter>> fetchLitters({required String profileId}) async {
+    final SimpleSelectStatement<LittersTable, LittersTableData> query =
+        _db.select(_db.littersTable)
+          ..where((LittersTable tbl) => tbl.profileId.equals(profileId))
+          ..orderBy(
+            <OrderingTerm>[
+              OrderingTerm(
+                expression: _db.littersTable.kindlingDate,
+                mode: OrderingMode.desc,
+              ),
+            ],
+          );
+    final List<LittersTableData> rows = await query.get();
+    return rows.map(_mapRow).toList();
+  }
+
+  Stream<List<Litter>> watchLitters({required String profileId}) {
+    final SimpleSelectStatement<LittersTable, LittersTableData> query =
+        _db.select(_db.littersTable)
+          ..where((LittersTable tbl) => tbl.profileId.equals(profileId))
+          ..orderBy(
+            <OrderingTerm>[
+              OrderingTerm(
+                expression: _db.littersTable.kindlingDate,
+                mode: OrderingMode.desc,
+              ),
+            ],
+          );
+    return query.watch().map((List<LittersTableData> rows) {
+      return rows.map(_mapRow).toList();
+    });
+  }
+
+  Future<Litter?> fetchLitterById(
+    String id, {
+    required String profileId,
+  }) async {
+    final LittersTableData? row = await (_db.select(_db.littersTable)
+          ..where(
+            (LittersTable tbl) =>
+                tbl.profileId.equals(profileId) & tbl.id.equals(id),
+          ))
+        .getSingleOrNull();
+    if (row == null) {
+      return null;
+    }
+    return _mapRow(row);
+  }
+
+  Future<void> upsertLitter(
+    Litter litter, {
+    required String profileId,
+    String syncState = kSyncStateSynced,
+  }) async {
+    await _db
+        .into(_db.littersTable)
+        .insertOnConflictUpdate(
+          LittersTableCompanion.insert(
+            id: litter.id,
+            profileId: profileId,
+            payload: jsonEncode(litter.toJson()),
+            kindlingDate: litter.kindlingDate,
+            status: litter.status.storageValue,
+            updatedAt: DateTime.now(),
+            syncState: Value(syncState),
+          ),
+        );
+  }
+
+  Future<void> deleteLitter(
+    String id, {
+    required String profileId,
+  }) async {
+    await (_db.delete(_db.littersTable)
+          ..where(
+            (LittersTable tbl) =>
+                tbl.profileId.equals(profileId) & tbl.id.equals(id),
+          ))
+        .go();
+  }
+
+  Litter _mapRow(LittersTableData row) {
+    final Map<String, dynamic> json =
+        jsonDecode(row.payload) as Map<String, dynamic>;
+    return Litter.fromJson(json).copyWith(
+      hasPendingSync: row.syncState != kSyncStateSynced,
+    );
   }
 }
 
