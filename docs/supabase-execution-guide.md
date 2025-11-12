@@ -1,6 +1,6 @@
-# Guide d'execution des migrations Supabase
+﻿# Guide d'execution des migrations Supabase
 
-Derniere mise a jour : 2025-11-01 (Plan2 - tache 09).
+Derniere mise a jour : 2025-11-06 (Plan2 - pre-tache 15).
 
 ## Pre-requis communs
 
@@ -62,6 +62,7 @@ Derniere mise a jour : 2025-11-01 (Plan2 - tache 09).
 - Migration a appliquer : `supabase/migrations/20251101090000_task_templates_and_notifications.sql`.
 - Statut CLI : encore instable sous Windows -> utiliser **Methode B**.
 - Requetes de verification a lancer apres execution :
+
   ```sql
   SELECT table_name
   FROM information_schema.tables
@@ -74,6 +75,7 @@ Derniere mise a jour : 2025-11-01 (Plan2 - tache 09).
     AND table_name LIKE 'notification%';
   ```
 - Resultats attendus :
+
   ```
   task_template_assignment_events
   task_template_assignments
@@ -120,21 +122,98 @@ _Remarque : LIKE utilise `_` comme joker, remplacer par `LIKE 'health%'` pour ve
     - Génération 0 : sujet (`missing=false`)
     - Génération 1/2 : parents + placeholders (`missing=true` quand absent)
 - Capture sauvegardée dans “Finance Ledger and Contacts Schema” (SQL Editor) + sortie texte ci-dessus.
-R�alignement 2025-11-04 :
+  R�alignement 2025-11-04 :
 - Conversion `public.species_config.events_schema` de `text[]` vers `jsonb` (`ALTER TABLE ... USING to_jsonb(events_schema)`) puis ajout du `DEFAULT '[]'::jsonb` et `SET NOT NULL`.
 - Ajout/reconstruction des colonnes manquantes et index sur `public.profiles`, `public.species_config`, `public.animals` (contacts, timestamps, g�n�alogie).
 - Cr�ation conditionnelle des tables absentes + index : `public.breeding_records`, `public.breeding_metrics`, `public.sync_queue`, `breeding_records_profile_mating_idx`, `breeding_records_animals_idx`, `breeding_metrics_unique_period`.
 - Mise � niveau de `public.events` et `public.animal_events` (colonnes `profile_id`, `event_type`, `role`, timestamps).
 - Seed de d�monstration avec l'UUID Auth `c96b2fdb-7a54-492c-a5fa-44bab270b27b` : profil, esp�ce Lapin, animaux `demo-f-001`, `demo-m-001`, `demo-kit-001`, enregistrement `breeding_records` (`dddddddd-dddd-dddd-dddd-dddddddd0001`).
-- Requ�tes de validation archiv�es :  
-  `SELECT column_name,data_type FROM information_schema.columns WHERE table_name='species_config';`  
-  `SELECT generation, relation_path, display_name, missing FROM public.fn_pedigree_tree('cccccccc-cccc-cccc-cccc-cccccccc0001',4);`  
-  `SELECT generation, COUNT(*) FROM public.fn_pedigree_tree('cccccccc-cccc-cccc-cccc-cccccccc0001',4) GROUP BY generation;`  
+- Requ�tes de validation archiv�es :
+  `SELECT column_name,data_type FROM information_schema.columns WHERE table_name='species_config';`
+  `SELECT generation, relation_path, display_name, missing FROM public.fn_pedigree_tree('cccccccc-cccc-cccc-cccc-cccccccc0001',4);`
+  `SELECT generation, COUNT(*) FROM public.fn_pedigree_tree('cccccccc-cccc-cccc-cccc-cccccccc0001',4) GROUP BY generation;`
   `SELECT id, tag_id, profile_id FROM public.animals LIMIT 5;`
+
+### Journal 2025-11-05 (Plan2 tache 14)
+
+- Migration a appliquer : `supabase/migrations/20251105153000_cage_card_templates.sql`.
+- Contexte : creation de la table `cage_card_templates` pour stocker les gabarits (format, champs actifs, couleur, options sensibles) et ajout des policies RLS + trigger de mise a jour des timestamps.
+- Execution : Preferer **Methode B** (SQL Editor) si `supabase db push` ne repond pas correctement sur Windows. Coller le script complet puis enregistrer la version :
+
+  ```sql
+  INSERT INTO supabase_migrations.schema_migrations (version, name)
+  VALUES ('20251105153000', '20251105153000_cage_card_templates.sql')
+  ON CONFLICT (version) DO NOTHING;
+  ```
+- Requetes de verification :
+
+  ```sql
+  SELECT table_name
+  FROM information_schema.tables
+  WHERE table_schema = 'public'
+    AND table_name = 'cage_card_templates';
+
+  SELECT policyname
+  FROM pg_policies
+  WHERE schemaname = 'public'
+    AND tablename = 'cage_card_templates'
+  ORDER BY policyname;
+
+  SELECT trigger_name, action_statement
+  FROM information_schema.triggers
+  WHERE event_object_schema = 'public'
+    AND event_object_table = 'cage_card_templates';
+
+  SELECT column_name, column_default
+  FROM information_schema.columns
+  WHERE table_schema = 'public'
+    AND table_name = 'cage_card_templates'
+    AND column_name IN ('enabled_fields', 'accent_color', 'include_sensitive');
+  ```
+- Resultats attendus :
+
+  ```text
+  cage_card_templates
+  ```
+
+  ```text
+  Cage card templates are visible to their owner
+  Users can delete their own cage card templates
+  Users can insert their own cage card templates
+  Users can update their own cage card templates
+  ```
+
+  ```text
+  tg_cage_card_templates_timestamps | EXECUTE FUNCTION public.tg_maintain_timestamps()
+  ```
+
+  ```text
+  enabled_fields    | DEFAULT '{}'::jsonb
+  accent_color      | DEFAULT '#2F855A'::text
+  include_sensitive | DEFAULT false
+  ```
+- Notes : creer le bucket `cage_cards` dans Supabase Storage avant de tester l'export PDF depuis Flutter (ou utiliser un bucket existant en mettant a jour `storage_path`). Chaque profil doit posseder au moins un template actif pour declencher la generation.
+
+**Execute le 05/11/2025 - OK via SQL Editor**
+
+```text
+cage_card_templates
+```
+
+```text
+Cage card templates are visible to their owner
+Users can delete their own cage card templates
+Users can insert their own cage card templates
+Users can update their own cage card templates
+```
+
+```text
+tg_cage_card_templates_timestamps
+```
 
 ### Edge Function `create-pedigree-share` & bucket Storage
 
-- Bucket prive `pedigrees` :  
+- Bucket prive `pedigrees` :
   ```sql
   INSERT INTO storage.buckets (id, name, public)
   VALUES ('pedigrees', 'pedigrees', FALSE)
@@ -165,10 +244,11 @@ R�alignement 2025-11-04 :
       AND split_part(name, '/', 1) = auth.uid()::text
     );
   ```
+
   Les chemins doivent suivre `pedigrees/{auth.uid}/{breeder_id}.pdf` pour que les policies soient valides.
-- Fonction Edge (`supabase/functions/create-pedigree-share/index.ts`) :  
-  1. Valide `profileId` vs `auth.getUser()`  
-  2. Cree un lien signe (expiration 60 s -> 7 jours, par defaut 24 h)  
+- Fonction Edge (`supabase/functions/create-pedigree-share/index.ts`) :
+  1. Valide `profileId` vs `auth.getUser()`
+  2. Cree un lien signe (expiration 60 s -> 7 jours, par defaut 24 h)
   3. Retourne `{ shareUrl, storagePath, expiresAt }`
 - Commandes :
   ```bash
@@ -180,6 +260,7 @@ R�alignement 2025-11-04 :
   supabase functions deploy create-pedigree-share \
     --project-ref rmtkvalfhbhhqczwvtoz
   ```
+
   Secrets (Edge Functions → *Secrets*) à renseigner : `EDGE_SUPABASE_URL`, `EDGE_SUPABASE_ANON_KEY`, `EDGE_SUPABASE_SERVICE_ROLE_KEY` (copier les mêmes valeurs que dans `.env`). Ces noms sont ceux utilisés par `create-pedigree-share`.
 
 ## SQL de controle apres migration
@@ -193,7 +274,8 @@ FROM information_schema.tables
 WHERE table_schema = 'public'
 ORDER BY table_name;
 ```
-**Resultat du 31/10/2025**  
+
+**Resultat du 31/10/2025**
 Tables `breeding_records` et `breeding_metrics` absentes. Leur creation reste a planifier (Methode B recommandee tant que la CLI est instable).
 
 ```sql
@@ -203,7 +285,9 @@ FROM information_schema.triggers
 WHERE event_object_schema = 'public'
 ORDER BY event_object_table, trigger_name;
 ```
+
 **Resultat du 31/10/2025**
+
 ```
 event_object_table | trigger_name
 -------------------|--------------------------------
@@ -213,6 +297,7 @@ food_types         | trg_food_types_updated_at
 knowledge_articles | trg_knowledge_articles_updated_at
 support_requests   | trg_support_requests_updated_at
 ```
+
 => Les triggers `trg_*_updated_at` sont bien presents pour maintenir `updated_at`.
 
 ```sql
@@ -222,7 +307,9 @@ FROM pg_policies
 WHERE schemaname = 'public'
 ORDER BY tablename, policyname;
 ```
+
 **Resultat du 31/10/2025**
+
 ```
 schemaname | tablename           | policyname
 -----------|---------------------|---------------------------------------------
@@ -246,6 +333,7 @@ public     | support_requests    | support_requests_select_owner
 public     | support_requests    | support_requests_update_service_role
 public     | user_preferences    | user_preferences_owner_all
 ```
+
 => Toutes les tables sensibles restent protegees par des policies RLS actives.
 
 Comptes `codex-agent+*@example.com` supprimes le 30/10/2025 (Auth > Users).
@@ -294,6 +382,12 @@ Comptes `codex-agent+*@example.com` supprimes le 30/10/2025 (Auth > Users).
   WHERE table_schema = 'public'
     AND table_name IN ('contacts', 'transaction_categories', 'financial_transactions');
 
+  SELECT column_name, data_type
+  FROM information_schema.columns
+  WHERE table_schema = 'public'
+    AND table_name = 'financial_transactions'
+  ORDER BY ordinal_position;
+
   SELECT policyname, tablename
   FROM pg_policies
   WHERE schemaname = 'public'
@@ -304,6 +398,11 @@ Comptes `codex-agent+*@example.com` supprimes le 30/10/2025 (Auth > Users).
   FROM pg_indexes
   WHERE schemaname = 'public'
     AND tablename IN ('contacts', 'transaction_categories', 'financial_transactions');
+
+  SELECT code, default_flow
+  FROM public.transaction_categories
+  WHERE profile_id IS NULL
+  ORDER BY code;
   ```
 - Enregistrer le resultat du SQL Editor ici une fois applique. Inclure la commande d'insertion dans `supabase_migrations.schema_migrations` :
   ```sql
@@ -311,6 +410,7 @@ Comptes `codex-agent+*@example.com` supprimes le 30/10/2025 (Auth > Users).
   VALUES ('20251101120000', '20251101120000_finances_and_contacts.sql')
   ON CONFLICT (version) DO NOTHING;
   ```
+
 **Ex�cut� le 01/11/2025 � OK via SQL Editor**
 
 ```text
@@ -320,15 +420,98 @@ transaction_categories
 ```
 
 ```text
-contact_owner_all
-financial_transactions_owner_all
-transaction_categories_owner_all
+id              | uuid
+profile_id      | uuid
+category_id     | uuid
+contact_id      | uuid
+title           | text
+notes           | text
+flow            | text
+amount          | numeric
+currency        | text
+occured_on      | date
+payment_method  | text
+attachment_url  | text
+attachment_name | text
+created_at      | timestamp with time zone
+updated_at      | timestamp with time zone
 ```
 
 ```text
-financial_transactions_profile_idx
+contacts_owner_all               | contacts
+contacts_owner_delete            | contacts
+contacts_owner_insert            | contacts
+contacts_owner_select            | contacts
+contacts_owner_update            | contacts
+financial_transactions_owner_all | financial_transactions
+transaction_categories_manage    | transaction_categories
+transaction_categories_select    | transaction_categories
+```
+
+```text
+contacts_display_name_unique
+contacts_pkey
+contacts_profile_idx
+contacts_profile_name_idx
+contacts_profile_type_idx
+financial_transactions_category_idx
+financial_transactions_contact_idx
+financial_transactions_pkey
+financial_transactions_profile_date_idx
+transaction_categories_code_uniq
+transaction_categories_global_code_unique
+transaction_categories_pkey
+transaction_categories_profile_active_idx
 transaction_categories_profile_idx
 ```
+
+```text
+breeding  | expense
+feed      | expense
+health    | expense
+housing   | expense
+sales     | income
+supplies  | expense
+transport | expense
+```
+
+### Journal 2025-11-05 (bucket cage_cards)
+
+- Migration a appliquer : `supabase/migrations/20251106100000_storage_cage_cards.sql`.
+- Objectif : creer le bucket prive `cage_cards` pour les PDF generes par `CageCardService` + definir les policies RLS par proprietaire.
+- Requetes de verification :
+
+  ```sql
+  SELECT id, name, public, file_size_limit
+  FROM storage.buckets
+  WHERE id = 'cage_cards';
+
+  SELECT policyname, permissive, roles
+  FROM pg_policies
+  WHERE schemaname = 'storage'
+    AND tablename = 'objects'
+    AND policyname LIKE 'cage_cards%';
+  ```
+- Lancer ensuite un upload test (depuis l'UI Flutter ou PostgREST) pour verifier que le chemin suit la convention `<profile_id>/<fichier>.pdf`.
+- Insertion dans `supabase_migrations.schema_migrations` :
+
+  ```sql
+  INSERT INTO supabase_migrations.schema_migrations (version, name)
+  VALUES ('20251106100000', '20251106100000_storage_cage_cards.sql')
+  ON CONFLICT (version) DO NOTHING;
+  ```
+- Resultats attendus :
+
+  ```text
+  cage_cards | cage_cards | f | 10485760
+  ```
+
+  ```text
+  cage_cards owners can delete | permissive | {authenticated}
+  cage_cards owners can insert | permissive | {authenticated}
+  cage_cards owners can read   | permissive | {authenticated}
+  cage_cards owners can update | permissive | {authenticated}
+  ```
 
 ## Creation rapide d'un token `authenticated` pour tests API
 
@@ -340,6 +523,7 @@ $body = @{ email=$email; password='TempPass123!' } | ConvertTo-Json
 $session = Invoke-RestMethod -Uri 'https://rmtkvalfhbhhqczwvtoz.supabase.co/auth/v1/signup' -Headers $headers -Method Post -Body $body
 $session.access_token
 ```
+
 Utiliser le token renvoye dans l'en-tete `Authorization: Bearer <token>` pour tester les endpoints PostgREST proteges par RLS.
 
 ## Lancement Flutter (web)
@@ -362,8 +546,6 @@ flutter run -d chrome
 - **Pedigrees** : table `pedigree_exports` + fonction recursive pour l'arbre genealogique.
 - **Cartes de clapier / QR** : table `cage_card_templates`, stockage des exports generes.
 - **Personnalisation** : etendre `user_preferences` (langue, unite, theme) si besoin.
-
-
 
 ### Journal 2025-11-02 (Plan2 tache 12)
 
