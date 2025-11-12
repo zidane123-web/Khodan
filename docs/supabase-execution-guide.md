@@ -513,6 +513,65 @@ transport | expense
   cage_cards owners can update | permissive | {authenticated}
   ```
 
+### Journal 2025-11-07 (Plan2 tâche 15 - ventes & transferts)
+
+- Migration à appliquer : `supabase/migrations/20251107121500_rabbit_sales_marketplace.sql`.
+- Objectif : créer `rabbit_sales`, `rabbit_transfers`, `marketplace_listings`, relier `financial_transactions`, `animals`, `contacts` et ajouter les triggers d'archivage + RLS.
+- Requêtes de contrôle à exécuter depuis le SQL Editor :
+
+  ```sql
+  SELECT table_name
+  FROM information_schema.tables
+  WHERE table_schema = 'public'
+    AND table_name IN (
+      'rabbit_sales',
+      'rabbit_transfers',
+      'marketplace_listings'
+    );
+
+  SELECT policyname, tablename
+  FROM pg_policies
+  WHERE schemaname = 'public'
+    AND tablename IN (
+      'rabbit_sales',
+      'rabbit_transfers',
+      'marketplace_listings'
+    );
+
+  SELECT tgname, tgrelid::regclass
+  FROM pg_trigger
+  WHERE tgname LIKE 'trg_rabbit_%'
+     OR tgname LIKE 'trg_marketplace_%';
+  ```
+
+- Résultats attendus :
+
+  ```text
+  rabbit_sales
+  rabbit_transfers
+  marketplace_listings
+  ```
+
+  ```text
+  rabbit_sales_owner_all        | rabbit_sales
+  rabbit_transfers_owner_all    | rabbit_transfers
+  rabbit_transfers_recipient_rw | rabbit_transfers
+  marketplace_listings_owner_all| marketplace_listings
+  ```
+
+  ```text
+  trg_rabbit_sales_timestamps         | rabbit_sales
+  trg_rabbit_sales_archive            | rabbit_sales
+  trg_rabbit_transfers_timestamps     | rabbit_transfers
+  trg_rabbit_transfers_archive        | rabbit_transfers
+  trg_marketplace_listings_timestamps | marketplace_listings
+  trg_marketplace_listings_archive    | marketplace_listings
+  ```
+
+- Notes :
+  - Le trigger `public.tg_archive_on_status_change()` est créé si absent afin de renseigner `archived_at` dès que l'état passe en `completed` (ventes/transferts) ou `expired/sold` (annonces).
+  - Penser à relancer `flutter analyze` puis `flutter test` après application de la migration pour vérifier les formulaires et services associés (cf. `docs/transferts-ventes.md`).
+
 ## Creation rapide d'un token `authenticated` pour tests API
 
 ```powershell

@@ -60,6 +60,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navMore => 'Plus';
 
   @override
+  String get navSales => 'Ventes';
+
+  @override
+  String get navTransfers => 'Transferts';
+
+  @override
+  String get navMarketplace => 'Marketplace';
+
+  @override
   String get placeholderPlanningTitle => 'Planning en préparation';
 
   @override

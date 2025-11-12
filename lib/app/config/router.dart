@@ -30,6 +30,9 @@ import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/health/presentation/screens/health_screen.dart';
 import '../../features/pedigrees/presentation/pages/pedigree_page.dart';
 import '../../features/cage_cards/presentation/screens/cage_cards_page.dart';
+import '../../features/sales/presentation/screens/marketplace_page.dart';
+import '../../features/sales/presentation/screens/transfert_page.dart';
+import '../../features/sales/presentation/screens/ventes_page.dart';
 import '../../data/models/animal.dart';
 import '../../l10n/app_localizations.dart';
 import '../core/widgets/khodan_placeholder_screen.dart';
@@ -140,6 +143,24 @@ class KhodanRouter {
                         label: 'Finances',
                         description: 'Ledger et contacts',
                         icon: Icons.account_balance_wallet_outlined,
+                      ),
+                      KhodanShellExtraDestination(
+                        route: const SalesRoute().location,
+                        label: l10n.navSales,
+                        description: 'Ventes locales',
+                        icon: Icons.sell_outlined,
+                      ),
+                      KhodanShellExtraDestination(
+                        route: const SalesTransfersRoute().location,
+                        label: l10n.navTransfers,
+                        description: 'Transferts entre comptes',
+                        icon: Icons.swap_horiz_outlined,
+                      ),
+                      KhodanShellExtraDestination(
+                        route: const MarketplaceRoute().location,
+                        label: l10n.navMarketplace,
+                        description: 'Mini-annonces',
+                        icon: Icons.storefront_outlined,
                       ),
                       KhodanShellExtraDestination(
                         route: const PedigreeRoute().location,
@@ -315,6 +336,21 @@ class KhodanRouter {
                 const FinancePage(),
           ),
           GoRoute(
+            path: const SalesRoute().path,
+            builder: (BuildContext context, GoRouterState state) =>
+                const VentesPage(),
+          ),
+          GoRoute(
+            path: const SalesTransfersRoute().path,
+            builder: (BuildContext context, GoRouterState state) =>
+                const TransfertPage(),
+          ),
+          GoRoute(
+            path: const MarketplaceRoute().path,
+            builder: (BuildContext context, GoRouterState state) =>
+                const MarketplacePage(),
+          ),
+          GoRoute(
             path: const PlanningRoute().path,
             builder: (BuildContext context, GoRouterState state) {
               return const PlanningScreen();
@@ -472,6 +508,18 @@ class SettingsAboutRoute extends KhodanRoute {
 
 class FinanceRoute extends KhodanRoute {
   const FinanceRoute() : super('/finances');
+}
+
+class SalesRoute extends KhodanRoute {
+  const SalesRoute() : super('/sales');
+}
+
+class SalesTransfersRoute extends KhodanRoute {
+  const SalesTransfersRoute() : super('/sales/transfers');
+}
+
+class MarketplaceRoute extends KhodanRoute {
+  const MarketplaceRoute() : super('/sales/marketplace');
 }
 
 class PlanningRoute extends KhodanRoute {

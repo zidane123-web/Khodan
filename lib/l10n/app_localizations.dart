@@ -189,6 +189,24 @@ abstract class AppLocalizations {
   /// **'Plus'**
   String get navMore;
 
+  /// No description provided for @navSales.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ventes'**
+  String get navSales;
+
+  /// No description provided for @navTransfers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Transferts'**
+  String get navTransfers;
+
+  /// No description provided for @navMarketplace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marketplace'**
+  String get navMarketplace;
+
   /// No description provided for @placeholderPlanningTitle.
   ///
   /// In fr, this message translates to:
