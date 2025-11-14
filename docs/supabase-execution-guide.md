@@ -654,45 +654,37 @@ flutter run -d chrome
 
 ### Journal 2025-11-15 (Plan2 tache 16)
 
-- Migration à appliquer : `supabase/migrations/20251115120000_subscriptions_and_members.sql` (plans + abonnements + membres d'élevage).
-- **Méthode recommandée** : tenter `supabase db push`. Si la CLI échoue encore sous Windows, basculer immédiatement sur la **Méthode B** (SQL Editor) :
-  1. Coller le script complet dans l'onglet SQL du projet `rmtkvalfhbhhqczwvtoz`.
-  2. Exécuter, puis enregistrer la version via :
-     ```sql
-     INSERT INTO supabase_migrations.schema_migrations (version, name)
-     VALUES ('20251115120000', '20251115120000_subscriptions_and_members.sql')
-     ON CONFLICT (version) DO NOTHING;
-     ```
-  3. Reporter le résultat et la date dans `Plan2/done/task-16-mon-compte.md`.
-- **Requêtes de contrôle** (à lancer depuis le SQL Editor et à conserver dans le journal) :
+- **Migration appliquée** : `supabase/migrations/20251115120000_subscriptions_and_members.sql` (plans + abonnements + membres d'élevage).
+- **Méthode** : 14/11/2025 via SQL Editor (méthode B) car la CLI Windows échoue. Script complet collé → sortie `Success. No rows returned`, puis :
   ```sql
-  SELECT code, max_breeders, max_members, storage_limit_mb
-  FROM subscription_plans
-  ORDER BY sort_order;
-
-  SELECT profile_id, plan_id, status, manual_payment_reference
-  FROM user_subscriptions
-  ORDER BY created_at DESC
-  LIMIT 10;
-
-  SELECT profile_id, email, role, status
-  FROM farm_members
-  ORDER BY created_at DESC
-  LIMIT 10;
-
-  SELECT tablename, policyname
-  FROM pg_policies
-  WHERE tablename IN ('subscription_plans','user_subscriptions','farm_members');
-
-  SELECT tgname, tablename
-  FROM pg_trigger
-  WHERE tgname LIKE 'trg_%subscriptions%' OR tgname LIKE 'trg_farm_members_%';
+  INSERT INTO supabase_migrations.schema_migrations (version, name)
+  VALUES ('20251115120000', '20251115120000_subscriptions_and_members.sql')
+  ON CONFLICT (version) DO NOTHING;
   ```
-- **Résultats attendus** :
-  - Quatre lignes dans `subscription_plans` (`free`, `standard`, `pro`, `enterprise`).
-  - Indices partiels visibles côté `user_subscriptions_active_unique` et `farm_members_subscription_idx`.
-  - Politiques `user_subscriptions_owner_all` et `farm_members_owner_all` actives (lecture/écriture propriétaire + `service_role`).
-  - Triggers `trg_subscription_plans_timestamps`, `trg_user_subscriptions_timestamps`, `trg_farm_members_timestamps` listés.
+  Résultat : `Success. No rows returned`.
+- **Requêtes de contrôle exécutées** :
+  ```markdown
+  | table_name         |
+  | ------------------ |
+  | farm_members       |
+  | subscription_plans |
+  | user_subscriptions |
+  ```
+  ```markdown
+  | policyname                     | tablename          |
+  | ------------------------------ | ------------------ |
+  | farm_members_owner_all         | farm_members       |
+  | subscription_plans_read_all    | subscription_plans |
+  | subscription_plans_service_write | subscription_plans |
+  | user_subscriptions_owner_all   | user_subscriptions |
+  ```
+  ```markdown
+  | tgname                           | tablename          |
+  | -------------------------------- | ------------------ |
+  | trg_farm_members_timestamps      | farm_members       |
+  | trg_subscription_plans_timestamps| subscription_plans |
+  | trg_user_subscriptions_timestamps| user_subscriptions |
+  ```
 - **Suite applicative** :
   - Lire/partager `docs/abonnements.md` pour rappeler les limites (5 éleveurs max sur Gratuit, etc.) et le flux de paiement manuel.
   - Après application de la migration, exécuter `flutter analyze` puis `flutter test` afin de valider l'écran `MonComptePage` et les garde-fous de quotas.
