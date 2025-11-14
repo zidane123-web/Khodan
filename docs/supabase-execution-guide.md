@@ -546,29 +546,36 @@ transport | expense
 
 - Résultats attendus :
 
-  ```text
-  rabbit_sales
-  rabbit_transfers
-  marketplace_listings
+  ```markdown
+  | table_name           |
+  | -------------------- |
+  | marketplace_listings |
+  | rabbit_sales         |
+  | rabbit_transfers     |
   ```
 
-  ```text
-  rabbit_sales_owner_all        | rabbit_sales
-  rabbit_transfers_owner_all    | rabbit_transfers
-  rabbit_transfers_recipient_rw | rabbit_transfers
-  marketplace_listings_owner_all| marketplace_listings
+  ```markdown
+  | policyname                        | tablename            |
+  | --------------------------------- | -------------------- |
+  | marketplace_listings_owner_all    | marketplace_listings |
+  | rabbit_sales_owner_all            | rabbit_sales         |
+  | rabbit_transfers_owner_all        | rabbit_transfers     |
+  | rabbit_transfers_recipient_select | rabbit_transfers     |
+  | rabbit_transfers_recipient_update | rabbit_transfers     |
   ```
 
-  ```text
-  trg_rabbit_sales_timestamps         | rabbit_sales
-  trg_rabbit_sales_archive            | rabbit_sales
-  trg_rabbit_transfers_timestamps     | rabbit_transfers
-  trg_rabbit_transfers_archive        | rabbit_transfers
-  trg_marketplace_listings_timestamps | marketplace_listings
-  trg_marketplace_listings_archive    | marketplace_listings
+  ```markdown
+  | tgname                              | table_name           |
+  | ----------------------------------- | -------------------- |
+  | trg_rabbit_sales_archive            | rabbit_sales         |
+  | trg_rabbit_sales_timestamps         | rabbit_sales         |
+  | trg_rabbit_transfers_archive        | rabbit_transfers     |
+  | trg_rabbit_transfers_timestamps     | rabbit_transfers     |
+  | trg_marketplace_listings_archive    | marketplace_listings |
+  | trg_marketplace_listings_timestamps | marketplace_listings |
   ```
 
-- Notes :
+  - Notes :
   - Le trigger `public.tg_archive_on_status_change()` est créé si absent afin de renseigner `archived_at` dès que l'état passe en `completed` (ventes/transferts) ou `expired/sold` (annonces).
   - Penser à relancer `flutter analyze` puis `flutter test` après application de la migration pour vérifier les formulaires et services associés (cf. `docs/transferts-ventes.md`).
   - **Execution 14/11/2025 - SQL Editor (méthode B)** : la CLI Windows échouant systématiquement, la migration complète a été collée dans le SQL Editor Supabase et exécutée sans erreur (`Success. No rows returned`). Ensuite :
