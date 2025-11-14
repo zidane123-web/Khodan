@@ -194,9 +194,19 @@ CREATE POLICY rabbit_transfers_owner_all
   WITH CHECK (profile_id = auth.uid() OR auth.role() = 'service_role');
 
 DROP POLICY IF EXISTS rabbit_transfers_recipient_rw ON public.rabbit_transfers;
-CREATE POLICY rabbit_transfers_recipient_rw
+DROP POLICY IF EXISTS rabbit_transfers_recipient_select
+  ON public.rabbit_transfers;
+DROP POLICY IF EXISTS rabbit_transfers_recipient_update
+  ON public.rabbit_transfers;
+
+CREATE POLICY rabbit_transfers_recipient_select
   ON public.rabbit_transfers
-  FOR SELECT, UPDATE
+  FOR SELECT
+  USING (recipient_profile_id = auth.uid() OR auth.role() = 'service_role');
+
+CREATE POLICY rabbit_transfers_recipient_update
+  ON public.rabbit_transfers
+  FOR UPDATE
   USING (recipient_profile_id = auth.uid() OR auth.role() = 'service_role')
   WITH CHECK (recipient_profile_id = auth.uid() OR auth.role() = 'service_role');
 

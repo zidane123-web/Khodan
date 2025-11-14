@@ -571,6 +571,13 @@ transport | expense
 - Notes :
   - Le trigger `public.tg_archive_on_status_change()` est créé si absent afin de renseigner `archived_at` dès que l'état passe en `completed` (ventes/transferts) ou `expired/sold` (annonces).
   - Penser à relancer `flutter analyze` puis `flutter test` après application de la migration pour vérifier les formulaires et services associés (cf. `docs/transferts-ventes.md`).
+  - **Execution 14/11/2025 - SQL Editor (méthode B)** : la CLI Windows échouant systématiquement, la migration complète a été collée dans le SQL Editor Supabase et exécutée sans erreur (`Success. No rows returned`). Ensuite :
+    ```sql
+    INSERT INTO supabase_migrations.schema_migrations (version, name)
+    VALUES ('20251107121500', '20251107121500_rabbit_sales_marketplace.sql')
+    ON CONFLICT (version) DO NOTHING;
+    ```
+    a confirmé l'enregistrement de la version (sortie : `Success. No rows returned`). Captures stockées dans le dossier d'historique Supabase.
 
 ## Creation rapide d'un token `authenticated` pour tests API
 
