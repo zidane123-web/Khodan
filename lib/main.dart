@@ -36,9 +36,11 @@ import 'data/services/connectivity_watcher.dart';
 import 'data/services/pedigree_service.dart';
 import 'data/services/offline_sync_manager.dart';
 import 'data/services/rabbit_sales_service.dart';
+import 'data/services/subscription_service.dart';
 import 'features/reports/services/reports_service.dart';
 import 'features/auth/presentation/cubit/auth_cubit.dart';
 import 'features/notifications/services/local_notification_service.dart';
+import 'features/account/presentation/cubit/subscription_cubit.dart';
 
 void main() {
   runZonedGuarded(
@@ -201,20 +203,26 @@ class _KhodanAppState extends State<KhodanApp> {
           AuthRepository(),
           localProfile: context.read<LocalProfileDataSource>(),
         )..listenAuthChanges(),
-        child: MaterialApp.router(
-          title: AppConstants.appName,
-          onGenerateTitle: (BuildContext context) =>
-              AppLocalizations.of(context).appTitle,
-          theme: buildKhodanTheme(),
-          routerConfig: _router.router,
-          debugShowCheckedModeBanner: false,
-          localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
+        child: BlocProvider<SubscriptionCubit>(
+          create: (BuildContext context) => SubscriptionCubit(
+            service: context.read<SubscriptionService>(),
+            authCubit: context.read<AuthCubit>(),
+          )..initialize(),
+          child: MaterialApp.router(
+            title: AppConstants.appName,
+            onGenerateTitle: (BuildContext context) =>
+                AppLocalizations.of(context).appTitle,
+            theme: buildKhodanTheme(),
+            routerConfig: _router.router,
+            debugShowCheckedModeBanner: false,
+            localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
         ),
       ),
     );
@@ -342,6 +350,9 @@ class _KhodanAppState extends State<KhodanApp> {
           apiClient: context.read<ApiExecutor>(),
         ),
       ),
+      RepositoryProvider<SubscriptionService>(
+        create: (_) => InMemorySubscriptionService(),
+      ),
     ];
   }
 
@@ -463,6 +474,9 @@ class _KhodanAppState extends State<KhodanApp> {
     );
     final LitterRepository litterRepository = syncedLitter;
     final HutchRepository hutchRepository = InMemoryHutchRepository();
+    final SubscriptionService subscriptionService = SupabaseSubscriptionService(
+      apiClient: apiClient,
+    );
 
     return <RepositoryProvider<dynamic>>[
       RepositoryProvider<ApiExecutor>.value(value: apiClient),
@@ -551,6 +565,9 @@ class _KhodanAppState extends State<KhodanApp> {
       ),
       RepositoryProvider<PedigreeService>(
         create: (_) => pedigreeService,
+      ),
+      RepositoryProvider<SubscriptionService>(
+        create: (_) => subscriptionService,
       ),
     ];
   }

@@ -2,6 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:khodan/features/account/presentation/cubit/subscription_cubit.dart';
+import 'package:khodan/features/account/presentation/widgets/subscription_quota_banner.dart';
 
 import '../../../../data/models/animal.dart';
 import '../../../../data/models/breeding_record.dart';
@@ -98,6 +102,22 @@ class _AnimalListViewState extends State<_AnimalListView> {
   }
 
   Future<void> _createAnimal() async {
+    final SubscriptionState subscription =
+        context.read<SubscriptionCubit>().state;
+    if (subscription.breedersLimitReached) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Limite d'éleveurs atteinte. Passez à un plan supérieur pour créer une nouvelle fiche.",
+          ),
+        ),
+      );
+      context.push('/settings/account');
+      return;
+    }
     final Animal? created = await Navigator.of(context).push<Animal>(
       MaterialPageRoute<Animal>(
         builder: (_) => BlocProvider.value(
@@ -628,6 +648,17 @@ class _AnimalListViewState extends State<_AnimalListView> {
 
     return Column(
       children: <Widget>[
+        BlocBuilder<SubscriptionCubit, SubscriptionState>(
+          builder: (BuildContext context, SubscriptionState subscriptionState) {
+            if (!subscriptionState.showQuotaBanner) {
+              return const SizedBox.shrink();
+            }
+            return SubscriptionQuotaBanner(
+              state: subscriptionState,
+              onAction: () => context.push('/settings/account'),
+            );
+          },
+        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: TextField(
@@ -664,19 +695,32 @@ class _AnimalListViewState extends State<_AnimalListView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AnimalCubit, AnimalState>(
-      listenWhen: (AnimalState previous, AnimalState current) =>
-          previous.filters.searchTerm != current.filters.searchTerm,
-      listener: (BuildContext context, AnimalState state) {
-        if (_searchController.text != state.filters.searchTerm) {
-          _searchController.value = TextEditingValue(
-            text: state.filters.searchTerm,
-            selection: TextSelection.collapsed(
-              offset: state.filters.searchTerm.length,
-            ),
-          );
-        }
-      },
+    return MultiBlocListener(
+      listeners: <BlocListener<AnimalCubit, AnimalState>>[
+        BlocListener<AnimalCubit, AnimalState>(
+          listenWhen: (AnimalState previous, AnimalState current) =>
+              previous.filters.searchTerm != current.filters.searchTerm,
+          listener: (BuildContext context, AnimalState state) {
+            if (_searchController.text != state.filters.searchTerm) {
+              _searchController.value = TextEditingValue(
+                text: state.filters.searchTerm,
+                selection: TextSelection.collapsed(
+                  offset: state.filters.searchTerm.length,
+                ),
+              );
+            }
+          },
+        ),
+        BlocListener<AnimalCubit, AnimalState>(
+          listenWhen: (AnimalState previous, AnimalState current) =>
+              previous.allAnimals.length != current.allAnimals.length,
+          listener: (BuildContext context, AnimalState state) {
+            context.read<SubscriptionCubit>().reportUsage(
+                  breeders: state.allAnimals.length,
+                );
+          },
+        ),
+      ],
       child: BlocBuilder<AnimalCubit, AnimalState>(
         builder: (BuildContext context, AnimalState state) {
           final List<Animal> currentAnimals = state.animals;

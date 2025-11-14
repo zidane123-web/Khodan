@@ -121,6 +121,16 @@ class _SettingsView extends StatelessWidget {
                     ),
                     const Divider(height: 1),
                     ListTile(
+                      leading: const Icon(Icons.account_circle_outlined),
+                      title: const Text('Mon compte'),
+                      subtitle: const Text('Plan, membres et factures'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        context.push(const SettingsAccountRoute().location);
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
                       leading: const Icon(Icons.pets_outlined),
                       title: Text(l10n.settingsSpeciesTitle),
                       subtitle: Text(l10n.settingsSpeciesSubtitle),

@@ -33,6 +33,7 @@ import '../../features/cage_cards/presentation/screens/cage_cards_page.dart';
 import '../../features/sales/presentation/screens/marketplace_page.dart';
 import '../../features/sales/presentation/screens/transfert_page.dart';
 import '../../features/sales/presentation/screens/ventes_page.dart';
+import '../../features/account/presentation/pages/mon_compte_page.dart';
 import '../../data/models/animal.dart';
 import '../../l10n/app_localizations.dart';
 import '../core/widgets/khodan_placeholder_screen.dart';
@@ -305,6 +306,11 @@ class KhodanRouter {
                             const SettingsProfileScreen(),
                       ),
                       GoRoute(
+                        path: 'account',
+                        builder: (BuildContext context, GoRouterState state) =>
+                            const MonComptePage(),
+                      ),
+                      GoRoute(
                         path: 'support/knowledge',
                         builder: (BuildContext context, GoRouterState state) =>
                             const SettingsKnowledgeBaseScreen(),
@@ -488,6 +494,10 @@ class SettingsPersonalizationRoute extends KhodanRoute {
 
 class SettingsProfileRoute extends KhodanRoute {
   const SettingsProfileRoute() : super('/settings/profile');
+}
+
+class SettingsAccountRoute extends KhodanRoute {
+  const SettingsAccountRoute() : super('/settings/account');
 }
 
 class SettingsKnowledgeBaseRoute extends KhodanRoute {
