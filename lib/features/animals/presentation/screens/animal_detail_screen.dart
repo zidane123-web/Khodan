@@ -59,12 +59,12 @@ class _AnimalDetailView extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: const Text('Depuis la galerie'),
-                onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+                onTap: () => Navigator.of(context).maybePop(ImageSource.gallery),
               ),
               ListTile(
                 leading: const Icon(Icons.camera_alt),
                 title: const Text('Prendre une photo'),
-                onTap: () => Navigator.of(context).pop(ImageSource.camera),
+                onTap: () => Navigator.of(context).maybePop(ImageSource.camera),
               ),
             ],
           ),
@@ -77,8 +77,33 @@ class _AnimalDetailView extends StatelessWidget {
     }
 
     final ImagePicker picker = ImagePicker();
-    final XFile? picked = await picker.pickImage(source: source);
+    XFile? picked;
+    try {
+      picked = await picker.pickImage(source: source);
+      if (!context.mounted) {
+        return;
+      }
+    } on PlatformException catch (error) {
+      if (context.mounted) {
+        _showPhotoFeedback(
+          context,
+          'Impossible d\'ouvrir l\'appareil : ${error.message ?? ''}'.trim(),
+          isError: true,
+        );
+      }
+      return;
+    } catch (error) {
+      if (context.mounted) {
+        _showPhotoFeedback(
+          context,
+          'Sélection interrompue : ${error.toString()}',
+          isError: true,
+        );
+      }
+      return;
+    }
     if (picked == null || !context.mounted) {
+      _showPhotoFeedback(context, 'Aucune image sélectionnée.');
       return;
     }
 
@@ -112,8 +137,27 @@ class _AnimalDetailView extends StatelessWidget {
           ),
         ],
       );
-    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+    } on PlatformException catch (error) {
       cropped = null;
+      if (context.mounted) {
+        _showPhotoFeedback(
+          context,
+          'Recadrage interrompu : ${error.message ?? ''}'.trim(),
+          isError: true,
+        );
+      }
+    } catch (error) {
+      cropped = null;
+      if (context.mounted) {
+        _showPhotoFeedback(
+          context,
+          'Échec du recadrage : ${error.toString()}',
+          isError: true,
+        );
+      }
     }
 
     final String targetPath = cropped?.path ?? picked.path;
@@ -121,7 +165,19 @@ class _AnimalDetailView extends StatelessWidget {
       return;
     }
     final AnimalDetailCubit cubit = context.read<AnimalDetailCubit>();
-    await cubit.uploadPhoto(targetPath);
+    try {
+      await cubit.uploadPhoto(targetPath);
+      if (!context.mounted) {
+        return;
+      }
+      _showPhotoFeedback(context, 'Photo ajoutée.');
+    } catch (error) {
+      _showPhotoFeedback(
+        context,
+        'Échec de l\'envoi de la photo : ${error.toString()}',
+        isError: true,
+      );
+    }
 
     if (cropped != null && cropped.path != picked.path) {
       final File original = File(picked.path);
@@ -144,11 +200,11 @@ class _AnimalDetailView extends StatelessWidget {
           ),
           actions: <Widget>[
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => Navigator.of(context).maybePop(false),
               child: const Text('Annuler'),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => Navigator.of(context).maybePop(true),
               child: const Text('Supprimer'),
             ),
           ],
@@ -159,6 +215,25 @@ class _AnimalDetailView extends StatelessWidget {
     if (confirmed == true && context.mounted) {
       await context.read<AnimalDetailCubit>().removeMedia(media);
     }
+  }
+
+  void _showPhotoFeedback(
+    BuildContext context,
+    String message, {
+    bool isError = false,
+  }) {
+    if (!context.mounted) {
+      return;
+    }
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: isError ? Theme.of(context).colorScheme.error : null,
+        ),
+      );
   }
 
   void _showQrCode(BuildContext context, Animal animal) {

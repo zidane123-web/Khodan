@@ -17,11 +17,13 @@ class AddEventScreen extends StatefulWidget {
   const AddEventScreen({
     required this.animals,
     this.category, // 'health' | 'other' | null
+    this.initialEventType,
     super.key,
   });
 
   final List<Animal> animals;
   final String? category;
+  final String? initialEventType;
 
   @override
   State<AddEventScreen> createState() => _AddEventScreenState();
@@ -110,6 +112,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
   void initState() {
     super.initState();
     _eventRepository = context.read<EventRepository>();
+    _eventType = widget.initialEventType;
     if (widget.category == 'health' && _eventType == null) {
       _eventType = 'vaccination';
     } else if (widget.category == 'other' && _eventType == null) {

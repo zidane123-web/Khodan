@@ -1,4 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:khodan/data/local/local_data_sources.dart';
+import 'package:khodan/data/models/animal.dart';
+import 'package:khodan/data/repositories/animal_repository.dart';
+import 'package:khodan/data/repositories/breeding_repository.dart';
+import 'package:khodan/features/animals/presentation/cubit/animal_cubit.dart';
+import 'package:khodan/features/animals/presentation/screens/animal_form_screen.dart';
+import 'package:khodan/features/events/presentation/cubit/breeding_cubit.dart';
+import 'package:khodan/features/events/presentation/screens/add_breeding_record_screen.dart';
+import 'package:khodan/features/events/presentation/screens/add_event_screen.dart';
+import 'package:khodan/features/litters/presentation/screens/litters_and_hutches_screen.dart';
+import 'package:khodan/features/planning/presentation/screens/planning_screen.dart';
 
 /// Écran principal du tableau de bord Khodan.
 ///
@@ -147,8 +162,8 @@ class _QuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SliverGridDelegateWithFixedCrossAxisCount gridDelegate =
-        isWide ? _desktopDelegate : _mobileDelegate;
+
+    final List<_DashboardAction> actions = _DashboardMockData.quickActions;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,36 +176,54 @@ class _QuickActions extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: gridDelegate,
-          itemCount: _DashboardMockData.quickActions.length,
-          itemBuilder: (BuildContext context, int index) {
-            final _DashboardAction action =
-                _DashboardMockData.quickActions[index];
-            return _QuickActionButton(action: action);
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double availableWidth = constraints.maxWidth;
+            if (availableWidth < 360) {
+              final double itemWidth =
+                  ((availableWidth * 0.9).clamp(220, 320)).toDouble();
+              return SizedBox(
+                height: 140,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: actions.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (BuildContext context, int index) {
+                    return SizedBox(
+                      width: itemWidth,
+                      child: _QuickActionButton(action: actions[index]),
+                    );
+                  },
+                ),
+              );
+            }
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: actions
+                  .map(
+                    (_DashboardAction action) => SizedBox(
+                      width: _computeButtonWidth(availableWidth),
+                      child: _QuickActionButton(action: action),
+                    ),
+                  )
+                  .toList(),
+            );
           },
         ),
       ],
     );
   }
 
-  static const SliverGridDelegateWithFixedCrossAxisCount _mobileDelegate =
-      SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: 2,
-    mainAxisSpacing: 12,
-    crossAxisSpacing: 12,
-    childAspectRatio: 1.8,
-  );
-
-  static const SliverGridDelegateWithFixedCrossAxisCount _desktopDelegate =
-      SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: 4,
-    mainAxisSpacing: 12,
-    crossAxisSpacing: 12,
-    childAspectRatio: 2.2,
-  );
+  double _computeButtonWidth(double maxWidth) {
+    if (maxWidth >= 1080) {
+      return (((maxWidth - 36) / 4).clamp(220, 320)).toDouble();
+    }
+    if (maxWidth >= 760) {
+      return (((maxWidth - 24) / 3).clamp(220, 320)).toDouble();
+    }
+    return (((maxWidth - 12) / 2).clamp(200, maxWidth)).toDouble();
+  }
 }
 
 class _QuickActionButton extends StatelessWidget {
@@ -203,11 +236,12 @@ class _QuickActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
+      key: Key(action.semanticKey),
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         alignment: Alignment.centerLeft,
       ),
-      onPressed: action.onTap,
+      onPressed: () => action.onTap(context),
       icon: Icon(action.icon),
       label: Text(action.label),
     );
@@ -375,7 +409,7 @@ class _PlanningSection extends StatelessWidget {
             Align(
               alignment: isWide ? Alignment.centerLeft : Alignment.center,
               child: OutlinedButton(
-                onPressed: onOpenPlanning,
+                onPressed: () => DashboardQuickActions.openPlanningTasks(context),
                 child: const Text('Voir tout le planning'),
               ),
             ),
@@ -410,16 +444,20 @@ class PlanningItem {
   final String label;
 }
 
+typedef _DashboardActionCallback = Future<void> Function(BuildContext context);
+
 class _DashboardAction {
   const _DashboardAction({
     required this.label,
     required this.icon,
     required this.onTap,
+    required this.semanticKey,
   });
 
   final String label;
   final IconData icon;
-  final VoidCallback onTap;
+  final _DashboardActionCallback onTap;
+  final String semanticKey;
 }
 
 class _DashboardMockData {
@@ -427,22 +465,26 @@ class _DashboardMockData {
     _DashboardAction(
       label: 'Saillie',
       icon: Icons.favorite,
-      onTap: onCreateBreeding,
+      semanticKey: 'dashboard-action-saillie',
+      onTap: DashboardQuickActions.addBreeding,
     ),
     _DashboardAction(
       label: 'Mise bas',
       icon: Icons.cruelty_free,
-      onTap: onCreateKindling,
+      semanticKey: 'dashboard-action-mise-bas',
+      onTap: DashboardQuickActions.openLitters,
     ),
     _DashboardAction(
       label: 'Pesée',
       icon: Icons.monitor_weight,
-      onTap: onCreateWeighing,
+      semanticKey: 'dashboard-action-pesee',
+      onTap: DashboardQuickActions.recordWeight,
     ),
     _DashboardAction(
       label: 'Abattage',
       icon: Icons.restaurant,
-      onTap: onCreateHarvest,
+      semanticKey: 'dashboard-action-abattage',
+      onTap: DashboardQuickActions.recordLoss,
     ),
   ];
 
@@ -489,41 +531,144 @@ class _DashboardMockData {
   ];
 }
 
-// Les fonctions suivantes sont des stubs destinés à être branchés sur Supabase.
-void onCreateBreeding() {
-  debugPrint('TODO: implémenter la création de saillie.');
-}
+class DashboardQuickActions {
+  DashboardQuickActions._();
 
-void onCreateKindling() {
-  debugPrint('TODO: implémenter la déclaration de mise bas.');
-}
+  static Future<void> addBreeding(BuildContext context) {
+    return _openBreedingForm(context);
+  }
 
-void onCreateWeighing() {
-  debugPrint('TODO: implémenter la saisie de pesée.');
-}
+  static Future<void> openLitters(BuildContext context) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<Widget>(
+        builder: (BuildContext _) => const LittersAndHutchesScreen(),
+      ),
+    );
+  }
 
-void onCreateHarvest() {
-  debugPrint('TODO: implémenter l\'enregistrement d\'abattage.');
-}
+  static Future<void> recordWeight(BuildContext context) {
+    return _openEvent(
+      context,
+      category: 'health',
+      initialEventType: 'weight',
+      emptyMessage: 'Ajoutez vos animaux pour enregistrer une pesée.',
+    );
+  }
 
-void onQuickAddBreeder() {
-  debugPrint('TODO: implémenter l\'ajout d\'un éleveur.');
-}
+  static Future<void> recordLoss(BuildContext context) {
+    return _openEvent(
+      context,
+      category: 'other',
+      initialEventType: 'death',
+      emptyMessage: 'Ajoutez vos animaux pour enregistrer une perte.',
+    );
+  }
 
-void onQuickAddBreeding() {
-  debugPrint('TODO: implémenter la planification d\'une saillie.');
-}
+  static Future<void> addBreeder(BuildContext context) {
+    return _openAnimalForm(context);
+  }
 
-void onQuickAddTask() {
-  debugPrint('TODO: implémenter la création d\'une tâche.');
-}
+  static Future<void> openPlanningTasks(BuildContext context) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<Widget>(
+        builder: (BuildContext _) => const PlanningScreen(),
+      ),
+    );
+  }
 
-void onQuickAddLoss() {
-  debugPrint('TODO: implémenter l\'enregistrement d\'une perte.');
-}
+  static Future<void> _openAnimalForm(BuildContext context) async {
+    final AnimalRepository repository = context.read<AnimalRepository>();
+    final LocalAnimalDataSource? local = _maybeRead<LocalAnimalDataSource>(context);
+    await Navigator.of(context).push(
+      MaterialPageRoute<Widget>(
+        builder: (BuildContext _) => BlocProvider<AnimalCubit>(
+          create: (BuildContext __) => AnimalCubit(
+            repository,
+            localDataSource: local,
+          )..fetchAnimals(),
+          child: const AnimalFormScreen(),
+        ),
+      ),
+    );
+  }
 
-void onOpenPlanning() {
-  debugPrint('TODO: ouvrir l\'agenda complet.');
+  static Future<void> _openBreedingForm(BuildContext context) async {
+    final BreedingRepository breedingRepository = context.read<BreedingRepository>();
+    final AnimalRepository animalRepository = context.read<AnimalRepository>();
+    await Navigator.of(context).push(
+      MaterialPageRoute<Widget>(
+        builder: (BuildContext _) => BlocProvider<BreedingCubit>(
+          create: (BuildContext __) =>
+              BreedingCubit(breedingRepository, animalRepository)..loadData(),
+          child: const AddBreedingRecordScreen(),
+        ),
+      ),
+    );
+  }
+
+  static Future<void> _openEvent(
+    BuildContext context, {
+    required String category,
+    required String initialEventType,
+    required String emptyMessage,
+  }) async {
+    final List<Animal> animals = await _loadAnimals(context);
+    if (!context.mounted) {
+      return;
+    }
+    if (animals.isEmpty) {
+      _showSnack(context, emptyMessage);
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute<Widget>(
+        builder: (BuildContext _) => AddEventScreen(
+          animals: animals,
+          category: category,
+          initialEventType: initialEventType,
+        ),
+      ),
+    );
+  }
+
+  static Future<List<Animal>> _loadAnimals(BuildContext context) async {
+    try {
+      return await context.read<AnimalRepository>().fetchAnimals();
+    } catch (error) {
+      if (context.mounted) {
+        _showSnack(
+          context,
+          'Impossible de charger les animaux. Veuillez réessayer.',
+          isError: true,
+        );
+      }
+      return const <Animal>[];
+    }
+  }
+
+  static T? _maybeRead<T>(BuildContext context) {
+    try {
+      return context.read<T>();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static void _showSnack(
+    BuildContext context,
+    String message, {
+    bool isError = false,
+  }) {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: isError ? Theme.of(context).colorScheme.error : null,
+        ),
+      );
+  }
 }
 
 void _showQuickAddMenu(BuildContext context) {
@@ -537,33 +682,45 @@ void _showQuickAddMenu(BuildContext context) {
             ListTile(
               leading: const Icon(Icons.person_add),
               title: const Text('Ajouter un éleveur'),
-              onTap: () {
-                Navigator.of(context).pop();
-                onQuickAddBreeder();
+              onTap: () async {
+                await Navigator.of(context).maybePop();
+                if (!context.mounted) {
+                  return;
+                }
+                await DashboardQuickActions.addBreeder(context);
               },
             ),
             ListTile(
               leading: const Icon(Icons.favorite),
               title: const Text('Planifier une saillie'),
-              onTap: () {
-                Navigator.of(context).pop();
-                onQuickAddBreeding();
+              onTap: () async {
+                await Navigator.of(context).maybePop();
+                if (!context.mounted) {
+                  return;
+                }
+                await DashboardQuickActions.addBreeding(context);
               },
             ),
             ListTile(
               leading: const Icon(Icons.check_circle_outline),
               title: const Text('Créer une tâche'),
-              onTap: () {
-                Navigator.of(context).pop();
-                onQuickAddTask();
+              onTap: () async {
+                await Navigator.of(context).maybePop();
+                if (!context.mounted) {
+                  return;
+                }
+                await DashboardQuickActions.openPlanningTasks(context);
               },
             ),
             ListTile(
               leading: const Icon(Icons.warning),
               title: const Text('Enregistrer une perte'),
-              onTap: () {
-                Navigator.of(context).pop();
-                onQuickAddLoss();
+              onTap: () async {
+                await Navigator.of(context).maybePop();
+                if (!context.mounted) {
+                  return;
+                }
+                await DashboardQuickActions.recordLoss(context);
               },
             ),
             const SizedBox(height: 8),

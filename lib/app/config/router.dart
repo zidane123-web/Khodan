@@ -245,12 +245,15 @@ class KhodanRouter {
                           final Object? extra = state.extra;
                           List<Animal>? animals;
                           String? category;
+                          String? initialEventType;
 
                           if (extra is Map) {
                             final Object? list = extra['animals'];
                             final Object? cat = extra['category'];
+                            final Object? eventType = extra['initialEventType'];
                             if (list is List<Animal>) animals = list;
                             if (cat is String) category = cat;
+                            if (eventType is String) initialEventType = eventType;
                           }
 
                           // Try to fallback to breeding cubit animals if not provided
@@ -267,6 +270,7 @@ class KhodanRouter {
                           return AddEventScreen(
                             animals: animals,
                             category: category,
+                            initialEventType: initialEventType,
                           );
                         },
                       ),

@@ -32,20 +32,25 @@ class AnimalPhotoGallery extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    'Galerie photo',
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Ajouter une photo',
-                  onPressed: onAddPhoto,
-                  icon: const Icon(Icons.add_a_photo_outlined),
-                ),
-              ],
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                return Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    Text(
+                      'Galerie photo',
+                      style: theme.textTheme.titleLarge,
+                    ),
+                    FilledButton.icon(
+                      onPressed: onAddPhoto,
+                      icon: const Icon(Icons.add_a_photo_outlined),
+                      label: const Text('Ajouter une photo'),
+                    ),
+                  ],
+                );
+              },
             ),
             if (isUploading) ...<Widget>[
               const SizedBox(height: 4),
