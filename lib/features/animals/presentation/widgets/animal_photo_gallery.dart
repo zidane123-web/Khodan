@@ -34,20 +34,30 @@ class AnimalPhotoGallery extends StatelessWidget {
           children: <Widget>[
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
-                return Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  runSpacing: 8,
+                final bool stackVertically = constraints.maxWidth < 420;
+                final Widget actionButton = FilledButton.icon(
+                  onPressed: isUploading ? null : onAddPhoto,
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  label: const Text('Ajouter une photo'),
+                );
+                final Widget title = Text(
+                  'Galerie photo',
+                  style: theme.textTheme.titleLarge,
+                );
+                if (stackVertically) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      title,
+                      const SizedBox(height: 8),
+                      actionButton,
+                    ],
+                  );
+                }
+                return Row(
                   children: <Widget>[
-                    Text(
-                      'Galerie photo',
-                      style: theme.textTheme.titleLarge,
-                    ),
-                    FilledButton.icon(
-                      onPressed: onAddPhoto,
-                      icon: const Icon(Icons.add_a_photo_outlined),
-                      label: const Text('Ajouter une photo'),
-                    ),
+                    Expanded(child: title),
+                    actionButton,
                   ],
                 );
               },
@@ -55,13 +65,18 @@ class AnimalPhotoGallery extends StatelessWidget {
             if (isUploading) ...<Widget>[
               const SizedBox(height: 4),
               const LinearProgressIndicator(),
+              const SizedBox(height: 8),
+              Text(
+                'Téléversement en cours...',
+                style: theme.textTheme.bodySmall,
+              ),
               const SizedBox(height: 12),
             ] else if (isLoading) ...<Widget>[
               const LinearProgressIndicator(),
               const SizedBox(height: 12),
             ] else
               const SizedBox(height: 12),
-            if (!_hasPhotos && !isLoading)
+            if (!_hasPhotos && !isLoading && !isUploading)
               Text(
                 'Ajoutez vos premières images pour suivre l’évolution de cet animal.',
                 style: theme.textTheme.bodyMedium,

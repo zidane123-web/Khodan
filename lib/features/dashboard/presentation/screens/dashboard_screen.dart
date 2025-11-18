@@ -7,9 +7,11 @@ import 'package:khodan/data/local/local_data_sources.dart';
 import 'package:khodan/data/models/animal.dart';
 import 'package:khodan/data/repositories/animal_repository.dart';
 import 'package:khodan/data/repositories/breeding_repository.dart';
+import 'package:khodan/data/repositories/event_repository.dart';
 import 'package:khodan/features/animals/presentation/cubit/animal_cubit.dart';
 import 'package:khodan/features/animals/presentation/screens/animal_form_screen.dart';
 import 'package:khodan/features/events/presentation/cubit/breeding_cubit.dart';
+import 'package:khodan/features/events/presentation/cubit/events_cubit.dart';
 import 'package:khodan/features/events/presentation/screens/add_breeding_record_screen.dart';
 import 'package:khodan/features/events/presentation/screens/add_event_screen.dart';
 import 'package:khodan/features/litters/presentation/screens/litters_and_hutches_screen.dart';
@@ -620,12 +622,27 @@ class DashboardQuickActions {
       _showSnack(context, emptyMessage);
       return;
     }
+    EventRepository repository;
+    try {
+      repository = context.read<EventRepository>();
+    } catch (_) {
+      _showSnack(
+        context,
+        'Impossible de trouver le module d\'événements.',
+        isError: true,
+      );
+      return;
+    }
     await Navigator.of(context).push(
       MaterialPageRoute<Widget>(
-        builder: (BuildContext _) => AddEventScreen(
-          animals: animals,
-          category: category,
-          initialEventType: initialEventType,
+        builder: (BuildContext _) => BlocProvider<EventsCubit>(
+          create: (BuildContext __) =>
+              EventsCubit(repository)..loadEvents(),
+          child: AddEventScreen(
+            animals: animals,
+            category: category,
+            initialEventType: initialEventType,
+          ),
         ),
       ),
     );
@@ -722,14 +739,6 @@ void _showQuickAddMenu(BuildContext context) {
                 }
                 await DashboardQuickActions.recordLoss(context);
               },
-            ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: Text(
-                'Plus d\'actions bientot.',
-                style: TextStyle(color: Colors.grey),
-              ),
             ),
           ],
         ),
