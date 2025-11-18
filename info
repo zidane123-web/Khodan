@@ -79,3 +79,37 @@ flutter run -d chrome ^
   --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtdGt2YWxmaGJoaHFjend2dG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMjc3MjAsImV4cCI6MjA3MzcwMzcyMH0.iCunOEha0B-Lxz4y2I94tzqNs3UqlQdNMUa7mM7fsHE
 
   flutter run -d chrome --dart-define=SUPABASE_URL=https://rmtkvalfhbhhqczwvtoz.supabase.co --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtdGt2YWxmaGJoaHFjend2dG96Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMjc3MjAsImV4cCI6MjA3MzcwMzcyMH0.iCunOEha0B-Lxz4y2I94tzqNs3UqlQdNMUa7mM7fsHE
+
+
+   
+   
+   
+   
+   
+   
+Afaire .
+   Manual Follow-ups
+
+  - Apply supabase/migrations/20251115120000_subscriptions_and_members.sql via Supabase SQL Editor if the  
+    subscription_quota_banner_test.dart
+
+
+  - Apply supabase/migrations/20251115120000_subscriptions_and_members.sql via Supabase SQL Editor if the  
+    CLI keeps failing, then record the execution in docs/supabase-execution-guide.md.
+  - Hook the manual payment notifications (NotificationServiceRegistry) to your real e-mail/SMS providers  
+    and re-validate the new RLS policies with a service_role session.
+
+  - Apply supabase/migrations/20251115120000_subscriptions_and_members.sql via Supabase SQL Editor if the  
+    CLI keeps failing, then record the execution in docs/supabase-execution-guide.md.
+
+  - Apply supabase/migrations/20251115120000_subscriptions_and_members.sql via Supabase SQL Editor if the  
+
+
+  - Apply supabase/migrations/20251115120000_subscriptions_and_members.sql via Supabase SQL Editor if the  
+    CLI keeps failing, then record the execution in docs/supabase-execution-guide.md.
+  - Hook the manual payment notifications (NotificationServiceRegistry) to your real e-mail/SMS providers  
+    and re-validate the new RLS policies with a service_role session.
+  - Re-run the full flutter test suite once the pre-existing failing tests on this branch are addressed, so    we can have an entirely green run.
+
+Token usage: total=442 162 input=353 678 (+ 17 810 432 cached) output=88 484 (reasoning 51 136)
+To continue this session, run codex resume 019a82f0-6948-7d21-8d82-160e70a9b1ab
