@@ -9,14 +9,14 @@ import '../../core/constants.dart';
 
 class BootstrapResult {
   const BootstrapResult({
-    required this.supabaseClient,
-    required this.syncCoordinator,
+    this.supabaseClient,
+    this.syncCoordinator,
     required this.notificationService,
     required this.importExportService,
   });
 
-  final SupabaseClient supabaseClient;
-  final SyncCoordinator syncCoordinator;
+  final SupabaseClient? supabaseClient;
+  final SyncCoordinator? syncCoordinator;
   final NotificationService notificationService;
   final ImportExportService importExportService;
 }
@@ -40,10 +40,9 @@ class AppBootstrap {
     }
 
     WidgetsFlutterBinding.ensureInitialized();
-    await _initializeSupabase();
-
-    final SupabaseClient client = Supabase.instance.client;
-    final SyncCoordinator syncCoordinator = SyncCoordinator(client: client);
+    final SupabaseClient? client = await _initializeSupabase();
+    final SyncCoordinator? syncCoordinator =
+        client == null ? null : SyncCoordinator(client: client);
     final NotificationService notificationService = NotificationService();
 
     await _initializeFirebase(notificationService);
@@ -59,19 +58,20 @@ class AppBootstrap {
     return _cached!;
   }
 
-  static Future<void> _initializeSupabase() async {
+  static Future<SupabaseClient?> _initializeSupabase() async {
     final String supabaseUrl = AppConstants.supabaseUrl;
     final String supabaseAnonKey = AppConstants.supabaseAnonKey;
 
     if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
       debugPrint('Supabase credentials are missing. Skipping initialization.');
-      return;
+      return null;
     }
 
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
     );
+    return Supabase.instance.client;
   }
 
   static Future<void> _initializeFirebase(NotificationService notificationService) async {

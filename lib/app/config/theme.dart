@@ -81,11 +81,11 @@ class KhodanRadius {
 }
 
 ThemeData buildKhodanTheme() {
-  const Color primary = Color(0xFF1B4D8C);
-  const Color secondary = Color(0xFF47A36D);
-  const Color tertiary = Color(0xFFFFB347);
-  const Color danger = Color(0xFFD96B5F);
-  const Color surface = Color(0xFFF5F7FA);
+  const Color primary = Color(0xFF1B5B3A); // Vert forêt
+  const Color secondary = Color(0xFFFF7A2E); // Orange carotte
+  const Color tertiary = Color(0xFF2D7CBF); // Bleu action
+  const Color danger = Color(0xFFD64545);
+  const Color surface = Color(0xFFF5F1E6); // Beige clair
   const Color surfaceTint = Colors.white;
 
   final ColorScheme colorScheme = ColorScheme.fromSeed(
@@ -99,8 +99,8 @@ ThemeData buildKhodanTheme() {
     surface: surface,
     onPrimary: Colors.white,
     onSecondary: Colors.white,
-    onTertiary: const Color(0xFF3D2A0E),
-    onSurface: const Color(0xFF101828),
+    onTertiary: Colors.white,
+    onSurface: const Color(0xFF1C2618),
     onError: Colors.white,
   );
 
@@ -236,11 +236,11 @@ ThemeData buildKhodanTheme() {
     ),
     extensions: const <ThemeExtension<dynamic>>[
       KhodanAppColors(
-        success: Color(0xFF47A36D),
+        success: Color(0xFF2E8B57),
         onSuccess: Colors.white,
-        warning: Color(0xFFFFB347),
-        onWarning: Color(0xFF3D2A0E),
-        info: Color(0xFF4C7CD5),
+        warning: Color(0xFFFFA63E),
+        onWarning: Color(0xFF3A2507),
+        info: Color(0xFF2D7CBF),
         onInfo: Colors.white,
       ),
     ],
