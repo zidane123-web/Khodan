@@ -26,7 +26,7 @@ class AnimalListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<AnimalCubit>(
       create: (BuildContext context) =>
-          AnimalCubit(InMemoryAnimalRepository())..fetchAnimals(),
+          AnimalCubit(SupabaseAnimalRepository())..fetchAnimals(),
       child: _AnimalListView(quickFilter: quickFilter),
     );
   }
@@ -55,8 +55,8 @@ class _AnimalListViewState extends State<_AnimalListView> {
     super.initState();
     _searchController = TextEditingController();
     _searchController.addListener(_onSearchChanged);
-    _eventRepository = InMemoryEventRepository();
-    _breedingRepository = InMemoryBreedingRepository();
+    _eventRepository = SupabaseEventRepository();
+    _breedingRepository = SupabaseBreedingRepository();
     _maybeApplyQuickFilter(widget.quickFilter);
   }
 

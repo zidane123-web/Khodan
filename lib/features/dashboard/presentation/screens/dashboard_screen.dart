@@ -6,6 +6,7 @@ import '../../../../data/repositories/animal_repository.dart';
 import '../../../../data/repositories/breeding_repository.dart';
 import '../../../../data/repositories/event_repository.dart';
 import '../../../animals/presentation/models/animal_quick_filter.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/dashboard_cubit.dart';
 import '../widgets/alerts_list.dart';
 import '../widgets/breeding_performance_card.dart';
@@ -21,17 +22,52 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<DashboardCubit>(
       create: (BuildContext context) => DashboardCubit(
-        InMemoryAnimalRepository(),
-        InMemoryBreedingRepository(),
-        InMemoryEventRepository(),
+        SupabaseAnimalRepository(),
+        SupabaseBreedingRepository(),
+        SupabaseEventRepository(),
       )..loadDashboard(),
       child: const _DashboardView(),
     );
   }
 }
 
-class _DashboardView extends StatelessWidget {
+class _DashboardView extends StatefulWidget {
   const _DashboardView();
+
+  @override
+  State<_DashboardView> createState() => _DashboardViewState();
+}
+
+class _DashboardViewState extends State<_DashboardView> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Refresh when app comes back to foreground
+    if (state == AppLifecycleState.resumed) {
+      context.read<DashboardCubit>().loadDashboard();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh when returning to this screen
+    final ModalRoute<dynamic>? route = ModalRoute.of(context);
+    if (route != null && route.isCurrent) {
+      context.read<DashboardCubit>().loadDashboard();
+    }
+  }
 
   Future<void> _openCustomization(
     BuildContext context,
@@ -123,6 +159,16 @@ class _DashboardView extends StatelessWidget {
                 icon: const Icon(Icons.notifications_outlined),
                 onPressed: () {},
               ),
+              IconButton(
+                icon: const Icon(Icons.logout),
+                tooltip: 'Se déconnecter',
+                onPressed: () async {
+                  await context.read<AuthCubit>().signOut();
+                  if (context.mounted) {
+                    context.go(const LoginRoute().location);
+                  }
+                },
+              ),
             ],
           ),
           body: body,
@@ -166,6 +212,7 @@ class _DashboardKpiGrid extends StatelessWidget {
           value: presentation.value,
           subtitle: presentation.subtitle,
           icon: presentation.icon,
+          color: presentation.color,
           onTap: filter == null
               ? null
               : () {
@@ -628,6 +675,7 @@ class _KpiPresentation {
     required this.icon,
     this.subtitle,
     this.description,
+    this.color,
   });
 
   final String title;
@@ -635,6 +683,7 @@ class _KpiPresentation {
   final IconData icon;
   final String? subtitle;
   final String? description;
+  final Color? color;
 }
 
 Map<DashboardKpiType, _KpiPresentation> _buildAllKpiPresentations(
@@ -661,6 +710,12 @@ _KpiPresentation _buildKpiPresentation(
   DashboardState state,
   int plannedWithinWeek,
 ) {
+  // Define colors based on a visual language
+  const Color colorAnimals = Color(0xFF1B5B3A); // Forest Green
+  const Color colorReproduction = Color(0xFFE04F5F); // Soft Red for love/repro
+  const Color colorProduction = Color(0xFF2D7CBF); // Blue for production/weaning
+  const Color colorAlert = Color(0xFFFF7A2E); // Orange for alerts/planned
+
   switch (type) {
     case DashboardKpiType.totalAnimals:
       final String subtitle = state.activeAnimals == state.totalAnimals
@@ -672,6 +727,7 @@ _KpiPresentation _buildKpiPresentation(
         subtitle: subtitle,
         description: 'Nombre total d’animaux enregistrés.',
         icon: Icons.pets,
+        color: colorAnimals,
       );
     case DashboardKpiType.activeAnimals:
       final int inactive = state.totalAnimals - state.activeAnimals;
@@ -686,6 +742,7 @@ _KpiPresentation _buildKpiPresentation(
         subtitle: subtitle,
         description: 'Animaux actuellement présents et actifs.',
         icon: Icons.pets_outlined,
+        color: colorAnimals,
       );
     case DashboardKpiType.gestatingDoes:
       final String subtitle = state.activeLitters > 0
@@ -697,6 +754,7 @@ _KpiPresentation _buildKpiPresentation(
         subtitle: subtitle,
         description: 'Femelles avec une gestation confirmée ou présumée.',
         icon: Icons.favorite_outline,
+        color: colorReproduction,
       );
     case DashboardKpiType.plannedBreedings:
       final String subtitle;
@@ -713,6 +771,7 @@ _KpiPresentation _buildKpiPresentation(
         subtitle: subtitle,
         description: 'Saillies programmées dans votre planning.',
         icon: Icons.event_available_outlined,
+        color: colorAlert,
       );
     case DashboardKpiType.activeLitters:
       final String subtitle = state.activeLitters == 0
@@ -724,6 +783,7 @@ _KpiPresentation _buildKpiPresentation(
         subtitle: subtitle,
         description: 'Portées encore en cours avant sevrage.',
         icon: Icons.home_outlined,
+        color: colorReproduction,
       );
     case DashboardKpiType.breedingSuccessRate:
       final String value = state.breedingSuccessRate == null
@@ -738,6 +798,7 @@ _KpiPresentation _buildKpiPresentation(
         subtitle: subtitle,
         description: 'Proportion de saillies confirmées gestantes.',
         icon: Icons.trending_up,
+        color: colorReproduction,
       );
     case DashboardKpiType.averageKitsBornAlive:
       final String subtitle = state.performance.totalLitters == 0
@@ -749,6 +810,7 @@ _KpiPresentation _buildKpiPresentation(
         subtitle: subtitle,
         description: 'Nombre moyen de lapereaux nés vivants par portée.',
         icon: Icons.child_care,
+        color: colorProduction,
       );
     case DashboardKpiType.averageKitsWeaned:
       final String subtitle = state.performance.totalLitters == 0
@@ -760,6 +822,7 @@ _KpiPresentation _buildKpiPresentation(
         subtitle: subtitle,
         description: 'Nombre moyen de lapereaux sevrés par portée.',
         icon: Icons.monitor_weight,
+        color: colorProduction,
       );
     case DashboardKpiType.totalKitsWeaned:
       final String subtitle = state.performance.totalLitters == 0
@@ -771,6 +834,7 @@ _KpiPresentation _buildKpiPresentation(
         subtitle: subtitle,
         description: 'Total de lapereaux sevrés sur la période.',
         icon: Icons.groups,
+        color: colorProduction,
       );
   }
 }

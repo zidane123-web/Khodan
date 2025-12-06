@@ -17,9 +17,9 @@ class EventsHubScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final BreedingRepository breedingRepository = InMemoryBreedingRepository();
-    final AnimalRepository animalRepository = InMemoryAnimalRepository();
-    final EventRepository eventRepository = InMemoryEventRepository();
+    final BreedingRepository breedingRepository = SupabaseBreedingRepository();
+    final AnimalRepository animalRepository = SupabaseAnimalRepository();
+    final EventRepository eventRepository = SupabaseEventRepository();
 
     return MultiBlocProvider(
       providers: <BlocProvider<dynamic>>[

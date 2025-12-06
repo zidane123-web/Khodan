@@ -73,6 +73,7 @@ class _MvpAnimalsScreenState extends State<MvpAnimalsScreen> {
       ),
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),

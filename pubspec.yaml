@@ -39,6 +39,7 @@ dependencies:
   printing: ^5.11.1 # <- AJOUTÉ ICI
   share_plus: ^9.0.0
   shared_preferences: ^2.3.2
+  uuid: ^4.5.2
 
 
 dev_dependencies:
