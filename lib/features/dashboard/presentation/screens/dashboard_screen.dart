@@ -156,10 +156,6 @@ class _DashboardViewState extends State<_DashboardView> with WidgetsBindingObser
                 onPressed: () => _openCustomization(context, state),
               ),
               IconButton(
-                icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {},
-              ),
-              IconButton(
                 icon: const Icon(Icons.logout),
                 tooltip: 'Se déconnecter',
                 onPressed: () async {
@@ -172,11 +168,6 @@ class _DashboardViewState extends State<_DashboardView> with WidgetsBindingObser
             ],
           ),
           body: body,
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => context.go('/events'),
-            icon: const Icon(Icons.add),
-            label: const Text('Nouvel événement'),
-          ),
         );
       },
     );

@@ -10,7 +10,7 @@ import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/events/presentation/screens/events_hub_screen.dart';
 import '../../features/animals/presentation/screens/animal_form_screen.dart';
 import '../../features/events/presentation/screens/breeding_form_screen.dart';
-import '../../features/field_mvp/presentation/screens/mvp_finances_screen.dart';
+import '../../features/finances/presentation/screens/finances_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
@@ -94,7 +94,7 @@ class KhodanRouter {
                     GoRoute(
                       path: const ReportsRoute().path,
                       builder: (BuildContext context, GoRouterState state) =>
-                          const MvpFinancesScreen(),
+                          const FinancesScreen(),
                     ),
                   ],
                 ),
