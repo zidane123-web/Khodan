@@ -67,9 +67,9 @@ class DashboardState extends Equatable {
       DashboardModuleType.calendar,
       DashboardModuleType.tasksToday,
       DashboardModuleType.tasksUpcoming,
-      DashboardModuleType.performance,
     ],
     this.hiddenModules = const <DashboardModuleType>{
+      DashboardModuleType.performance,
       DashboardModuleType.weightTracking,
       DashboardModuleType.healthAlerts,
       DashboardModuleType.feedInventory,
