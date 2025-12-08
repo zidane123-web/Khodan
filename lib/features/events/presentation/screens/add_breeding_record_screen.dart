@@ -88,7 +88,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
   List<Animal> get _bucks => _animals
       .where(
         (Animal animal) =>
-            animal.sex.toLowerCase().contains('mÃƒÂ¢') ||
+            animal.sex.toLowerCase().contains('mâ') ||
             animal.sex.toLowerCase().contains('mal'),
       )
       .toList();
@@ -455,7 +455,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
   Future<void> _submit() async {
     if (_selectedDoeId == null || _selectedBuckId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('SÃ©lectionnez une femelle et un mÃ¢le.')),
+        const SnackBar(content: Text('Sélectionnez une femelle et un mâle.')),
       );
 
       return;
@@ -761,8 +761,8 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
                           Expanded(
                             child: Text(
                               highRisk
-                                  ? 'Coefficient de consanguinitÃƒÂ© ÃƒÂ©levÃƒÂ© (${_pairingCoefficient!.toStringAsFixed(3)}). Ãƒâ€°vitez ce croisement ou surveillez la portÃƒÂ©e.'
-                                  : 'Coefficient de consanguinitÃƒÂ© estimÃƒÂ© : ${_pairingCoefficient!.toStringAsFixed(3)}.',
+                                  ? 'Coefficient de consanguinité élevé (${_pairingCoefficient!.toStringAsFixed(3)}). Évitez ce croisement ou surveillez la portée.'
+                                  : 'Coefficient de consanguinité estimé : ${_pairingCoefficient!.toStringAsFixed(3)}.',
 
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: highRisk
@@ -835,13 +835,13 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
               DropdownButtonFormField<String>(
                 value: _palpationResult,
 
-                decoration: const InputDecoration(labelText: 'RÃƒÂ©sultat'),
+                decoration: const InputDecoration(labelText: 'Résultat'),
 
                 items: const <DropdownMenuItem<String>>[
                   DropdownMenuItem<String>(
                     value: 'unknown',
 
-                    child: Text('Ãƒâ‚¬ confirmer'),
+                    child: Text('À confirmer'),
                   ),
 
                   DropdownMenuItem<String>(
@@ -888,7 +888,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
                 title: Text(
                   _kindlingDate != null
                       ? localizations.formatMediumDate(_kindlingDate!)
-                      : 'Date prÃƒÂ©vue : $plannedKindling',
+                      : 'Date prévue : $plannedKindling',
                 ),
 
                 leading: const Icon(Icons.nest_cam_wired_stand),
@@ -928,7 +928,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
                       keyboardType: TextInputType.number,
 
                       decoration: const InputDecoration(
-                        labelText: 'NÃƒÂ©s vivants',
+                        labelText: 'Nés vivants',
                       ),
                     ),
                   ),
@@ -942,7 +942,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
                       keyboardType: TextInputType.number,
 
                       decoration: const InputDecoration(
-                        labelText: 'NÃƒÂ©s morts',
+                        labelText: 'Nés morts',
                       ),
                     ),
                   ),
@@ -960,7 +960,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
                       keyboardType: TextInputType.number,
 
                       decoration: const InputDecoration(
-                        labelText: 'Lapereaux adoptÃƒÂ©s',
+                        labelText: 'Lapereaux adoptés',
                       ),
                     ),
                   ),
@@ -974,7 +974,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
                       keyboardType: TextInputType.number,
 
                       decoration: const InputDecoration(
-                        labelText: 'Lapereaux retirÃƒÂ©s',
+                        labelText: 'Lapereaux retirés',
                       ),
                     ),
                   ),
@@ -989,7 +989,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
                 title: Text(
                   _weaningDate != null
                       ? localizations.formatMediumDate(_weaningDate!)
-                      : 'Date prÃƒÂ©vue : $plannedWeaning',
+                      : 'Date prévue : $plannedWeaning',
                 ),
 
                 leading: const Icon(Icons.child_care_outlined),
@@ -1032,7 +1032,7 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
                       keyboardType: TextInputType.number,
 
                       decoration: const InputDecoration(
-                        labelText: 'Lapereaux sevrÃƒÂ©s',
+                        labelText: 'Lapereaux sevrés',
                       ),
                     ),
                   ),
@@ -1217,7 +1217,7 @@ class _BreedingErrorMessage extends StatelessWidget {
             if (onRetry != null) ...<Widget>[
               const SizedBox(height: 12),
 
-              FilledButton(onPressed: onRetry, child: const Text('RÃ©essayer')),
+              FilledButton(onPressed: onRetry, child: const Text('Réessayer')),
             ],
           ],
         ),
