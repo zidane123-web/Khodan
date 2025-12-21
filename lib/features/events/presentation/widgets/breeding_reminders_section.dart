@@ -88,6 +88,8 @@ class BreedingRemindersSection extends StatelessWidget {
     switch (type) {
       case BreedingTaskType.palpation:
         return Icons.monitor_heart;
+      case BreedingTaskType.nestBox:
+        return Icons.inventory_2_outlined;
       case BreedingTaskType.kindling:
         return Icons.nest_cam_wired_stand;
       case BreedingTaskType.weaning:
@@ -99,6 +101,8 @@ class BreedingRemindersSection extends StatelessWidget {
     switch (type) {
       case BreedingTaskType.palpation:
         return 'Palpation à planifier';
+      case BreedingTaskType.nestBox:
+        return 'Boîte à nid à installer';
       case BreedingTaskType.kindling:
         return 'Mise-bas à surveiller';
       case BreedingTaskType.weaning:

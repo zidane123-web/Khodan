@@ -176,6 +176,8 @@ class BreedingRecordCard extends StatelessWidget {
     switch (type) {
       case BreedingTaskType.palpation:
         return Icons.monitor_heart;
+      case BreedingTaskType.nestBox:
+        return Icons.inventory_2_outlined;
       case BreedingTaskType.kindling:
         return Icons.nest_cam_wired_stand;
       case BreedingTaskType.weaning:
@@ -187,6 +189,8 @@ class BreedingRecordCard extends StatelessWidget {
     switch (type) {
       case BreedingTaskType.palpation:
         return 'Palpation';
+      case BreedingTaskType.nestBox:
+        return 'Nid';
       case BreedingTaskType.kindling:
         return 'Mise-bas';
       case BreedingTaskType.weaning:

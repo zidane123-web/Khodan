@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum BreedingTaskType { palpation, kindling, weaning }
+enum BreedingTaskType { palpation, nestBox, kindling, weaning }
 
 class BreedingTask extends Equatable {
   const BreedingTask({
@@ -133,6 +133,10 @@ class BreedingRecord extends Equatable {
   DateTime get plannedWeaningDate =>
       (kindlingDate ?? plannedKindlingDate).add(const Duration(days: 28));
 
+  /// Date pour installer la boîte à nid (3 jours avant la mise bas prévue)
+  DateTime get plannedNestBoxDate =>
+      matingDate.add(const Duration(days: 28));
+
   List<BreedingTask> get tasks {
     final List<BreedingTask> tasks = <BreedingTask>[
       BreedingTask(
@@ -144,6 +148,14 @@ class BreedingRecord extends Equatable {
 
     if (palpationPositive != false) {
       tasks
+        ..add(
+          BreedingTask(
+            type: BreedingTaskType.nestBox,
+            dueDate: plannedNestBoxDate,
+            // Considéré comme fait si la mise bas est enregistrée
+            completedDate: kindlingDate != null ? plannedNestBoxDate : null,
+          ),
+        )
         ..add(
           BreedingTask(
             type: BreedingTaskType.kindling,

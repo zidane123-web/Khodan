@@ -702,6 +702,8 @@ class DashboardCubit extends Cubit<DashboardState> {
     switch (type) {
       case BreedingTaskType.palpation:
         return 'Palpation';
+      case BreedingTaskType.nestBox:
+        return 'Mettre le nid';
       case BreedingTaskType.kindling:
         return 'Mise-bas';
       case BreedingTaskType.weaning:
@@ -713,6 +715,8 @@ class DashboardCubit extends Cubit<DashboardState> {
     switch (type) {
       case BreedingTaskType.palpation:
         return DashboardTaskKind.palpation;
+      case BreedingTaskType.nestBox:
+        return DashboardTaskKind.nestBox;
       case BreedingTaskType.kindling:
         return DashboardTaskKind.kindling;
       case BreedingTaskType.weaning:
@@ -726,6 +730,8 @@ class DashboardCubit extends Cubit<DashboardState> {
     switch (kind) {
       case DashboardTaskKind.palpation:
         return DashboardCalendarCategory.taskPalpation;
+      case DashboardTaskKind.nestBox:
+        return DashboardCalendarCategory.taskNestBox;
       case DashboardTaskKind.kindling:
         return DashboardCalendarCategory.taskKindling;
       case DashboardTaskKind.weaning:
@@ -818,7 +824,7 @@ class _TasksBreakdown {
   final List<DashboardCalendarEvent> calendarEvents;
 }
 
-enum DashboardTaskKind { palpation, kindling, weaning, mating }
+enum DashboardTaskKind { palpation, nestBox, kindling, weaning, mating }
 
 class DashboardTask extends Equatable {
   const DashboardTask({
@@ -871,6 +877,7 @@ class DashboardAlert extends Equatable {
 
 enum DashboardCalendarCategory {
   taskPalpation,
+  taskNestBox,
   taskKindling,
   taskWeaning,
   scheduledMating,
