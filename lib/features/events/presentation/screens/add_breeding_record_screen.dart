@@ -78,19 +78,11 @@ class _AddBreedingRecordScreenState extends State<AddBreedingRecordScreen> {
   double? _pairingCoefficient;
 
   List<Animal> get _does => _animals
-      .where(
-        (Animal animal) =>
-            animal.sex.toLowerCase().contains('fem') ||
-            animal.sex.toLowerCase().startsWith('f'),
-      )
+      .where((Animal animal) => animal.isFemale)
       .toList();
 
   List<Animal> get _bucks => _animals
-      .where(
-        (Animal animal) =>
-            animal.sex.toLowerCase().contains('mâ') ||
-            animal.sex.toLowerCase().contains('mal'),
-      )
+      .where((Animal animal) => animal.isMale)
       .toList();
 
   Animal? _findAnimalById(String? id) {

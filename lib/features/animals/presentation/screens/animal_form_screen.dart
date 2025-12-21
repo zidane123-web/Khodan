@@ -21,7 +21,7 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
   final TextEditingController _cageController = TextEditingController();
   final TextEditingController _originController = TextEditingController();
 
-  late String _selectedSex;
+  late AnimalSex _selectedSex;
   late String _selectedStatus;
   DateTime? _birthDate;
   DateTime? _entryDate;
@@ -46,7 +46,7 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
     _nameController.text = initial?.name ?? '';
     _cageController.text = initial?.cageNumber ?? '';
     _originController.text = initial?.origin ?? '';
-    _selectedSex = initial?.sex ?? 'Femelle';
+    _selectedSex = initial?.sexEnum ?? AnimalSex.female;
     _selectedStatus = initial?.status ?? 'Vivant';
     _birthDate = initial?.birthDate ?? DateTime.now();
     _entryDate = initial?.entryDate ?? DateTime.now();
@@ -65,15 +65,10 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
       setState(() {
         _allAnimals = animals;
         _males = animals
-            .where((Animal a) =>
-                a.sex.toLowerCase().contains('mâ') ||
-                a.sex.toLowerCase().contains('mal') ||
-                a.sex.toLowerCase().startsWith('m'))
+            .where((Animal a) => a.isMale)
             .toList();
         _females = animals
-            .where((Animal a) =>
-                a.sex.toLowerCase().contains('fem') ||
-                a.sex.toLowerCase().startsWith('f'))
+            .where((Animal a) => a.isFemale)
             .toList();
         _isLoading = false;
       });
@@ -148,7 +143,7 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
             speciesId: 1,
             tagId: '',
             birthDate: _birthDate!,
-            sex: _selectedSex,
+            sexEnum: _selectedSex,
             status: _selectedStatus,
           );
 
@@ -157,7 +152,7 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
         name: _nameController.text.trim().isEmpty
             ? null
             : _nameController.text.trim(),
-        sex: _selectedSex,
+        sexEnum: _selectedSex,
         status: _selectedStatus,
         birthDate: _birthDate,
         cageNumber: _cageController.text.trim().isEmpty
@@ -300,17 +295,19 @@ class _AnimalFormScreenState extends State<AnimalFormScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField<AnimalSex>(
               value: _selectedSex,
               decoration: const InputDecoration(
                 labelText: 'Sexe *',
                 prefixIcon: Icon(Icons.wc),
               ),
-              items: const <DropdownMenuItem<String>>[
-                DropdownMenuItem<String>(value: 'Femelle', child: Text('Femelle')),
-                DropdownMenuItem<String>(value: 'Mâle', child: Text('Mâle')),
-              ],
-              onChanged: (String? value) {
+              items: AnimalSex.values.map((AnimalSex sex) {
+                return DropdownMenuItem<AnimalSex>(
+                  value: sex,
+                  child: Text(sex.label),
+                );
+              }).toList(),
+              onChanged: (AnimalSex? value) {
                 if (value != null) {
                   setState(() => _selectedSex = value);
                 }

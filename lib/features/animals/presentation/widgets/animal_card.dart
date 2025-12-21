@@ -35,7 +35,7 @@ class AnimalCard extends StatelessWidget {
     final MaterialLocalizations localizations =
         MaterialLocalizations.of(context);
 
-    final bool isFemale = animal.sex.toLowerCase().contains('fem');
+    final bool isFemale = animal.isFemale;
 
     void handleSelection() {
       if (selectionEnabled && onSelectionChanged != null) {

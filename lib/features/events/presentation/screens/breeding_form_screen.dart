@@ -75,14 +75,10 @@ class _BreedingFormScreenState extends State<BreedingFormScreen> {
       setState(() {
         _animals = animals;
         _does = animals
-            .where((Animal a) =>
-                a.sex.toLowerCase().contains('fem') ||
-                a.sex.toLowerCase().startsWith('f'))
+            .where((Animal a) => a.isFemale)
             .toList();
         _bucks = animals
-            .where((Animal a) =>
-                a.sex.toLowerCase().contains('mâ') ||
-                a.sex.toLowerCase().contains('mal'))
+            .where((Animal a) => a.isMale)
             .toList();
         _analyzer = GenealogyAnalyzer(animalsById);
         _isLoading = false;

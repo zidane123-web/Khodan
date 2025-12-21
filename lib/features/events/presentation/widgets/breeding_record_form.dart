@@ -63,15 +63,11 @@ class _BreedingRecordFormDialogState extends State<BreedingRecordFormDialog> {
   double? _pairingCoefficient;
 
   List<Animal> get _does => widget.animals
-      .where((Animal animal) =>
-          animal.sex.toLowerCase().contains('fem') ||
-          animal.sex.toLowerCase().startsWith('f'))
+      .where((Animal animal) => animal.isFemale)
       .toList();
 
   List<Animal> get _bucks => widget.animals
-      .where((Animal animal) =>
-          animal.sex.toLowerCase().contains('mâ') ||
-          animal.sex.toLowerCase().contains('mal'))
+      .where((Animal animal) => animal.isMale)
       .toList();
 
   List<DropdownMenuItem<String>> _buildBuckItems(ThemeData theme) {
