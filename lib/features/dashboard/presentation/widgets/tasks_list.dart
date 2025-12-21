@@ -61,6 +61,8 @@ class TasksList extends StatelessWidget {
     switch (kind) {
       case DashboardTaskKind.palpation:
         return Icons.monitor_heart;
+      case DashboardTaskKind.nestBox:
+        return Icons.inventory_2_outlined;
       case DashboardTaskKind.kindling:
         return Icons.baby_changing_station;
       case DashboardTaskKind.weaning:
@@ -74,6 +76,8 @@ class TasksList extends StatelessWidget {
     switch (kind) {
       case DashboardTaskKind.palpation:
         return theme.colorScheme.primary;
+      case DashboardTaskKind.nestBox:
+        return Colors.orange;
       case DashboardTaskKind.kindling:
         return theme.colorScheme.secondary;
       case DashboardTaskKind.weaning:

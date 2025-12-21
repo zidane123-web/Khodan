@@ -31,7 +31,7 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
   late final TextEditingController _damController;
 
   int _currentStep = 0;
-  late String _selectedSex;
+  late AnimalSex _selectedSex;
   late String _selectedStatus;
   DateTime? _birthDate;
   DateTime? _entryDate;
@@ -53,7 +53,7 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
     _originController = TextEditingController(text: initial?.origin ?? '');
     _sireController = TextEditingController(text: initial?.sireId ?? '');
     _damController = TextEditingController(text: initial?.damId ?? '');
-    _selectedSex = initial?.sex ?? 'Femelle';
+    _selectedSex = initial?.sexEnum ?? AnimalSex.female;
     _selectedStatus = initial?.status ?? 'Vivant';
     _birthDate = initial?.birthDate ?? DateTime.now();
     _entryDate = initial?.entryDate ?? DateTime.now();
@@ -143,7 +143,7 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
           speciesId: 1,
           tagId: '',
           birthDate: _birthDate!,
-          sex: _selectedSex,
+          sexEnum: _selectedSex,
           status: _selectedStatus,
         );
 
@@ -152,7 +152,7 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
       name: _nameController.text.trim().isEmpty
           ? null
           : _nameController.text.trim(),
-      sex: _selectedSex,
+      sexEnum: _selectedSex,
       status: _selectedStatus,
       birthDate: _birthDate,
       cageNumber: _cageController.text.trim().isEmpty
@@ -234,14 +234,16 @@ class _AnimalFormDialogState extends State<AnimalFormDialog> {
                 validator: _validateRequired,
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
+              DropdownButtonFormField<AnimalSex>(
                 value: _selectedSex,
                 decoration: const InputDecoration(labelText: 'Sexe'),
-                items: const <DropdownMenuItem<String>>[
-                  DropdownMenuItem<String>(value: 'Femelle', child: Text('Femelle')),
-                  DropdownMenuItem<String>(value: 'Mâle', child: Text('Mâle')),
-                ],
-                onChanged: (String? value) {
+                items: AnimalSex.values.map((AnimalSex sex) {
+                  return DropdownMenuItem<AnimalSex>(
+                    value: sex,
+                    child: Text(sex.label),
+                  );
+                }).toList(),
+                onChanged: (AnimalSex? value) {
                   if (value != null) {
                     setState(() => _selectedSex = value);
                   }

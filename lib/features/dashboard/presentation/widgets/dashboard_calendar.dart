@@ -335,6 +335,8 @@ class _DashboardCalendarState extends State<DashboardCalendar> {
     switch (category) {
       case DashboardCalendarCategory.taskPalpation:
         return theme.colorScheme.primary;
+      case DashboardCalendarCategory.taskNestBox:
+        return Colors.orange;
       case DashboardCalendarCategory.taskKindling:
         return theme.colorScheme.secondary;
       case DashboardCalendarCategory.taskWeaning:
