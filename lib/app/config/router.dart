@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/animals/presentation/screens/animal_list_screen.dart';
 import '../../features/animals/presentation/models/animal_quick_filter.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/signup_screen.dart';
+import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/events/presentation/screens/events_hub_screen.dart';
 import '../../features/animals/presentation/screens/animal_form_screen.dart';
@@ -25,26 +27,39 @@ class KhodanRouter {
           redirect: (BuildContext context, GoRouterState state) {
             final bool isLoggedIn = 
                 Supabase.instance.client.auth.currentUser != null;
-            final bool isOnLogin = state.matchedLocation == const LoginRoute().location;
+            final String currentPath = state.matchedLocation;
+            final bool isAuthRoute = currentPath == const LoginRoute().location ||
+                currentPath == const SignupRoute().location ||
+                currentPath == const ForgotPasswordRoute().location;
             
-            // If not logged in and not on login page, redirect to login
-            if (!isLoggedIn && !isOnLogin) {
+            // If not logged in and not on an auth page, redirect to login
+            if (!isLoggedIn && !isAuthRoute) {
               return const LoginRoute().location;
             }
             
-            // If logged in and on login page, redirect to dashboard
-            if (isLoggedIn && isOnLogin) {
+            // If logged in and on an auth page, redirect to dashboard
+            if (isLoggedIn && isAuthRoute) {
               return const DashboardRoute().location;
             }
             
             return null; // No redirect
           },
           routes: <RouteBase>[
-            // Login route (outside shell)
+            // Auth routes (outside shell)
             GoRoute(
               path: const LoginRoute().path,
               builder: (BuildContext context, GoRouterState state) =>
                   const LoginScreen(),
+            ),
+            GoRoute(
+              path: const SignupRoute().path,
+              builder: (BuildContext context, GoRouterState state) =>
+                  const SignupScreen(),
+            ),
+            GoRoute(
+              path: const ForgotPasswordRoute().path,
+              builder: (BuildContext context, GoRouterState state) =>
+                  const ForgotPasswordScreen(),
             ),
             // Main app shell (requires auth)
             StatefulShellRoute.indexedStack(
@@ -142,6 +157,14 @@ class ReportsRoute extends KhodanRoute {
 
 class SettingsRoute extends KhodanRoute {
   const SettingsRoute() : super('/settings');
+}
+
+class SignupRoute extends KhodanRoute {
+  const SignupRoute() : super('/auth/signup');
+}
+
+class ForgotPasswordRoute extends KhodanRoute {
+  const ForgotPasswordRoute() : super('/auth/forgot-password');
 }
 
 class KhodanNavigationShell extends StatefulWidget {

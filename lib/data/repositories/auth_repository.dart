@@ -20,20 +20,24 @@ class AuthRepository {
     required String email,
     required String password,
     String? farmName,
+    String? firstName,
+    String? lastName,
   }) async {
-    // Étape 1 : Désactiver temporairement l'e-mail de confirmation
+    // Étape 1 : Créer le compte utilisateur
     final AuthResponse response = await _client.auth.signUp(
       email: email,
       password: password,
       emailRedirectTo: null, // Important pour ne pas attendre la confirmation
     );
 
-    // Étape 2 : Mettre à jour le profil de l'utilisateur avec le nom de la ferme
-    if (farmName != null && response.user != null) {
+    // Étape 2 : Mettre à jour le profil de l'utilisateur
+    if (response.user != null) {
       await _client.from('profiles').upsert(<String, dynamic>{
         'id': response.user!.id,
         'email': email,
         'farm_name': farmName,
+        'first_name': firstName,
+        'last_name': lastName,
       });
     }
     
@@ -43,6 +47,10 @@ class AuthRepository {
     }
 
     return response;
+  }
+
+  Future<void> resetPassword({required String email}) async {
+    await _client.auth.resetPasswordForEmail(email);
   }
 
   Future<void> signOut() => _client.auth.signOut();

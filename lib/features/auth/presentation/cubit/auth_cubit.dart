@@ -57,14 +57,44 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> signUp(String email, String password, {String? farmName}) async {
+  Future<void> signUp(
+    String email,
+    String password, {
+    String? farmName,
+    String? firstName,
+    String? lastName,
+  }) async {
     emit(state.copyWith(status: AuthStatus.loading, resetError: true));
     try {
       await _repository.signUpWithEmail(
         email: email,
         password: password,
         farmName: farmName,
+        firstName: firstName,
+        lastName: lastName,
       );
+      emit(state.copyWith(status: AuthStatus.success));
+    } on AuthException catch (error) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: error.message,
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> resetPassword(String email) async {
+    emit(state.copyWith(status: AuthStatus.loading, resetError: true));
+    try {
+      await _repository.resetPassword(email: email);
       emit(state.copyWith(status: AuthStatus.success));
     } on AuthException catch (error) {
       emit(
@@ -98,3 +128,4 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 }
+
